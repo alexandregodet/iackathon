@@ -1,0 +1,197 @@
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../domain/entities/gemma_model_info.dart';
+
+enum GemmaModelState {
+  notInstalled,
+  downloading,
+  installed,
+  loading,
+  ready,
+  error,
+}
+
+@singleton
+class GemmaService {
+  InferenceModel? _model;
+  InferenceChat? _chat;
+  GemmaModelState _state = GemmaModelState.notInstalled;
+  double _downloadProgress = 0.0;
+  String? _errorMessage;
+  GemmaModelInfo? _currentModel;
+  String? _huggingFaceToken;
+  String? _systemPrompt;
+  bool _systemPromptSent = false;
+
+  GemmaModelState get state => _state;
+  double get downloadProgress => _downloadProgress;
+  String? get errorMessage => _errorMessage;
+  bool get isReady => _state == GemmaModelState.ready;
+  GemmaModelInfo? get currentModel => _currentModel;
+  bool get isMultimodal => _currentModel?.isMultimodal ?? false;
+  String? get systemPrompt => _systemPrompt;
+
+  void setSystemPrompt(String? prompt) {
+    _systemPrompt = prompt?.trim().isEmpty == true ? null : prompt?.trim();
+  }
+
+  final _stateController = StreamController<GemmaModelState>.broadcast();
+  Stream<GemmaModelState> get stateStream => _stateController.stream;
+
+  final _progressController = StreamController<double>.broadcast();
+  Stream<double> get progressStream => _progressController.stream;
+
+  void setHuggingFaceToken(String? token) {
+    _huggingFaceToken = token;
+  }
+
+  Future<void> checkModelStatus(GemmaModelInfo modelInfo) async {
+    _currentModel = modelInfo;
+    final isInstalled = await FlutterGemma.isModelInstalled(modelInfo.filename);
+    _state = isInstalled ? GemmaModelState.installed : GemmaModelState.notInstalled;
+    _stateController.add(_state);
+  }
+
+  Future<void> downloadModel(
+    GemmaModelInfo modelInfo, {
+    void Function(double)? onProgress,
+    String? token,
+  }) async {
+    try {
+      _currentModel = modelInfo;
+      _state = GemmaModelState.downloading;
+      _stateController.add(_state);
+
+      final authToken = token ?? _huggingFaceToken;
+
+      var builder = FlutterGemma.installModel(
+        modelType: modelInfo.modelType,
+        fileType: modelInfo.fileType,
+      ).fromNetwork(
+        modelInfo.url,
+        token: modelInfo.requiresAuth ? authToken : null,
+      );
+
+      builder = builder.withProgress((progress) {
+        _downloadProgress = progress.toDouble() / 100.0;
+        _progressController.add(_downloadProgress);
+        onProgress?.call(_downloadProgress);
+      });
+
+      await builder.install();
+
+      _state = GemmaModelState.installed;
+      _stateController.add(_state);
+    } catch (e) {
+      _state = GemmaModelState.error;
+      _errorMessage = e.toString();
+      _stateController.add(_state);
+      rethrow;
+    }
+  }
+
+  Future<void> loadModel([GemmaModelInfo? modelInfo]) async {
+    try {
+      if (modelInfo != null) {
+        _currentModel = modelInfo;
+      }
+
+      if (_currentModel == null) {
+        throw Exception('No model selected');
+      }
+
+      _state = GemmaModelState.loading;
+      _stateController.add(_state);
+
+      _model = await FlutterGemma.getActiveModel(
+        maxTokens: 1024,
+        supportImage: _currentModel!.isMultimodal,
+        maxNumImages: _currentModel!.isMultimodal ? 1 : null,
+      );
+
+      _chat = await _model!.createChat(
+        modelType: _currentModel!.modelType,
+        supportImage: _currentModel!.isMultimodal,
+      );
+
+      _state = GemmaModelState.ready;
+      _stateController.add(_state);
+    } catch (e) {
+      _state = GemmaModelState.error;
+      _errorMessage = e.toString();
+      _stateController.add(_state);
+      rethrow;
+    }
+  }
+
+  Stream<String> generateResponse(String userMessage, {Uint8List? imageBytes}) async* {
+    if (_chat == null || !isReady) {
+      throw Exception('Model not ready');
+    }
+
+    // Préparer le message avec le system prompt si nécessaire
+    String finalMessage = userMessage;
+    if (_systemPrompt != null && !_systemPromptSent) {
+      finalMessage = '[Instructions système]\n$_systemPrompt\n[Fin des instructions]\n\n$userMessage';
+      _systemPromptSent = true;
+    }
+
+    if (imageBytes != null && isMultimodal) {
+      await _chat!.addQuery(Message.withImage(
+        text: finalMessage,
+        imageBytes: imageBytes,
+        isUser: true,
+      ));
+    } else {
+      await _chat!.addQuery(Message.text(text: finalMessage, isUser: true));
+    }
+
+    // Utiliser generateChatResponseAsync pour le streaming token par token
+    await for (final response in _chat!.generateChatResponseAsync()) {
+      if (response is TextResponse) {
+        yield response.token;
+      }
+    }
+  }
+
+  Future<String> generateResponseSync(String userMessage) async {
+    if (_chat == null || !isReady) {
+      throw Exception('Model not ready');
+    }
+
+    await _chat!.addQuery(Message.text(text: userMessage, isUser: true));
+    final response = await _chat!.generateChatResponse();
+    if (response is TextResponse) {
+      return response.token;
+    }
+    return '';
+  }
+
+  Future<void> clearChat() async {
+    _systemPromptSent = false;
+    if (_model != null && _currentModel != null) {
+      _chat = await _model!.createChat(
+        modelType: _currentModel!.modelType,
+        supportImage: _currentModel!.isMultimodal,
+      );
+    }
+  }
+
+  Future<void> unloadModel() async {
+    _model?.close();
+    _model = null;
+    _chat = null;
+    _state = GemmaModelState.installed;
+    _stateController.add(_state);
+  }
+
+  void dispose() {
+    _model?.close();
+    _stateController.close();
+    _progressController.close();
+  }
+}

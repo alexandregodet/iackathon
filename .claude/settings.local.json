@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter:*)",
+      "Bash(dart run build_runner build:*)",
+      "WebFetch(domain:pub.dev)",
+      "Bash(where /r \"%LOCALAPPDATA%\\Pub\\Cache\\hosted\\pub.dev\" flutter_gemma.dart)",
+      "Bash(dir /s /b \"%LOCALAPPDATA%\\Pub\\Cache\\hosted\\pub.dev\\flutter_gemma*\")",
+      "Bash(findstr:*)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
