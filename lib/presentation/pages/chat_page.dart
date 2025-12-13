@@ -680,10 +680,31 @@ class _ChatPageContentState extends State<_ChatPageContent> {
       padding: const EdgeInsets.all(16),
       itemCount: messages.length,
       itemBuilder: (context, index) {
+        final message = messages[index];
         final isLastMessage = index == messages.length - 1;
+        final isLastAssistant =
+            isLastMessage && message.role == MessageRole.assistant;
+
         return ChatBubble(
-          message: messages[index],
+          message: message,
           isCurrentlyThinking: isLastMessage && state.isThinking,
+          canRegenerate: isLastAssistant && !state.isGenerating,
+          onCopy: message.role == MessageRole.assistant
+              ? () {
+                  context.read<ChatBloc>().add(ChatCopyMessage(message.id));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Message copie'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                }
+              : null,
+          onRegenerate: isLastAssistant
+              ? () {
+                  context.read<ChatBloc>().add(ChatRegenerateMessage(message.id));
+                }
+              : null,
         );
       },
     );
@@ -798,14 +819,17 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 ),
                 const SizedBox(width: 8),
                 FloatingActionButton(
-                  onPressed:
-                      state.isGenerating ? null : () => _sendMessage(context),
+                  onPressed: state.isGenerating
+                      ? () => context.read<ChatBloc>().add(const ChatStopGeneration())
+                      : () => _sendMessage(context),
                   elevation: 0,
+                  backgroundColor: state.isGenerating
+                      ? colorScheme.errorContainer
+                      : null,
                   child: state.isGenerating
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                      ? Icon(
+                          Icons.stop,
+                          color: colorScheme.onErrorContainer,
                         )
                       : const Icon(Icons.send),
                 ),
