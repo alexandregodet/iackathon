@@ -19,13 +19,20 @@ class IackathonApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'IAckathon',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      home: const HomePage(),
+    final settingsService = getIt<SettingsService>();
+
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: settingsService.themeModeNotifier,
+      builder: (context, themeMode, child) {
+        return MaterialApp(
+          title: 'IAckathon',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
+          home: const HomePage(),
+        );
+      },
     );
   }
 }

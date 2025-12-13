@@ -17,6 +17,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   late int _maxTokens;
   late double _temperature;
+  late int _themeMode;
   late TextEditingController _systemPromptController;
 
   @override
@@ -24,6 +25,7 @@ class _SettingsPageState extends State<SettingsPage> {
     super.initState();
     _maxTokens = _settingsService.maxTokens;
     _temperature = _settingsService.temperature;
+    _themeMode = _settingsService.themeMode;
     _systemPromptController = TextEditingController(
       text: _settingsService.systemPrompt ?? '',
     );
@@ -74,6 +76,60 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Appearance Section
+          _buildSectionHeader(context, 'Apparence', Icons.palette),
+          const SizedBox(height: 8),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Theme',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Choisissez le theme de l\'application',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  SegmentedButton<int>(
+                    segments: const [
+                      ButtonSegment(
+                        value: 0,
+                        icon: Icon(Icons.brightness_auto),
+                        label: Text('Auto'),
+                      ),
+                      ButtonSegment(
+                        value: 1,
+                        icon: Icon(Icons.light_mode),
+                        label: Text('Clair'),
+                      ),
+                      ButtonSegment(
+                        value: 2,
+                        icon: Icon(Icons.dark_mode),
+                        label: Text('Sombre'),
+                      ),
+                    ],
+                    selected: {_themeMode},
+                    onSelectionChanged: (selection) {
+                      setState(() {
+                        _themeMode = selection.first;
+                      });
+                      // Apply theme immediately
+                      _settingsService.setThemeMode(_themeMode);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // Model Parameters Section
           _buildSectionHeader(context, 'Parametres du modele', Icons.tune),
           const SizedBox(height: 8),

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,8 +11,25 @@ class SettingsService {
 
   SharedPreferences? _prefs;
 
+  // Theme notifier for reactive updates
+  final ValueNotifier<ThemeMode> themeModeNotifier =
+      ValueNotifier(ThemeMode.system);
+
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+    // Initialize theme notifier with saved value
+    themeModeNotifier.value = _getThemeModeFromInt(themeMode);
+  }
+
+  ThemeMode _getThemeModeFromInt(int value) {
+    switch (value) {
+      case 1:
+        return ThemeMode.light;
+      case 2:
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
   }
 
   // Max Tokens
@@ -40,5 +58,6 @@ class SettingsService {
   int get themeMode => _prefs?.getInt(_themeKey) ?? 0;
   Future<void> setThemeMode(int value) async {
     await _prefs?.setInt(_themeKey, value);
+    themeModeNotifier.value = _getThemeModeFromInt(value);
   }
 }
