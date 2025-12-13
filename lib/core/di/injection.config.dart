@@ -15,6 +15,7 @@ import 'package:injectable/injectable.dart' as _i526;
 import '../../data/datasources/database.dart' as _i104;
 import '../../data/datasources/gemma_service.dart' as _i363;
 import '../../data/datasources/rag_service.dart' as _i909;
+import '../../data/datasources/settings_service.dart' as _i462;
 import '../../presentation/blocs/chat/chat_bloc.dart' as _i142;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -27,6 +28,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i104.AppDatabase>(() => _i104.AppDatabase());
     gh.singleton<_i363.GemmaService>(() => _i363.GemmaService());
     gh.singleton<_i909.RagService>(() => _i909.RagService());
+    gh.singleton<_i462.SettingsService>(() => _i462.SettingsService());
     gh.factory<_i142.ChatBloc>(
       () => _i142.ChatBloc(
         gh<_i363.GemmaService>(),

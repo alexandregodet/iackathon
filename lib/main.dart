@@ -3,12 +3,14 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 
 import 'core/di/injection.dart';
 import 'core/theme/app_theme.dart';
+import 'data/datasources/settings_service.dart';
 import 'presentation/pages/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterGemma.initialize();
   await configureDependencies();
+  await getIt<SettingsService>().init();
   runApp(const IackathonApp());
 }
 
