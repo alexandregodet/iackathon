@@ -828,18 +828,19 @@ class _ChatPageContentState extends State<_ChatPageContent> {
 
   Widget _buildInputBar(BuildContext context, ChatState state) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+        color: isDark ? colorScheme.surfaceContainerLow : colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: isDark
+                ? colorScheme.primary.withValues(alpha: 0.3)
+                : colorScheme.outlineVariant,
           ),
-        ],
+        ),
       ),
       child: SafeArea(
         child: Column(
@@ -850,116 +851,172 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             if (state.isProcessingDocument)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Traitement du document... ${state.documentProcessingCurrent}/${state.documentProcessingTotal}',
-                        style: TextStyle(color: colorScheme.onPrimaryContainer),
+                        '# processing ${state.documentProcessingCurrent}/${state.documentProcessingTotal}',
+                        style: TextStyle(
+                          color: colorScheme.primary,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // PDF button
-                GestureDetector(
-                  onLongPress: () => _showDocumentsDialog(context),
-                  child: IconButton(
-                    onPressed: state.isGenerating || state.isProcessingDocument
-                        ? null
-                        : () => _pickPdf(context),
-                    icon: Badge(
-                      isLabelVisible: state.activeDocumentCount > 0,
-                      label: Text('${state.activeDocumentCount}'),
-                      child: Icon(
-                        Icons.description,
-                        color: state.isGenerating || state.isProcessingDocument
-                            ? colorScheme.outline
-                            : state.hasActiveDocuments
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    tooltip: 'Ajouter un PDF (appui long: gerer)',
-                  ),
-                ),
-                if (state.isMultimodal)
-                  IconButton(
-                    onPressed: state.isGenerating ? null : _showImageSourceDialog,
-                    icon: Icon(
-                      Icons.add_photo_alternate,
-                      color: state.isGenerating
-                          ? colorScheme.outline
-                          : colorScheme.primary,
-                    ),
-                    tooltip: 'Ajouter une image',
-                  ),
-                IconButton(
-                  onPressed: state.isGenerating
-                      ? null
-                      : () => _showTemplatePicker(context),
-                  icon: Icon(
-                    Icons.description_outlined,
-                    color: state.isGenerating
-                        ? colorScheme.outline
-                        : colorScheme.secondary,
-                  ),
-                  tooltip: 'Modeles de prompts',
-                ),
+                // Text field with prefix icons
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    enabled: !state.isGenerating,
-                    decoration: InputDecoration(
-                      hintText: state.isGenerating
-                          ? 'Generation en cours...'
-                          : _selectedImageBytes != null
-                              ? 'Posez une question sur l\'image...'
-                              : 'Ecrivez votre message...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: isDark
+                            ? colorScheme.primary.withValues(alpha: 0.3)
+                            : colorScheme.outlineVariant,
                       ),
                     ),
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendMessage(context),
-                    maxLines: null,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Action icons row
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // PDF button
+                              _buildInputIcon(
+                                icon: Icons.description,
+                                onTap: state.isGenerating || state.isProcessingDocument
+                                    ? null
+                                    : () => _pickPdf(context),
+                                onLongPress: () => _showDocumentsDialog(context),
+                                isActive: state.hasActiveDocuments,
+                                badge: state.activeDocumentCount > 0
+                                    ? state.activeDocumentCount
+                                    : null,
+                                colorScheme: colorScheme,
+                                tooltip: 'PDF',
+                              ),
+                              // Image button (multimodal only)
+                              if (state.isMultimodal)
+                                _buildInputIcon(
+                                  icon: Icons.image,
+                                  onTap: state.isGenerating
+                                      ? null
+                                      : _showImageSourceDialog,
+                                  isActive: _selectedImageBytes != null,
+                                  colorScheme: colorScheme,
+                                  tooltip: 'Image',
+                                ),
+                              // Templates button
+                              _buildInputIcon(
+                                icon: Icons.code,
+                                onTap: state.isGenerating
+                                    ? null
+                                    : () => _showTemplatePicker(context),
+                                colorScheme: colorScheme,
+                                tooltip: 'Templates',
+                                useSecondary: true,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Divider
+                        Container(
+                          width: 1,
+                          height: 24,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        ),
+                        // Text field
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            enabled: !state.isGenerating,
+                            style: const TextStyle(fontSize: 14),
+                            decoration: InputDecoration(
+                              hintText: state.isGenerating
+                                  ? '> processing...'
+                                  : _selectedImageBytes != null
+                                      ? '> describe image...'
+                                      : '> enter message...',
+                              hintStyle: TextStyle(
+                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                            ),
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _sendMessage(context),
+                            maxLines: 4,
+                            minLines: 1,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                FloatingActionButton(
-                  onPressed: state.isGenerating
-                      ? () => context.read<ChatBloc>().add(const ChatStopGeneration())
-                      : () => _sendMessage(context),
-                  elevation: 0,
-                  backgroundColor: state.isGenerating
-                      ? colorScheme.errorContainer
-                      : null,
-                  child: state.isGenerating
-                      ? Icon(
-                          Icons.stop,
-                          color: colorScheme.onErrorContainer,
-                        )
-                      : const Icon(Icons.send),
+                // Send/Stop button
+                SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Material(
+                    color: state.isGenerating
+                        ? colorScheme.error.withValues(alpha: 0.15)
+                        : colorScheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    child: InkWell(
+                      onTap: state.isGenerating
+                          ? () => context.read<ChatBloc>().add(const ChatStopGeneration())
+                          : () => _sendMessage(context),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: state.isGenerating
+                                ? colorScheme.error.withValues(alpha: 0.5)
+                                : colorScheme.primary.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Icon(
+                          state.isGenerating ? Icons.stop : Icons.arrow_forward,
+                          color: state.isGenerating
+                              ? colorScheme.error
+                              : colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -969,37 +1026,108 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     );
   }
 
-  Widget _buildImagePreview(ColorScheme colorScheme) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.memory(
-              _selectedImageBytes!,
-              height: 120,
-              width: 120,
-              fit: BoxFit.cover,
-            ),
+  Widget _buildInputIcon({
+    required IconData icon,
+    required VoidCallback? onTap,
+    VoidCallback? onLongPress,
+    bool isActive = false,
+    int? badge,
+    required ColorScheme colorScheme,
+    String? tooltip,
+    bool useSecondary = false,
+  }) {
+    final color = onTap == null
+        ? colorScheme.outline
+        : isActive
+            ? colorScheme.primary
+            : useSecondary
+                ? colorScheme.secondary
+                : colorScheme.onSurfaceVariant;
+
+    Widget iconWidget = Icon(icon, size: 18, color: color);
+
+    if (badge != null) {
+      iconWidget = Badge(
+        label: Text(
+          '$badge',
+          style: const TextStyle(fontSize: 9),
+        ),
+        child: iconWidget,
+      );
+    }
+
+    return Tooltip(
+      message: tooltip ?? '',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: iconWidget,
           ),
-          Positioned(
-            top: 4,
-            right: 4,
-            child: GestureDetector(
-              onTap: _clearSelectedImage,
-              child: Container(
-                padding: const EdgeInsets.all(4),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePreview(ColorScheme colorScheme) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Stack(
+            children: [
+              Container(
                 decoration: BoxDecoration(
-                  color: colorScheme.surface.withValues(alpha: 0.8),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: isDark
+                        ? colorScheme.primary.withValues(alpha: 0.5)
+                        : colorScheme.outlineVariant,
+                  ),
                 ),
-                child: Icon(
-                  Icons.close,
-                  size: 16,
-                  color: colorScheme.onSurface,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: Image.memory(
+                    _selectedImageBytes!,
+                    height: 80,
+                    width: 80,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
+              Positioned(
+                top: 2,
+                right: 2,
+                child: GestureDetector(
+                  onTap: _clearSelectedImage,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: colorScheme.error,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      size: 12,
+                      color: colorScheme.onError,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '# image attached',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 11,
             ),
           ),
         ],
