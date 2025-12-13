@@ -59,3 +59,68 @@ class ChatStreamComplete extends ChatEvent {
 class ChatClearConversation extends ChatEvent {
   const ChatClearConversation();
 }
+
+// RAG Events
+class ChatCheckEmbedder extends ChatEvent {
+  const ChatCheckEmbedder();
+}
+
+class ChatDownloadEmbedder extends ChatEvent {
+  const ChatDownloadEmbedder();
+}
+
+class ChatLoadEmbedder extends ChatEvent {
+  const ChatLoadEmbedder();
+}
+
+class ChatLoadDocuments extends ChatEvent {
+  const ChatLoadDocuments();
+}
+
+class ChatDocumentSelected extends ChatEvent {
+  final String filePath;
+  final String fileName;
+
+  const ChatDocumentSelected({
+    required this.filePath,
+    required this.fileName,
+  });
+
+  @override
+  List<Object?> get props => [filePath, fileName];
+}
+
+class ChatDocumentProcessingProgress extends ChatEvent {
+  final int current;
+  final int total;
+
+  const ChatDocumentProcessingProgress({
+    required this.current,
+    required this.total,
+  });
+
+  @override
+  List<Object?> get props => [current, total];
+}
+
+class ChatToggleDocument extends ChatEvent {
+  final int documentId;
+  final bool isActive;
+
+  const ChatToggleDocument({
+    required this.documentId,
+    required this.isActive,
+  });
+
+  @override
+  List<Object?> get props => [documentId, isActive];
+}
+
+class ChatRemoveDocument extends ChatEvent {
+  final int documentId;
+
+  const ChatRemoveDocument(this.documentId);
+
+  @override
+  List<Object?> get props => [documentId];
+}
