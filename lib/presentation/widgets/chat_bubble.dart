@@ -6,11 +6,17 @@ import '../../domain/entities/chat_message.dart';
 class ChatBubble extends StatefulWidget {
   final ChatMessage message;
   final bool isCurrentlyThinking;
+  final VoidCallback? onCopy;
+  final VoidCallback? onRegenerate;
+  final bool canRegenerate;
 
   const ChatBubble({
     super.key,
     required this.message,
     this.isCurrentlyThinking = false,
+    this.onCopy,
+    this.onRegenerate,
+    this.canRegenerate = false,
   });
 
   @override
@@ -19,6 +25,7 @@ class ChatBubble extends StatefulWidget {
 
 class _ChatBubbleState extends State<ChatBubble> {
   bool _isThinkingExpanded = false;
+  bool _showActions = false;
 
   @override
   Widget build(BuildContext context) {
@@ -46,63 +53,98 @@ class _ChatBubbleState extends State<ChatBubble> {
             const SizedBox(width: 8),
           ],
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isUser
-                    ? colorScheme.primary
-                    : colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(20),
-                  topRight: const Radius.circular(20),
-                  bottomLeft: Radius.circular(isUser ? 20 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 20),
+            child: GestureDetector(
+              onLongPress: !isUser && !widget.message.isStreaming
+                  ? () => setState(() => _showActions = !_showActions)
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isUser
+                      ? colorScheme.primary
+                      : colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(20),
+                    topRight: const Radius.circular(20),
+                    bottomLeft: Radius.circular(isUser ? 20 : 4),
+                    bottomRight: Radius.circular(isUser ? 4 : 20),
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (widget.message.hasImage) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.memory(
-                        widget.message.imageBytes!,
-                        width: 200,
-                        fit: BoxFit.cover,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.message.hasImage) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(
+                          widget.message.imageBytes!,
+                          width: 200,
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    ),
-                    if (widget.message.content.isNotEmpty)
-                      const SizedBox(height: 8),
-                  ],
-                  // Thinking section for assistant messages
-                  if (!isUser && _shouldShowThinking()) ...[
-                    _buildThinkingSection(context, colorScheme),
+                      if (widget.message.content.isNotEmpty)
+                        const SizedBox(height: 8),
+                    ],
+                    // Thinking section for assistant messages
+                    if (!isUser && _shouldShowThinking()) ...[
+                      _buildThinkingSection(context, colorScheme),
+                      if (widget.message.content.isNotEmpty ||
+                          widget.message.isStreaming)
+                        const SizedBox(height: 12),
+                    ],
                     if (widget.message.content.isNotEmpty ||
-                        widget.message.isStreaming)
-                      const SizedBox(height: 12),
-                  ],
-                  if (widget.message.content.isNotEmpty ||
-                      (widget.message.isStreaming && !widget.message.hasImage))
-                    _buildMessageContent(
-                      context,
-                      isUser: isUser,
-                      textColor: textColor,
-                      colorScheme: colorScheme,
-                    ),
-                  if (widget.message.isStreaming && !widget.isCurrentlyThinking) ...[
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: isUser
-                            ? colorScheme.onPrimary
-                            : colorScheme.primary,
+                        (widget.message.isStreaming && !widget.message.hasImage))
+                      _buildMessageContent(
+                        context,
+                        isUser: isUser,
+                        textColor: textColor,
+                        colorScheme: colorScheme,
                       ),
-                    ),
+                    if (widget.message.isStreaming && !widget.isCurrentlyThinking) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: isUser
+                              ? colorScheme.onPrimary
+                              : colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                    // Action buttons for assistant messages
+                    if (!isUser && _showActions && !widget.message.isStreaming) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildActionButton(
+                            icon: Icons.copy,
+                            label: 'Copier',
+                            onTap: () {
+                              widget.onCopy?.call();
+                              setState(() => _showActions = false);
+                            },
+                            colorScheme: colorScheme,
+                          ),
+                          if (widget.canRegenerate) ...[
+                            const SizedBox(width: 8),
+                            _buildActionButton(
+                              icon: Icons.refresh,
+                              label: 'Regenerer',
+                              onTap: () {
+                                widget.onRegenerate?.call();
+                                setState(() => _showActions = false);
+                              },
+                              colorScheme: colorScheme,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -258,6 +300,42 @@ class _ChatBubbleState extends State<ChatBubble> {
         quoteStyle: TextStyle(
           color: textColor.withValues(alpha: 0.8),
           fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: colorScheme.primary),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );
