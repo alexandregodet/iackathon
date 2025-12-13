@@ -539,9 +539,14 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 ? state.currentConversation!.title
                 : widget.modelInfo.name;
             return Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title),
+                Flexible(
+                  child: Text(
+                    title,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
                 const SizedBox(width: 8),
                 _buildModelStatusBadge(context, state),
               ],
@@ -885,7 +890,10 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Text field with prefix icons
+                // Add button (+)
+                _buildAddButton(context, state, colorScheme, isDark),
+                const SizedBox(width: 8),
+                // Text field
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
@@ -897,127 +905,36 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                             : colorScheme.outlineVariant,
                       ),
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // Action icons row
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // PDF button
-                              _buildInputIcon(
-                                icon: Icons.description,
-                                onTap: state.isGenerating || state.isProcessingDocument
-                                    ? null
-                                    : () => _pickPdf(context),
-                                onLongPress: () => _showDocumentsDialog(context),
-                                isActive: state.hasActiveDocuments,
-                                badge: state.activeDocumentCount > 0
-                                    ? state.activeDocumentCount
-                                    : null,
-                                colorScheme: colorScheme,
-                                tooltip: 'PDF',
-                              ),
-                              // Image button (multimodal only)
-                              if (state.isMultimodal)
-                                _buildInputIcon(
-                                  icon: Icons.image,
-                                  onTap: state.isGenerating
-                                      ? null
-                                      : _showImageSourceDialog,
-                                  isActive: _selectedImageBytes != null,
-                                  colorScheme: colorScheme,
-                                  tooltip: 'Image',
-                                ),
-                              // Templates button
-                              _buildInputIcon(
-                                icon: Icons.code,
-                                onTap: state.isGenerating
-                                    ? null
-                                    : () => _showTemplatePicker(context),
-                                colorScheme: colorScheme,
-                                tooltip: 'Templates',
-                                useSecondary: true,
-                              ),
-                            ],
-                          ),
+                    child: TextField(
+                      controller: _controller,
+                      enabled: !state.isGenerating,
+                      style: const TextStyle(fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: state.isGenerating
+                            ? '> processing...'
+                            : _selectedImageBytes != null
+                                ? '> describe image...'
+                                : '> enter message...',
+                        hintStyle: TextStyle(
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          fontSize: 14,
                         ),
-                        // Divider
-                        Container(
-                          width: 1,
-                          height: 24,
-                          margin: const EdgeInsets.only(bottom: 10),
-                          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
                         ),
-                        // Text field
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            enabled: !state.isGenerating,
-                            style: const TextStyle(fontSize: 14),
-                            decoration: InputDecoration(
-                              hintText: state.isGenerating
-                                  ? '> processing...'
-                                  : _selectedImageBytes != null
-                                      ? '> describe image...'
-                                      : '> enter message...',
-                              hintStyle: TextStyle(
-                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                                fontSize: 14,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                            ),
-                            textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _sendMessage(context),
-                            maxLines: 4,
-                            minLines: 1,
-                          ),
-                        ),
-                      ],
+                      ),
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _sendMessage(context),
+                      maxLines: 4,
+                      minLines: 1,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 // Send/Stop button
-                SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: Material(
-                    color: state.isGenerating
-                        ? colorScheme.error.withValues(alpha: 0.15)
-                        : colorScheme.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                    child: InkWell(
-                      onTap: state.isGenerating
-                          ? () => context.read<ChatBloc>().add(const ChatStopGeneration())
-                          : () => _sendMessage(context),
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: state.isGenerating
-                                ? colorScheme.error.withValues(alpha: 0.5)
-                                : colorScheme.primary.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Icon(
-                          state.isGenerating ? Icons.stop : Icons.arrow_forward,
-                          color: state.isGenerating
-                              ? colorScheme.error
-                              : colorScheme.primary,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                _buildSendButton(context, state, colorScheme),
               ],
             ),
           ],
@@ -1026,47 +943,264 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     );
   }
 
-  Widget _buildInputIcon({
+  Widget _buildAddButton(
+    BuildContext context,
+    ChatState state,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    final hasAttachments = state.hasActiveDocuments || _selectedImageBytes != null;
+    final isDisabled = state.isGenerating || state.isProcessingDocument;
+
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Material(
+        color: hasAttachments
+            ? colorScheme.primary.withValues(alpha: 0.15)
+            : colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(4),
+        child: InkWell(
+          onTap: isDisabled ? null : () => _showAttachmentMenu(context, state),
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: hasAttachments
+                    ? colorScheme.primary.withValues(alpha: 0.5)
+                    : isDark
+                        ? colorScheme.primary.withValues(alpha: 0.3)
+                        : colorScheme.outlineVariant,
+              ),
+            ),
+            child: Badge(
+              isLabelVisible: state.activeDocumentCount > 0,
+              label: Text(
+                '${state.activeDocumentCount}',
+                style: const TextStyle(fontSize: 9),
+              ),
+              child: Icon(
+                Icons.add,
+                color: isDisabled
+                    ? colorScheme.outline
+                    : hasAttachments
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSendButton(
+    BuildContext context,
+    ChatState state,
+    ColorScheme colorScheme,
+  ) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Material(
+        color: state.isGenerating
+            ? colorScheme.error.withValues(alpha: 0.15)
+            : colorScheme.primary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+        child: InkWell(
+          onTap: state.isGenerating
+              ? () => context.read<ChatBloc>().add(const ChatStopGeneration())
+              : () => _sendMessage(context),
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: state.isGenerating
+                    ? colorScheme.error.withValues(alpha: 0.5)
+                    : colorScheme.primary.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Icon(
+              state.isGenerating ? Icons.stop : Icons.arrow_forward,
+              color: state.isGenerating ? colorScheme.error : colorScheme.primary,
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAttachmentMenu(BuildContext context, ChatState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? colorScheme.surfaceContainerLow : colorScheme.surface,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: isDark
+                ? colorScheme.primary.withValues(alpha: 0.3)
+                : colorScheme.outlineVariant,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '> ',
+                    style: TextStyle(color: colorScheme.primary),
+                  ),
+                  Text(
+                    'attach',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // PDF option
+            _buildAttachmentOption(
+              context: context,
+              icon: Icons.description,
+              label: 'pdf',
+              subtitle: state.hasActiveDocuments
+                  ? '${state.activeDocumentCount} active'
+                  : 'add document',
+              isActive: state.hasActiveDocuments,
+              onTap: () {
+                Navigator.pop(context);
+                _pickPdf(context);
+              },
+              onLongPress: () {
+                Navigator.pop(context);
+                _showDocumentsDialog(context);
+              },
+              colorScheme: colorScheme,
+            ),
+            // Image option (multimodal only)
+            if (state.isMultimodal)
+              _buildAttachmentOption(
+                context: context,
+                icon: Icons.image,
+                label: 'image',
+                subtitle: _selectedImageBytes != null ? 'attached' : 'add photo',
+                isActive: _selectedImageBytes != null,
+                onTap: () {
+                  Navigator.pop(context);
+                  _showImageSourceDialog();
+                },
+                colorScheme: colorScheme,
+              ),
+            // Templates option
+            _buildAttachmentOption(
+              context: context,
+              icon: Icons.code,
+              label: 'template',
+              subtitle: 'prompt library',
+              onTap: () {
+                Navigator.pop(context);
+                _showTemplatePicker(context);
+              },
+              colorScheme: colorScheme,
+              useSecondary: true,
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentOption({
+    required BuildContext context,
     required IconData icon,
-    required VoidCallback? onTap,
+    required String label,
+    required String subtitle,
+    required VoidCallback onTap,
     VoidCallback? onLongPress,
     bool isActive = false,
-    int? badge,
     required ColorScheme colorScheme,
-    String? tooltip,
     bool useSecondary = false,
   }) {
-    final color = onTap == null
-        ? colorScheme.outline
-        : isActive
-            ? colorScheme.primary
-            : useSecondary
-                ? colorScheme.secondary
-                : colorScheme.onSurfaceVariant;
+    final color = isActive
+        ? colorScheme.primary
+        : useSecondary
+            ? colorScheme.secondary
+            : colorScheme.onSurfaceVariant;
 
-    Widget iconWidget = Icon(icon, size: 18, color: color);
-
-    if (badge != null) {
-      iconWidget = Badge(
-        label: Text(
-          '$badge',
-          style: const TextStyle(fontSize: 9),
-        ),
-        child: iconWidget,
-      );
-    }
-
-    return Tooltip(
-      message: tooltip ?? '',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          borderRadius: BorderRadius.circular(4),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: iconWidget,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Icon(icon, size: 18, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isActive ? color : colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isActive)
+                Icon(
+                  Icons.check_circle,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+            ],
           ),
         ),
       ),
