@@ -600,7 +600,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
               Expanded(
                 child: state.messages.isEmpty
                     ? _buildEmptyState(context, state)
-                    : _buildMessageList(state.messages),
+                    : _buildMessageList(state.messages, state),
               ),
               _buildInputBar(context, state),
             ],
@@ -674,13 +674,17 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     );
   }
 
-  Widget _buildMessageList(List<ChatMessage> messages) {
+  Widget _buildMessageList(List<ChatMessage> messages, ChatState state) {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
       itemCount: messages.length,
       itemBuilder: (context, index) {
-        return ChatBubble(message: messages[index]);
+        final isLastMessage = index == messages.length - 1;
+        return ChatBubble(
+          message: messages[index],
+          isCurrentlyThinking: isLastMessage && state.isThinking,
+        );
       },
     );
   }

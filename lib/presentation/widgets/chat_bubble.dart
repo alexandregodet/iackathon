@@ -3,14 +3,26 @@ import 'package:flutter_md/flutter_md.dart';
 
 import '../../domain/entities/chat_message.dart';
 
-class ChatBubble extends StatelessWidget {
+class ChatBubble extends StatefulWidget {
   final ChatMessage message;
+  final bool isCurrentlyThinking;
 
-  const ChatBubble({super.key, required this.message});
+  const ChatBubble({
+    super.key,
+    required this.message,
+    this.isCurrentlyThinking = false,
+  });
+
+  @override
+  State<ChatBubble> createState() => _ChatBubbleState();
+}
+
+class _ChatBubbleState extends State<ChatBubble> {
+  bool _isThinkingExpanded = false;
 
   @override
   Widget build(BuildContext context) {
-    final isUser = message.role == MessageRole.user;
+    final isUser = widget.message.role == MessageRole.user;
     final colorScheme = Theme.of(context).colorScheme;
     final textColor = isUser ? colorScheme.onPrimary : colorScheme.onSurface;
 
@@ -50,26 +62,34 @@ class ChatBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (message.hasImage) ...[
+                  if (widget.message.hasImage) ...[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.memory(
-                        message.imageBytes!,
+                        widget.message.imageBytes!,
                         width: 200,
                         fit: BoxFit.cover,
                       ),
                     ),
-                    if (message.content.isNotEmpty) const SizedBox(height: 8),
+                    if (widget.message.content.isNotEmpty)
+                      const SizedBox(height: 8),
                   ],
-                  if (message.content.isNotEmpty ||
-                      (message.isStreaming && !message.hasImage))
+                  // Thinking section for assistant messages
+                  if (!isUser && _shouldShowThinking()) ...[
+                    _buildThinkingSection(context, colorScheme),
+                    if (widget.message.content.isNotEmpty ||
+                        widget.message.isStreaming)
+                      const SizedBox(height: 12),
+                  ],
+                  if (widget.message.content.isNotEmpty ||
+                      (widget.message.isStreaming && !widget.message.hasImage))
                     _buildMessageContent(
                       context,
                       isUser: isUser,
                       textColor: textColor,
                       colorScheme: colorScheme,
                     ),
-                  if (message.isStreaming) ...[
+                  if (widget.message.isStreaming && !widget.isCurrentlyThinking) ...[
                     const SizedBox(height: 8),
                     SizedBox(
                       width: 16,
@@ -103,15 +123,104 @@ class ChatBubble extends StatelessWidget {
     );
   }
 
+  bool _shouldShowThinking() {
+    return widget.message.hasThinking || widget.isCurrentlyThinking;
+  }
+
+  Widget _buildThinkingSection(BuildContext context, ColorScheme colorScheme) {
+    final thinkingInProgress = widget.isCurrentlyThinking && !widget.message.isThinkingComplete;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header - toujours visible
+          InkWell(
+            onTap: widget.message.hasThinking
+                ? () => setState(() => _isThinkingExpanded = !_isThinkingExpanded)
+                : null,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.psychology_alt,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      thinkingInProgress ? 'Reflexion en cours...' : 'Raisonnement',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  if (thinkingInProgress)
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
+                    )
+                  else if (widget.message.hasThinking)
+                    Icon(
+                      _isThinkingExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          // Content - visible if expanded or currently thinking
+          if (_isThinkingExpanded || thinkingInProgress) ...[
+            Divider(
+              height: 1,
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                widget.message.thinkingContent ?? '',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildMessageContent(
     BuildContext context, {
     required bool isUser,
     required Color textColor,
     required ColorScheme colorScheme,
   }) {
-    final content = message.content.isEmpty && message.isStreaming
+    final content = widget.message.content.isEmpty && widget.message.isStreaming
         ? '...'
-        : message.content;
+        : widget.message.content;
 
     // Pour les messages utilisateur, afficher en texte simple
     if (isUser) {
