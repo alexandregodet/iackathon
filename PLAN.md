@@ -108,21 +108,21 @@ Projet Flutter pour hackathon IA avec LLM local (Gemma) integre sur device.
 
 ---
 
-## Phase 4 : Fonctionnalites Avancees (A FAIRE)
+## Phase 4 : Fonctionnalites Avancees (COMPLETE)
 
 ### 4.1 Persistance des conversations
-- [ ] Sauvegarder les messages dans Drift
-- [ ] Liste des conversations historiques
-- [ ] Reprendre une conversation
+- [x] Sauvegarder les messages dans Drift
+- [x] Liste des conversations historiques
+- [x] Reprendre une conversation
 
 ### 4.2 Parametres du modele
-- [ ] Page de parametres
-- [ ] Configuration temperature
-- [ ] Configuration max tokens
+- [x] Page de parametres
+- [x] Configuration temperature
+- [x] Configuration max tokens
 - [ ] Selection du modele (Gemma 1B, 2B, autres)
 
 ### 4.3 Fonctionnalites assistant
-- [ ] Prompts systeme personnalisables
+- [x] Prompts systeme personnalisables
 - [ ] Templates de conversation
 - [ ] Export des conversations
 
