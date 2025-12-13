@@ -8,6 +8,7 @@ import '../../../data/datasources/database.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
 import '../../../domain/entities/chat_message.dart';
+import '../../../domain/entities/conversation_info.dart';
 import '../../../domain/entities/document_info.dart';
 import 'chat_event.dart';
 import 'chat_state.dart';
@@ -37,7 +38,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatDocumentProcessingProgress>(_onDocumentProcessingProgress);
     on<ChatToggleDocument>(_onToggleDocument);
     on<ChatRemoveDocument>(_onRemoveDocument);
-
+    // Conversation events
+    on<ChatLoadConversations>(_onLoadConversations);
+    on<ChatCreateConversation>(_onCreateConversation);
+    on<ChatLoadConversation>(_onLoadConversation);
+    on<ChatDeleteConversation>(_onDeleteConversation);
+    on<ChatRenameConversation>(_onRenameConversation);
   }
 
   Future<void> _onInitialize(
@@ -124,6 +130,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       isGenerating: true,
     ));
 
+    // Save user message to database if we have a conversation
+    if (state.currentConversationId != null) {
+      await _saveMessageToDb(userMessage, state.currentConversationId!);
+    }
+
     try {
       // Build augmented prompt if RAG is active
       String promptToSend = event.message;
@@ -173,23 +184,28 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
   }
 
-  void _onStreamComplete(
+  Future<void> _onStreamComplete(
     ChatStreamComplete event,
     Emitter<ChatState> emit,
-  ) {
+  ) async {
     if (state.messages.isEmpty) return;
 
     final messages = List<ChatMessage>.from(state.messages);
     final lastMessage = messages.last;
 
     if (lastMessage.role == MessageRole.assistant) {
-      messages[messages.length - 1] = lastMessage.copyWith(
-        isStreaming: false,
-      );
+      final completedMessage = lastMessage.copyWith(isStreaming: false);
+      messages[messages.length - 1] = completedMessage;
+
       emit(state.copyWith(
         messages: messages,
         isGenerating: false,
       ));
+
+      // Save assistant message to database if we have a conversation
+      if (state.currentConversationId != null && completedMessage.content.isNotEmpty) {
+        await _saveMessageToDb(completedMessage, state.currentConversationId!);
+      }
     }
   }
 
@@ -374,6 +390,177 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (e) {
       emit(state.copyWith(ragError: e.toString()));
     }
+  }
+
+  // ============== CONVERSATION HANDLERS ==============
+
+  Future<void> _onLoadConversations(
+    ChatLoadConversations event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      emit(state.copyWith(isLoadingConversations: true));
+
+      final convos = await (_database.select(_database.conversations)
+            ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+          .get();
+
+      final conversationInfos = <ConversationInfo>[];
+
+      for (final conv in convos) {
+        final messagesQuery = _database.select(_database.messages)
+          ..where((m) => m.conversationId.equals(conv.id))
+          ..orderBy([(m) => OrderingTerm.desc(m.createdAt)])
+          ..limit(1);
+
+        final lastMessageResult = await messagesQuery.get();
+        final messageCount = await (_database.select(_database.messages)
+              ..where((m) => m.conversationId.equals(conv.id)))
+            .get()
+            .then((msgs) => msgs.length);
+
+        conversationInfos.add(ConversationInfo(
+          id: conv.id,
+          title: conv.title,
+          createdAt: conv.createdAt,
+          updatedAt: conv.updatedAt,
+          messageCount: messageCount,
+          lastMessage: lastMessageResult.isNotEmpty
+              ? lastMessageResult.first.content
+              : null,
+        ));
+      }
+
+      emit(state.copyWith(
+        conversations: conversationInfos,
+        isLoadingConversations: false,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        isLoadingConversations: false,
+        error: e.toString(),
+      ));
+    }
+  }
+
+  Future<void> _onCreateConversation(
+    ChatCreateConversation event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      final title = event.title ?? 'Nouvelle conversation';
+      final now = DateTime.now();
+
+      final id = await _database.into(_database.conversations).insert(
+            ConversationsCompanion.insert(
+              title: title,
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+
+      await _gemmaService.clearChat();
+      emit(state.copyWith(
+        currentConversationId: id,
+        messages: [],
+      ));
+
+      add(const ChatLoadConversations());
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  Future<void> _onLoadConversation(
+    ChatLoadConversation event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      emit(state.copyWith(isLoadingConversations: true));
+
+      final dbMessages = await (_database.select(_database.messages)
+            ..where((m) => m.conversationId.equals(event.conversationId))
+            ..orderBy([(m) => OrderingTerm.asc(m.createdAt)]))
+          .get();
+
+      final messages = dbMessages
+          .map((m) => ChatMessage(
+                id: m.id.toString(),
+                role: m.role == 'user' ? MessageRole.user : MessageRole.assistant,
+                content: m.content,
+                timestamp: m.createdAt,
+              ))
+          .toList();
+
+      await _gemmaService.clearChat();
+
+      emit(state.copyWith(
+        currentConversationId: event.conversationId,
+        messages: messages,
+        isLoadingConversations: false,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        isLoadingConversations: false,
+        error: e.toString(),
+      ));
+    }
+  }
+
+  Future<void> _onDeleteConversation(
+    ChatDeleteConversation event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await (_database.delete(_database.conversations)
+            ..where((c) => c.id.equals(event.conversationId)))
+          .go();
+
+      if (state.currentConversationId == event.conversationId) {
+        await _gemmaService.clearChat();
+        emit(state.copyWith(
+          clearCurrentConversation: true,
+          messages: [],
+        ));
+      }
+
+      add(const ChatLoadConversations());
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  Future<void> _onRenameConversation(
+    ChatRenameConversation event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await (_database.update(_database.conversations)
+            ..where((c) => c.id.equals(event.conversationId)))
+          .write(ConversationsCompanion(
+            title: Value(event.newTitle),
+            updatedAt: Value(DateTime.now()),
+          ));
+
+      add(const ChatLoadConversations());
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  Future<void> _saveMessageToDb(ChatMessage message, int conversationId) async {
+    await _database.into(_database.messages).insert(
+          MessagesCompanion.insert(
+            conversationId: conversationId,
+            role: message.role == MessageRole.user ? 'user' : 'assistant',
+            content: message.content,
+            createdAt: Value(message.timestamp),
+          ),
+        );
+
+    await (_database.update(_database.conversations)
+          ..where((c) => c.id.equals(conversationId)))
+        .write(ConversationsCompanion(updatedAt: Value(DateTime.now())));
   }
 
   @override

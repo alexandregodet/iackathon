@@ -124,3 +124,48 @@ class ChatRemoveDocument extends ChatEvent {
   @override
   List<Object?> get props => [documentId];
 }
+
+// Conversation Events
+class ChatLoadConversations extends ChatEvent {
+  const ChatLoadConversations();
+}
+
+class ChatCreateConversation extends ChatEvent {
+  final String? title;
+
+  const ChatCreateConversation({this.title});
+
+  @override
+  List<Object?> get props => [title];
+}
+
+class ChatLoadConversation extends ChatEvent {
+  final int conversationId;
+
+  const ChatLoadConversation(this.conversationId);
+
+  @override
+  List<Object?> get props => [conversationId];
+}
+
+class ChatDeleteConversation extends ChatEvent {
+  final int conversationId;
+
+  const ChatDeleteConversation(this.conversationId);
+
+  @override
+  List<Object?> get props => [conversationId];
+}
+
+class ChatRenameConversation extends ChatEvent {
+  final int conversationId;
+  final String newTitle;
+
+  const ChatRenameConversation({
+    required this.conversationId,
+    required this.newTitle,
+  });
+
+  @override
+  List<Object?> get props => [conversationId, newTitle];
+}

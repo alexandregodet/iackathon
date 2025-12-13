@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
 import '../../../domain/entities/chat_message.dart';
+import '../../../domain/entities/conversation_info.dart';
 import '../../../domain/entities/document_info.dart';
 import '../../../domain/entities/gemma_model_info.dart';
 
@@ -13,6 +14,11 @@ class ChatState extends Equatable {
   final List<ChatMessage> messages;
   final bool isGenerating;
   final String? error;
+
+  // Conversation State
+  final List<ConversationInfo> conversations;
+  final int? currentConversationId;
+  final bool isLoadingConversations;
 
   // RAG State
   final EmbedderState embedderState;
@@ -30,6 +36,10 @@ class ChatState extends Equatable {
     this.messages = const [],
     this.isGenerating = false,
     this.error,
+    // Conversation defaults
+    this.conversations = const [],
+    this.currentConversationId,
+    this.isLoadingConversations = false,
     // RAG defaults
     this.embedderState = EmbedderState.notInstalled,
     this.embedderDownloadProgress = 0.0,
@@ -56,6 +66,15 @@ class ChatState extends Equatable {
   bool get hasActiveDocuments => activeDocuments.isNotEmpty;
   int get activeDocumentCount => activeDocuments.length;
 
+  // Conversation getters
+  bool get hasCurrentConversation => currentConversationId != null;
+  ConversationInfo? get currentConversation => hasCurrentConversation
+      ? conversations.cast<ConversationInfo?>().firstWhere(
+            (c) => c?.id == currentConversationId,
+            orElse: () => null,
+          )
+      : null;
+
   ChatState copyWith({
     GemmaModelState? modelState,
     GemmaModelInfo? selectedModel,
@@ -63,6 +82,11 @@ class ChatState extends Equatable {
     List<ChatMessage>? messages,
     bool? isGenerating,
     String? error,
+    // Conversation
+    List<ConversationInfo>? conversations,
+    int? currentConversationId,
+    bool clearCurrentConversation = false,
+    bool? isLoadingConversations,
     // RAG
     EmbedderState? embedderState,
     double? embedderDownloadProgress,
@@ -79,6 +103,13 @@ class ChatState extends Equatable {
       messages: messages ?? this.messages,
       isGenerating: isGenerating ?? this.isGenerating,
       error: error,
+      // Conversation
+      conversations: conversations ?? this.conversations,
+      currentConversationId: clearCurrentConversation
+          ? null
+          : (currentConversationId ?? this.currentConversationId),
+      isLoadingConversations:
+          isLoadingConversations ?? this.isLoadingConversations,
       // RAG
       embedderState: embedderState ?? this.embedderState,
       embedderDownloadProgress:
@@ -101,6 +132,10 @@ class ChatState extends Equatable {
         messages,
         isGenerating,
         error,
+        // Conversation
+        conversations,
+        currentConversationId,
+        isLoadingConversations,
         // RAG
         embedderState,
         embedderDownloadProgress,
