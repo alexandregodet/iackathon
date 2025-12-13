@@ -15,6 +15,18 @@ enum GemmaModelState {
   error,
 }
 
+class GemmaStreamResponse {
+  final String? thinkingChunk;
+  final String? textChunk;
+  final bool isThinkingPhase;
+
+  const GemmaStreamResponse({
+    this.thinkingChunk,
+    this.textChunk,
+    this.isThinkingPhase = false,
+  });
+}
+
 @singleton
 class GemmaService {
   InferenceModel? _model;
@@ -33,6 +45,7 @@ class GemmaService {
   bool get isReady => _state == GemmaModelState.ready;
   GemmaModelInfo? get currentModel => _currentModel;
   bool get isMultimodal => _currentModel?.isMultimodal ?? false;
+  bool get supportsThinking => _currentModel?.supportsThinking ?? false;
   String? get systemPrompt => _systemPrompt;
 
   void setSystemPrompt(String? prompt) {
@@ -116,6 +129,7 @@ class GemmaService {
       _chat = await _model!.createChat(
         modelType: _currentModel!.modelType,
         supportImage: _currentModel!.isMultimodal,
+        isThinking: _currentModel!.supportsThinking,
       );
 
       _state = GemmaModelState.ready;
@@ -133,10 +147,9 @@ class GemmaService {
       throw Exception('Model not ready');
     }
 
-    // Préparer le message avec le system prompt si nécessaire
     String finalMessage = userMessage;
     if (_systemPrompt != null && !_systemPromptSent) {
-      finalMessage = '[Instructions système]\n$_systemPrompt\n[Fin des instructions]\n\n$userMessage';
+      finalMessage = '[Instructions systeme]\n$_systemPrompt\n[Fin des instructions]\n\n$userMessage';
       _systemPromptSent = true;
     }
 
@@ -150,10 +163,48 @@ class GemmaService {
       await _chat!.addQuery(Message.text(text: finalMessage, isUser: true));
     }
 
-    // Utiliser generateChatResponseAsync pour le streaming token par token
     await for (final response in _chat!.generateChatResponseAsync()) {
       if (response is TextResponse) {
         yield response.token;
+      }
+    }
+  }
+
+  Stream<GemmaStreamResponse> generateResponseWithThinking(
+    String userMessage, {
+    Uint8List? imageBytes,
+  }) async* {
+    if (_chat == null || !isReady) {
+      throw Exception('Model not ready');
+    }
+
+    String finalMessage = userMessage;
+    if (_systemPrompt != null && !_systemPromptSent) {
+      finalMessage = '[Instructions systeme]\n$_systemPrompt\n[Fin des instructions]\n\n$userMessage';
+      _systemPromptSent = true;
+    }
+
+    if (imageBytes != null && isMultimodal) {
+      await _chat!.addQuery(Message.withImage(
+        text: finalMessage,
+        imageBytes: imageBytes,
+        isUser: true,
+      ));
+    } else {
+      await _chat!.addQuery(Message.text(text: finalMessage, isUser: true));
+    }
+
+    await for (final response in _chat!.generateChatResponseAsync()) {
+      if (response is ThinkingResponse) {
+        yield GemmaStreamResponse(
+          thinkingChunk: response.content,
+          isThinkingPhase: true,
+        );
+      } else if (response is TextResponse) {
+        yield GemmaStreamResponse(
+          textChunk: response.token,
+          isThinkingPhase: false,
+        );
       }
     }
   }
@@ -177,6 +228,7 @@ class GemmaService {
       _chat = await _model!.createChat(
         modelType: _currentModel!.modelType,
         supportImage: _currentModel!.isMultimodal,
+        isThinking: _currentModel!.supportsThinking,
       );
     }
   }
