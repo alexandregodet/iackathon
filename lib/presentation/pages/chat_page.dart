@@ -521,10 +521,17 @@ class _ChatPageContentState extends State<_ChatPageContent> {
       appBar: AppBar(
         title: BlocBuilder<ChatBloc, ChatState>(
           builder: (context, state) {
-            if (state.currentConversation != null) {
-              return Text(state.currentConversation!.title);
-            }
-            return Text(widget.modelInfo.name);
+            final title = state.currentConversation != null
+                ? state.currentConversation!.title
+                : widget.modelInfo.name;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title),
+                const SizedBox(width: 8),
+                _buildModelStatusBadge(context, state),
+              ],
+            );
           },
         ),
         actions: [
@@ -875,6 +882,49 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildModelStatusBadge(BuildContext context, ChatState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color badgeColor;
+    IconData icon;
+    String tooltip;
+
+    if (state.isModelReady) {
+      badgeColor = Colors.green;
+      icon = Icons.check_circle;
+      tooltip = 'Modele pret';
+    } else if (state.isLoading) {
+      badgeColor = Colors.orange;
+      icon = Icons.hourglass_top;
+      tooltip = 'Chargement...';
+    } else if (state.isDownloading) {
+      badgeColor = Colors.blue;
+      icon = Icons.download;
+      tooltip = 'Telechargement ${(state.downloadProgress * 100).toInt()}%';
+    } else if (state.modelState == GemmaModelState.error) {
+      badgeColor = colorScheme.error;
+      icon = Icons.error;
+      tooltip = 'Erreur';
+    } else if (state.isModelInstalled) {
+      badgeColor = Colors.grey;
+      icon = Icons.circle;
+      tooltip = 'Modele installe (non charge)';
+    } else {
+      badgeColor = Colors.grey;
+      icon = Icons.download;
+      tooltip = 'Modele non installe';
+    }
+
+    return Tooltip(
+      message: tooltip,
+      child: Icon(
+        icon,
+        size: 16,
+        color: badgeColor,
       ),
     );
   }
