@@ -183,3 +183,26 @@ class ChatThinkingChunk extends ChatEvent {
 class ChatThinkingComplete extends ChatEvent {
   const ChatThinkingComplete();
 }
+
+// Message Action Events
+class ChatCopyMessage extends ChatEvent {
+  final String messageId;
+
+  const ChatCopyMessage(this.messageId);
+
+  @override
+  List<Object?> get props => [messageId];
+}
+
+class ChatRegenerateMessage extends ChatEvent {
+  final String assistantMessageId;
+
+  const ChatRegenerateMessage(this.assistantMessageId);
+
+  @override
+  List<Object?> get props => [assistantMessageId];
+}
+
+class ChatStopGeneration extends ChatEvent {
+  const ChatStopGeneration();
+}
