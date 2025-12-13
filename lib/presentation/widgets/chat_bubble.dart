@@ -143,6 +143,20 @@ class _ChatBubbleState extends State<ChatBubble> {
                         ],
                       ),
                     ],
+                    // Token count
+                    if (widget.message.content.isNotEmpty &&
+                        !widget.message.isStreaming) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        '~${_estimateTokens(widget.message.content)} tokens',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isUser
+                              ? colorScheme.onPrimary.withValues(alpha: 0.6)
+                              : colorScheme.outline,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -303,6 +317,12 @@ class _ChatBubbleState extends State<ChatBubble> {
         ),
       ),
     );
+  }
+
+  int _estimateTokens(String text) {
+    // Rough estimation: 1 token ≈ 4 characters
+    // This is an approximation, actual tokenization varies by model
+    return (text.length / 4).ceil();
   }
 
   Widget _buildActionButton({
