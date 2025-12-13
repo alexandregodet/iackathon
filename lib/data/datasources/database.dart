@@ -24,13 +24,23 @@ class Messages extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+class Documents extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().withLength(min: 1, max: 255)();
+  TextColumn get filePath => text()();
+  IntColumn get totalChunks => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get lastUsedAt => dateTime().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(false))();
+}
+
 @singleton
-@DriftDatabase(tables: [Conversations, Messages])
+@DriftDatabase(tables: [Conversations, Messages, Documents])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -39,7 +49,9 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Handle future migrations here
+        if (from < 2) {
+          await m.createTable(documents);
+        }
       },
     );
   }
