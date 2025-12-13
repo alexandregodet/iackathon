@@ -85,6 +85,25 @@ class ChatState extends Equatable {
           )
       : null;
 
+  // Context usage getters
+  static const int maxContextTokens = 8192;
+
+  int get estimatedTokensUsed {
+    int totalChars = 0;
+    for (final msg in messages) {
+      totalChars += msg.content.length;
+      if (msg.thinkingContent != null) {
+        totalChars += msg.thinkingContent!.length;
+      }
+    }
+    return (totalChars / 4).ceil();
+  }
+
+  double get contextUsagePercent =>
+      (estimatedTokensUsed / maxContextTokens).clamp(0.0, 1.0);
+
+  bool get isContextNearlyFull => contextUsagePercent > 0.8;
+
   ChatState copyWith({
     GemmaModelState? modelState,
     GemmaModelInfo? selectedModel,
