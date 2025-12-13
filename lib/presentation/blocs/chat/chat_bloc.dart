@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
@@ -48,6 +49,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatLoadConversation>(_onLoadConversation);
     on<ChatDeleteConversation>(_onDeleteConversation);
     on<ChatRenameConversation>(_onRenameConversation);
+    // Message action events
+    on<ChatCopyMessage>(_onCopyMessage);
+    on<ChatRegenerateMessage>(_onRegenerateMessage);
+    on<ChatStopGeneration>(_onStopGeneration);
   }
 
   Future<void> _onInitialize(
@@ -639,6 +644,85 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     await (_database.update(_database.conversations)
           ..where((c) => c.id.equals(conversationId)))
         .write(ConversationsCompanion(updatedAt: Value(DateTime.now())));
+  }
+
+  // ============== MESSAGE ACTION HANDLERS ==============
+
+  Future<void> _onCopyMessage(
+    ChatCopyMessage event,
+    Emitter<ChatState> emit,
+  ) async {
+    final message = state.messages.firstWhere(
+      (m) => m.id == event.messageId,
+      orElse: () => throw Exception('Message not found'),
+    );
+    await Clipboard.setData(ClipboardData(text: message.content));
+  }
+
+  Future<void> _onRegenerateMessage(
+    ChatRegenerateMessage event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (state.isGenerating) return;
+
+    // Find the assistant message index
+    final assistantIndex = state.messages.indexWhere(
+      (m) => m.id == event.assistantMessageId,
+    );
+
+    if (assistantIndex == -1 || assistantIndex == 0) return;
+
+    // Find the preceding user message
+    final userMessage = state.messages[assistantIndex - 1];
+    if (userMessage.role != MessageRole.user) return;
+
+    // Remove the assistant message from state
+    final updatedMessages = List<ChatMessage>.from(state.messages)
+      ..removeAt(assistantIndex);
+
+    emit(state.copyWith(messages: updatedMessages));
+
+    // Re-send the user message
+    add(ChatSendMessage(userMessage.content, imageBytes: userMessage.imageBytes));
+  }
+
+  Future<void> _onStopGeneration(
+    ChatStopGeneration event,
+    Emitter<ChatState> emit,
+  ) async {
+    // Cancel active subscriptions
+    await _responseSubscription?.cancel();
+    await _thinkingResponseSubscription?.cancel();
+    _responseSubscription = null;
+    _thinkingResponseSubscription = null;
+
+    // Mark the last message as no longer streaming, keep partial content
+    if (state.messages.isEmpty) {
+      emit(state.copyWith(isGenerating: false, isThinking: false));
+      return;
+    }
+
+    final messages = List<ChatMessage>.from(state.messages);
+    final lastMessage = messages.last;
+
+    if (lastMessage.role == MessageRole.assistant && lastMessage.isStreaming) {
+      final stoppedMessage = lastMessage.copyWith(isStreaming: false);
+      messages[messages.length - 1] = stoppedMessage;
+
+      emit(state.copyWith(
+        messages: messages,
+        isGenerating: false,
+        isThinking: false,
+      ));
+
+      // Save partial message to database if conversation exists
+      if (state.currentConversationId != null &&
+          stoppedMessage.content.isNotEmpty) {
+        await _saveMessageToDb(stoppedMessage, state.currentConversationId!);
+      }
+    } else {
+      emit(state.copyWith(isGenerating: false, isThinking: false));
+    }
   }
 
   @override
