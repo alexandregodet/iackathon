@@ -19,6 +19,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final RagService _ragService;
   final AppDatabase _database;
   StreamSubscription<String>? _responseSubscription;
+  StreamSubscription<GemmaStreamResponse>? _thinkingResponseSubscription;
 
   ChatBloc(this._gemmaService, this._ragService, this._database)
       : super(const ChatState()) {
@@ -38,6 +39,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatDocumentProcessingProgress>(_onDocumentProcessingProgress);
     on<ChatToggleDocument>(_onToggleDocument);
     on<ChatRemoveDocument>(_onRemoveDocument);
+    // Thinking events
+    on<ChatThinkingChunk>(_onThinkingChunk);
+    on<ChatThinkingComplete>(_onThinkingComplete);
     // Conversation events
     on<ChatLoadConversations>(_onLoadConversations);
     on<ChatCreateConversation>(_onCreateConversation);
@@ -147,18 +151,48 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
 
       _responseSubscription?.cancel();
-      _responseSubscription = _gemmaService
-          .generateResponse(promptToSend, imageBytes: event.imageBytes)
-          .listen(
-        (chunk) => add(ChatStreamChunk(chunk)),
-        onDone: () => add(const ChatStreamComplete()),
-        onError: (e) {
-          emit(state.copyWith(
-            isGenerating: false,
-            error: e.toString(),
-          ));
-        },
-      );
+      _thinkingResponseSubscription?.cancel();
+
+      // Use thinking-aware generation for models that support it
+      if (_gemmaService.supportsThinking) {
+        emit(state.copyWith(isThinking: true, currentThinkingContent: ''));
+
+        _thinkingResponseSubscription = _gemmaService
+            .generateResponseWithThinking(promptToSend, imageBytes: event.imageBytes)
+            .listen(
+          (response) {
+            if (response.isThinkingPhase && response.thinkingChunk != null) {
+              add(ChatThinkingChunk(response.thinkingChunk!));
+            } else if (response.textChunk != null) {
+              add(ChatStreamChunk(response.textChunk!));
+            }
+          },
+          onDone: () {
+            add(const ChatThinkingComplete());
+            add(const ChatStreamComplete());
+          },
+          onError: (e) {
+            emit(state.copyWith(
+              isGenerating: false,
+              isThinking: false,
+              error: e.toString(),
+            ));
+          },
+        );
+      } else {
+        _responseSubscription = _gemmaService
+            .generateResponse(promptToSend, imageBytes: event.imageBytes)
+            .listen(
+          (chunk) => add(ChatStreamChunk(chunk)),
+          onDone: () => add(const ChatStreamComplete()),
+          onError: (e) {
+            emit(state.copyWith(
+              isGenerating: false,
+              error: e.toString(),
+            ));
+          },
+        );
+      }
     } catch (e) {
       emit(state.copyWith(
         isGenerating: false,
@@ -215,6 +249,50 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     await _gemmaService.clearChat();
     emit(state.copyWith(messages: []));
+  }
+
+  // ============== THINKING HANDLERS ==============
+
+  void _onThinkingChunk(
+    ChatThinkingChunk event,
+    Emitter<ChatState> emit,
+  ) {
+    // Accumulate thinking content in state
+    final newThinkingContent = state.currentThinkingContent + event.chunk;
+    emit(state.copyWith(currentThinkingContent: newThinkingContent));
+
+    // Also update the current assistant message with thinking content
+    if (state.messages.isEmpty) return;
+
+    final messages = List<ChatMessage>.from(state.messages);
+    final lastMessage = messages.last;
+
+    if (lastMessage.role == MessageRole.assistant) {
+      messages[messages.length - 1] = lastMessage.copyWith(
+        thinkingContent: newThinkingContent,
+      );
+      emit(state.copyWith(messages: messages));
+    }
+  }
+
+  void _onThinkingComplete(
+    ChatThinkingComplete event,
+    Emitter<ChatState> emit,
+  ) {
+    emit(state.copyWith(isThinking: false));
+
+    // Mark thinking as complete on the message
+    if (state.messages.isEmpty) return;
+
+    final messages = List<ChatMessage>.from(state.messages);
+    final lastMessage = messages.last;
+
+    if (lastMessage.role == MessageRole.assistant) {
+      messages[messages.length - 1] = lastMessage.copyWith(
+        isThinkingComplete: true,
+      );
+      emit(state.copyWith(messages: messages));
+    }
   }
 
   // ============== RAG HANDLERS ==============
@@ -566,6 +644,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   @override
   Future<void> close() {
     _responseSubscription?.cancel();
+    _thinkingResponseSubscription?.cancel();
     return super.close();
   }
 }

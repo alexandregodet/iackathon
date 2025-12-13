@@ -29,6 +29,10 @@ class ChatState extends Equatable {
   final int documentProcessingTotal;
   final String? ragError;
 
+  // Thinking State
+  final bool isThinking;
+  final String currentThinkingContent;
+
   const ChatState({
     this.modelState = GemmaModelState.notInstalled,
     this.selectedModel,
@@ -48,6 +52,9 @@ class ChatState extends Equatable {
     this.documentProcessingCurrent = 0,
     this.documentProcessingTotal = 0,
     this.ragError,
+    // Thinking defaults
+    this.isThinking = false,
+    this.currentThinkingContent = '',
   });
 
   bool get isModelReady => modelState == GemmaModelState.ready;
@@ -56,6 +63,9 @@ class ChatState extends Equatable {
   bool get isLoading => modelState == GemmaModelState.loading;
   bool get isMultimodal => selectedModel?.isMultimodal ?? false;
   bool get requiresAuth => selectedModel?.requiresAuth ?? false;
+
+  // Thinking getters
+  bool get supportsThinking => selectedModel?.supportsThinking ?? false;
 
   // RAG getters
   bool get isEmbedderReady => embedderState == EmbedderState.ready;
@@ -95,6 +105,9 @@ class ChatState extends Equatable {
     int? documentProcessingCurrent,
     int? documentProcessingTotal,
     String? ragError,
+    // Thinking
+    bool? isThinking,
+    String? currentThinkingContent,
   }) {
     return ChatState(
       modelState: modelState ?? this.modelState,
@@ -121,6 +134,10 @@ class ChatState extends Equatable {
       documentProcessingTotal:
           documentProcessingTotal ?? this.documentProcessingTotal,
       ragError: ragError,
+      // Thinking
+      isThinking: isThinking ?? this.isThinking,
+      currentThinkingContent:
+          currentThinkingContent ?? this.currentThinkingContent,
     );
   }
 
@@ -144,5 +161,8 @@ class ChatState extends Equatable {
         documentProcessingCurrent,
         documentProcessingTotal,
         ragError,
+        // Thinking
+        isThinking,
+        currentThinkingContent,
       ];
 }

@@ -169,3 +169,17 @@ class ChatRenameConversation extends ChatEvent {
   @override
   List<Object?> get props => [conversationId, newTitle];
 }
+
+// Thinking Events
+class ChatThinkingChunk extends ChatEvent {
+  final String chunk;
+
+  const ChatThinkingChunk(this.chunk);
+
+  @override
+  List<Object?> get props => [chunk];
+}
+
+class ChatThinkingComplete extends ChatEvent {
+  const ChatThinkingComplete();
+}
