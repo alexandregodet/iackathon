@@ -15,10 +15,29 @@ class ConversationsPage extends StatefulWidget {
 }
 
 class _ConversationsPageState extends State<ConversationsPage> {
+  final _searchController = TextEditingController();
+  bool _isSearching = false;
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     context.read<ChatBloc>().add(const ChatLoadConversations());
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<ConversationInfo> _filterConversations(List<ConversationInfo> conversations) {
+    if (_searchQuery.isEmpty) return conversations;
+    final query = _searchQuery.toLowerCase();
+    return conversations.where((c) {
+      return c.title.toLowerCase().contains(query) ||
+          (c.lastMessage?.toLowerCase().contains(query) ?? false);
+    }).toList();
   }
 
   @override
@@ -27,13 +46,39 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Conversations'),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Rechercher...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                ),
+                style: TextStyle(color: colorScheme.onSurface),
+                onChanged: (value) => setState(() => _searchQuery = value),
+              )
+            : const Text('Conversations'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _createNewConversation(context),
-            tooltip: 'Nouvelle conversation',
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }
+              });
+            },
+            tooltip: _isSearching ? 'Fermer' : 'Rechercher',
           ),
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _createNewConversation(context),
+              tooltip: 'Nouvelle conversation',
+            ),
         ],
       ),
       body: BlocBuilder<ChatBloc, ChatState>(
@@ -41,6 +86,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
           if (state.isLoadingConversations) {
             return const Center(child: CircularProgressIndicator());
           }
+
+          final filteredConversations = _filterConversations(state.conversations);
 
           if (state.conversations.isEmpty) {
             return Center(
@@ -77,11 +124,41 @@ class _ConversationsPageState extends State<ConversationsPage> {
             );
           }
 
+          if (filteredConversations.isEmpty && _searchQuery.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.search_off,
+                    size: 64,
+                    color: colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Aucun resultat',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: colorScheme.outline,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Aucune conversation ne correspond a "$_searchQuery"',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.outline,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }
+
           return ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: state.conversations.length,
+            itemCount: filteredConversations.length,
             itemBuilder: (context, index) {
-              final conversation = state.conversations[index];
+              final conversation = filteredConversations[index];
               final isSelected = state.currentConversationId == conversation.id;
 
               return _ConversationTile(
