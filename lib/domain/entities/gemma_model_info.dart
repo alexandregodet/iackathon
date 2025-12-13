@@ -11,6 +11,7 @@ class GemmaModelInfo {
   final int sizeInMb;
   final bool isMultimodal;
   final bool requiresAuth;
+  final bool supportsThinking;
 
   const GemmaModelInfo({
     required this.id,
@@ -23,6 +24,7 @@ class GemmaModelInfo {
     required this.sizeInMb,
     this.isMultimodal = false,
     this.requiresAuth = false,
+    this.supportsThinking = false,
   });
 
   String get sizeLabel {
@@ -34,7 +36,8 @@ class GemmaModelInfo {
 }
 
 class AvailableModels {
-  static const String _cdnBaseUrl = 'https://storage.kast.maintenance-coach.com/cdn/ai_models';
+  static const String _cdnBaseUrl =
+      'https://storage.kast.maintenance-coach.com/cdn/ai_models';
 
   static const gemma3_1b = GemmaModelInfo(
     id: 'gemma3_1b',
@@ -45,8 +48,6 @@ class AvailableModels {
     modelType: ModelType.gemmaIt,
     fileType: ModelFileType.task,
     sizeInMb: 900,
-    isMultimodal: false,
-    requiresAuth: false,
   );
 
   static const gemma3NanoE2b = GemmaModelInfo(
@@ -59,7 +60,6 @@ class AvailableModels {
     fileType: ModelFileType.task,
     sizeInMb: 2000,
     isMultimodal: true,
-    requiresAuth: false,
   );
 
   static const gemma3NanoE4b = GemmaModelInfo(
@@ -72,20 +72,35 @@ class AvailableModels {
     fileType: ModelFileType.task,
     sizeInMb: 4000,
     isMultimodal: true,
-    requiresAuth: false,
+  );
+
+  static const deepSeekR1 = GemmaModelInfo(
+    id: 'deepseek_r1_1.5b',
+    name: 'DeepSeek R1 1.5B',
+    description: 'Modele de raisonnement avec mode pensée',
+    url: '$_cdnBaseUrl/deepseek_q8_ekv1280.task',
+    filename: 'deepseek_q8_ekv1280.task',
+    modelType: ModelType.deepSeek,
+    fileType: ModelFileType.task,
+    sizeInMb: 1860,
+    supportsThinking: true,
   );
 
   static List<GemmaModelInfo> get all => [
-        gemma3_1b,
-        gemma3NanoE2b,
-        gemma3NanoE4b,
-      ];
+    gemma3_1b,
+    gemma3NanoE2b,
+    gemma3NanoE4b,
+    deepSeekR1,
+  ];
 
   static List<GemmaModelInfo> get multimodal =>
       all.where((m) => m.isMultimodal).toList();
 
   static List<GemmaModelInfo> get textOnly =>
       all.where((m) => !m.isMultimodal).toList();
+
+  static List<GemmaModelInfo> get thinkingModels =>
+      all.where((m) => m.supportsThinking).toList();
 
   static GemmaModelInfo? getById(String id) {
     try {

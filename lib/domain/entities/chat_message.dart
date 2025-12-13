@@ -11,6 +11,8 @@ class ChatMessage extends Equatable {
   final DateTime timestamp;
   final bool isStreaming;
   final Uint8List? imageBytes;
+  final String? thinkingContent;
+  final bool isThinkingComplete;
 
   const ChatMessage({
     required this.id,
@@ -19,9 +21,12 @@ class ChatMessage extends Equatable {
     required this.timestamp,
     this.isStreaming = false,
     this.imageBytes,
+    this.thinkingContent,
+    this.isThinkingComplete = false,
   });
 
   bool get hasImage => imageBytes != null;
+  bool get hasThinking => thinkingContent != null && thinkingContent!.isNotEmpty;
 
   ChatMessage copyWith({
     String? id,
@@ -30,6 +35,8 @@ class ChatMessage extends Equatable {
     DateTime? timestamp,
     bool? isStreaming,
     Uint8List? imageBytes,
+    String? thinkingContent,
+    bool? isThinkingComplete,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -38,9 +45,20 @@ class ChatMessage extends Equatable {
       timestamp: timestamp ?? this.timestamp,
       isStreaming: isStreaming ?? this.isStreaming,
       imageBytes: imageBytes ?? this.imageBytes,
+      thinkingContent: thinkingContent ?? this.thinkingContent,
+      isThinkingComplete: isThinkingComplete ?? this.isThinkingComplete,
     );
   }
 
   @override
-  List<Object?> get props => [id, role, content, timestamp, isStreaming, imageBytes];
+  List<Object?> get props => [
+        id,
+        role,
+        content,
+        timestamp,
+        isStreaming,
+        imageBytes,
+        thinkingContent,
+        isThinkingComplete,
+      ];
 }
