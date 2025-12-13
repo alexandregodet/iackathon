@@ -16,6 +16,7 @@ import '../blocs/chat/chat_event.dart';
 import '../blocs/chat/chat_state.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/model_status_card.dart';
+import 'conversations_page.dart';
 
 class ChatPage extends StatelessWidget {
   final GemmaModelInfo modelInfo;
@@ -518,7 +519,14 @@ class _ChatPageContentState extends State<_ChatPageContent> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.modelInfo.name),
+        title: BlocBuilder<ChatBloc, ChatState>(
+          builder: (context, state) {
+            if (state.currentConversation != null) {
+              return Text(state.currentConversation!.title);
+            }
+            return Text(widget.modelInfo.name);
+          },
+        ),
         actions: [
           BlocBuilder<ChatBloc, ChatState>(
             builder: (context, state) {
@@ -526,6 +534,20 @@ class _ChatPageContentState extends State<_ChatPageContent> {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.history),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider.value(
+                            value: context.read<ChatBloc>(),
+                            child: const ConversationsPage(),
+                          ),
+                        ),
+                      );
+                    },
+                    tooltip: 'Historique des conversations',
+                  ),
                   IconButton(
                     icon: const Icon(Icons.settings_suggest),
                     onPressed: _showSystemPromptDialog,
