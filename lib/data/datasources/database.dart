@@ -48,6 +48,9 @@ class PromptTemplates extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// Constructor for testing with custom executor (e.g., in-memory database)
+  AppDatabase.forTesting(super.executor);
+
   @override
   int get schemaVersion => 3;
 
