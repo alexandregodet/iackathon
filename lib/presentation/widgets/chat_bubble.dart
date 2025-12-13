@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_md/flutter_md.dart';
 
+import '../../core/di/injection.dart';
+import '../../data/datasources/tts_service.dart';
 import '../../domain/entities/chat_message.dart';
 
 class ChatBubble extends StatefulWidget {
@@ -128,6 +130,8 @@ class _ChatBubbleState extends State<ChatBubble> {
                             },
                             colorScheme: colorScheme,
                           ),
+                          const SizedBox(width: 8),
+                          _buildTtsButton(colorScheme),
                           if (widget.canRegenerate) ...[
                             const SizedBox(width: 8),
                             _buildActionButton(
@@ -323,6 +327,25 @@ class _ChatBubbleState extends State<ChatBubble> {
     // Rough estimation: 1 token ≈ 4 characters
     // This is an approximation, actual tokenization varies by model
     return (text.length / 4).ceil();
+  }
+
+  Widget _buildTtsButton(ColorScheme colorScheme) {
+    final ttsService = getIt<TtsService>();
+    final isPlaying = ttsService.isPlayingMessage(widget.message.id);
+
+    return _buildActionButton(
+      icon: isPlaying ? Icons.stop : Icons.volume_up,
+      label: isPlaying ? 'Stop' : 'Ecouter',
+      onTap: () async {
+        if (isPlaying) {
+          await ttsService.stop();
+        } else {
+          await ttsService.speak(widget.message.content, widget.message.id);
+        }
+        setState(() {});
+      },
+      colorScheme: colorScheme,
+    );
   }
 
   Widget _buildActionButton({
