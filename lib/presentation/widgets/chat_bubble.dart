@@ -25,108 +25,68 @@ class ChatBubble extends StatefulWidget {
   State<ChatBubble> createState() => _ChatBubbleState();
 }
 
-class _ChatBubbleState extends State<ChatBubble>
-    with SingleTickerProviderStateMixin {
+class _ChatBubbleState extends State<ChatBubble> {
   bool _isThinkingExpanded = false;
   bool _showActions = false;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final isUser = widget.message.role == MessageRole.user;
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            mainAxisAlignment:
-                isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!isUser) ...[
-                _buildAvatar(colorScheme, isUser: false),
-                const SizedBox(width: 12),
-              ],
-              Flexible(
-                child: GestureDetector(
-                  onLongPress: !isUser && !widget.message.isStreaming
-                      ? () => setState(() => _showActions = !_showActions)
-                      : null,
-                  child: _buildMessageContainer(context, isUser, colorScheme),
-                ),
-              ),
-              if (isUser) ...[
-                const SizedBox(width: 12),
-                _buildAvatar(colorScheme, isUser: true),
-              ],
-            ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isUser) ...[
+            _buildAvatar(colorScheme, isDark, isUser: false),
+            const SizedBox(width: 10),
+          ],
+          Flexible(
+            child: GestureDetector(
+              onLongPress: !isUser && !widget.message.isStreaming
+                  ? () => setState(() => _showActions = !_showActions)
+                  : null,
+              child: _buildMessageContainer(context, isUser, colorScheme, isDark),
+            ),
           ),
-        ),
+          if (isUser) ...[
+            const SizedBox(width: 10),
+            _buildAvatar(colorScheme, isDark, isUser: true),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildAvatar(ColorScheme colorScheme, {required bool isUser}) {
+  Widget _buildAvatar(ColorScheme colorScheme, bool isDark, {required bool isUser}) {
     return Container(
-      width: 36,
-      height: 36,
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isUser
-              ? [
-                  colorScheme.secondary,
-                  colorScheme.secondary.withValues(alpha: 0.7),
-                ]
-              : [
-                  colorScheme.primary,
-                  colorScheme.primary.withValues(alpha: 0.7),
-                ],
+        color: isUser
+            ? colorScheme.secondary.withValues(alpha: isDark ? 0.3 : 0.15)
+            : colorScheme.primary.withValues(alpha: isDark ? 0.3 : 0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: isUser
+              ? colorScheme.secondary.withValues(alpha: isDark ? 0.5 : 0.3)
+              : colorScheme.primary.withValues(alpha: isDark ? 0.5 : 0.3),
         ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: (isUser ? colorScheme.secondary : colorScheme.primary)
-                .withValues(alpha: 0.25),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Icon(
-        isUser ? Icons.person_rounded : Icons.auto_awesome_rounded,
-        size: 18,
-        color: isUser ? colorScheme.onSecondary : colorScheme.onPrimary,
+      child: Center(
+        child: Text(
+          isUser ? 'U' : '>',
+          style: TextStyle(
+            color: isUser ? colorScheme.secondary : colorScheme.primary,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
       ),
     );
   }
@@ -135,59 +95,45 @@ class _ChatBubbleState extends State<ChatBubble>
     BuildContext context,
     bool isUser,
     ColorScheme colorScheme,
+    bool isDark,
   ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       constraints: BoxConstraints(
         maxWidth: MediaQuery.of(context).size.width * 0.75,
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isUser
-            ? colorScheme.primary
+            ? colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.1)
             : isDark
                 ? colorScheme.surfaceContainerHigh
                 : colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(20),
-          topRight: const Radius.circular(20),
-          bottomLeft: Radius.circular(isUser ? 20 : 6),
-          bottomRight: Radius.circular(isUser ? 6 : 20),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: isUser
+              ? colorScheme.primary.withValues(alpha: isDark ? 0.5 : 0.3)
+              : colorScheme.outlineVariant.withValues(alpha: isDark ? 0.5 : 1),
         ),
-        border: isUser
-            ? null
-            : Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-              ),
-        boxShadow: [
-          BoxShadow(
-            color: (isUser ? colorScheme.primary : colorScheme.shadow)
-                .withValues(alpha: isUser ? 0.2 : 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (widget.message.hasImage) ...[
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(4),
               child: Image.memory(
                 widget.message.imageBytes!,
-                width: 220,
+                width: 200,
                 fit: BoxFit.cover,
               ),
             ),
-            if (widget.message.content.isNotEmpty) const SizedBox(height: 12),
+            if (widget.message.content.isNotEmpty) const SizedBox(height: 10),
           ],
           // Thinking section
           if (!isUser && _shouldShowThinking()) ...[
-            _buildThinkingSection(context, colorScheme),
+            _buildThinkingSection(context, colorScheme, isDark),
             if (widget.message.content.isNotEmpty || widget.message.isStreaming)
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
           ],
           if (widget.message.content.isNotEmpty ||
               (widget.message.isStreaming && !widget.message.hasImage))
@@ -197,18 +143,18 @@ class _ChatBubbleState extends State<ChatBubble>
               colorScheme: colorScheme,
             ),
           if (widget.message.isStreaming && !widget.isCurrentlyThinking) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             _buildTypingIndicator(colorScheme, isUser),
           ],
           // Action buttons
           if (!isUser && _showActions && !widget.message.isStreaming) ...[
-            const SizedBox(height: 12),
-            _buildActionButtons(colorScheme),
+            const SizedBox(height: 10),
+            _buildActionButtons(colorScheme, isDark),
           ],
           // Token count
           if (widget.message.content.isNotEmpty &&
               !widget.message.isStreaming) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             _buildTokenCount(colorScheme, isUser),
           ],
         ],
@@ -219,24 +165,24 @@ class _ChatBubbleState extends State<ChatBubble>
   Widget _buildTypingIndicator(ColorScheme colorScheme, bool isUser) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (index) {
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 600 + (index * 200)),
-          builder: (context, value, child) {
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: (isUser ? colorScheme.onPrimary : colorScheme.primary)
-                    .withValues(alpha: 0.3 + (0.7 * value)),
-                shape: BoxShape.circle,
-              ),
-            );
-          },
-        );
-      }),
+      children: [
+        Text(
+          '_',
+          style: TextStyle(
+            color: colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          'processing...',
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 11,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
     );
   }
 
@@ -244,23 +190,20 @@ class _ChatBubbleState extends State<ChatBubble>
     return widget.message.hasThinking || widget.isCurrentlyThinking;
   }
 
-  Widget _buildThinkingSection(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildThinkingSection(
+    BuildContext context,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
     final thinkingInProgress =
         widget.isCurrentlyThinking && !widget.message.isThinkingComplete;
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primary.withValues(alpha: 0.08),
-            colorScheme.primary.withValues(alpha: 0.04),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(14),
+        color: colorScheme.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.15),
+          color: colorScheme.primary.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -270,29 +213,22 @@ class _ChatBubbleState extends State<ChatBubble>
             onTap: widget.message.hasThinking
                 ? () => setState(() => _isThinkingExpanded = !_isThinkingExpanded)
                 : null,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(4),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.psychology_alt_rounded,
-                      size: 16,
-                      color: colorScheme.primary,
-                    ),
+                  Icon(
+                    Icons.psychology,
+                    size: 14,
+                    color: colorScheme.primary,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      thinkingInProgress ? 'Reflexion en cours...' : 'Raisonnement',
+                      thinkingInProgress ? '# thinking...' : '# reasoning',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: colorScheme.primary,
                       ),
@@ -300,19 +236,19 @@ class _ChatBubbleState extends State<ChatBubble>
                   ),
                   if (thinkingInProgress)
                     SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: 12,
+                      height: 12,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: 1.5,
                         color: colorScheme.primary,
                       ),
                     )
                   else if (widget.message.hasThinking)
                     Icon(
                       _isThinkingExpanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      size: 20,
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 16,
                       color: colorScheme.primary,
                     ),
                 ],
@@ -325,14 +261,14 @@ class _ChatBubbleState extends State<ChatBubble>
               color: colorScheme.primary.withValues(alpha: 0.1),
             ),
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(10),
               child: Text(
                 widget.message.thinkingContent ?? '',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontStyle: FontStyle.italic,
                   color: colorScheme.onSurfaceVariant,
-                  height: 1.5,
+                  height: 1.4,
                 ),
               ),
             ),
@@ -351,14 +287,14 @@ class _ChatBubbleState extends State<ChatBubble>
         ? '...'
         : widget.message.content;
 
-    final textColor = isUser ? colorScheme.onPrimary : colorScheme.onSurface;
+    final textColor = colorScheme.onSurface;
 
     if (isUser) {
       return Text(
         content,
         style: TextStyle(
           color: textColor,
-          fontSize: 15,
+          fontSize: 13,
           height: 1.5,
         ),
       );
@@ -369,60 +305,62 @@ class _ChatBubbleState extends State<ChatBubble>
       markdown: Markdown.fromString(content),
       theme: MarkdownThemeData.mergeTheme(
         theme,
-        textStyle: TextStyle(color: textColor, fontSize: 15, height: 1.5),
+        textStyle: TextStyle(color: textColor, fontSize: 13, height: 1.5),
         h1Style: TextStyle(
-          color: textColor,
-          fontSize: 22,
+          color: colorScheme.primary,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
           height: 1.3,
         ),
         h2Style: TextStyle(
-          color: textColor,
-          fontSize: 20,
+          color: colorScheme.primary,
+          fontSize: 16,
           fontWeight: FontWeight.bold,
           height: 1.3,
         ),
         h3Style: TextStyle(
-          color: textColor,
-          fontSize: 18,
+          color: colorScheme.tertiary,
+          fontSize: 14,
           fontWeight: FontWeight.bold,
           height: 1.3,
         ),
         linkColor: colorScheme.primary,
         surfaceColor: colorScheme.surfaceContainer,
-        monospaceBackgroundColor: colorScheme.surfaceContainer,
+        monospaceBackgroundColor: colorScheme.surfaceContainerHigh,
         quoteStyle: TextStyle(
-          color: textColor.withValues(alpha: 0.8),
+          color: textColor.withValues(alpha: 0.7),
           fontStyle: FontStyle.italic,
         ),
       ),
     );
   }
 
-  Widget _buildActionButtons(ColorScheme colorScheme) {
+  Widget _buildActionButtons(ColorScheme colorScheme, bool isDark) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 6,
+      runSpacing: 6,
       children: [
         _buildActionChip(
-          icon: Icons.copy_rounded,
-          label: 'Copier',
+          icon: Icons.copy,
+          label: 'copy',
           onTap: () {
             widget.onCopy?.call();
             setState(() => _showActions = false);
           },
           colorScheme: colorScheme,
+          isDark: isDark,
         ),
-        _buildTtsChip(colorScheme),
+        _buildTtsChip(colorScheme, isDark),
         if (widget.canRegenerate)
           _buildActionChip(
-            icon: Icons.refresh_rounded,
-            label: 'Regenerer',
+            icon: Icons.refresh,
+            label: 'regen',
             onTap: () {
               widget.onRegenerate?.call();
               setState(() => _showActions = false);
             },
             colorScheme: colorScheme,
+            isDark: isDark,
           ),
       ],
     );
@@ -433,30 +371,31 @@ class _ChatBubbleState extends State<ChatBubble>
     required String label,
     required VoidCallback onTap,
     required ColorScheme colorScheme,
+    required bool isDark,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(4),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           decoration: BoxDecoration(
             color: colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(4),
             border: Border.all(
-              color: colorScheme.primary.withValues(alpha: 0.2),
+              color: colorScheme.primary.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: colorScheme.primary),
-              const SizedBox(width: 6),
+              Icon(icon, size: 12, color: colorScheme.primary),
+              const SizedBox(width: 4),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.w500,
                   color: colorScheme.primary,
                 ),
@@ -468,13 +407,13 @@ class _ChatBubbleState extends State<ChatBubble>
     );
   }
 
-  Widget _buildTtsChip(ColorScheme colorScheme) {
+  Widget _buildTtsChip(ColorScheme colorScheme, bool isDark) {
     final ttsService = getIt<TtsService>();
     final isPlaying = ttsService.isPlayingMessage(widget.message.id);
 
     return _buildActionChip(
-      icon: isPlaying ? Icons.stop_rounded : Icons.volume_up_rounded,
-      label: isPlaying ? 'Stop' : 'Ecouter',
+      icon: isPlaying ? Icons.stop : Icons.volume_up,
+      label: isPlaying ? 'stop' : 'speak',
       onTap: () async {
         if (isPlaying) {
           await ttsService.stop();
@@ -484,6 +423,7 @@ class _ChatBubbleState extends State<ChatBubble>
         setState(() {});
       },
       colorScheme: colorScheme,
+      isDark: isDark,
     );
   }
 
@@ -492,21 +432,11 @@ class _ChatBubbleState extends State<ChatBubble>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.token_rounded,
-          size: 12,
-          color: isUser
-              ? colorScheme.onPrimary.withValues(alpha: 0.5)
-              : colorScheme.outline,
-        ),
-        const SizedBox(width: 4),
         Text(
           '~$tokens tokens',
           style: TextStyle(
-            fontSize: 11,
-            color: isUser
-                ? colorScheme.onPrimary.withValues(alpha: 0.5)
-                : colorScheme.outline,
+            fontSize: 9,
+            color: colorScheme.outline,
           ),
         ),
       ],
