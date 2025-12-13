@@ -17,6 +17,7 @@ import '../blocs/chat/chat_state.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/model_status_card.dart';
 import 'conversations_page.dart';
+import 'prompt_templates_page.dart';
 
 class ChatPage extends StatelessWidget {
   final GemmaModelInfo modelInfo;
@@ -114,6 +115,19 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showTemplatePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PromptTemplatePicker(
+        onSelected: (content) {
+          _controller.text = content;
+        },
       ),
     );
   }
@@ -609,6 +623,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                     ? _buildEmptyState(context, state)
                     : _buildMessageList(state.messages, state),
               ),
+              if (state.messages.isNotEmpty)
+                _buildContextIndicator(context, state),
               _buildInputBar(context, state),
             ],
           );
@@ -717,6 +733,99 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     );
   }
 
+  Widget _buildContextIndicator(BuildContext context, ChatState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final usagePercent = state.contextUsagePercent;
+    final tokensUsed = state.estimatedTokensUsed;
+    final maxTokens = ChatState.maxContextTokens;
+
+    Color progressColor;
+    if (usagePercent > 0.9) {
+      progressColor = colorScheme.error;
+    } else if (usagePercent > 0.7) {
+      progressColor = Colors.orange;
+    } else {
+      progressColor = colorScheme.primary;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.memory,
+            size: 16,
+            color: state.isContextNearlyFull
+                ? colorScheme.error
+                : colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Contexte',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      '~$tokensUsed / $maxTokens tokens',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: state.isContextNearlyFull
+                            ? colorScheme.error
+                            : colorScheme.onSurfaceVariant,
+                        fontWeight: state.isContextNearlyFull
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: usagePercent,
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation(progressColor),
+                    minHeight: 4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (state.isContextNearlyFull) ...[
+            const SizedBox(width: 8),
+            Tooltip(
+              message: 'Le contexte est presque plein.\nCreez une nouvelle conversation.',
+              child: Icon(
+                Icons.warning_amber,
+                size: 18,
+                color: colorScheme.error,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildInputBar(BuildContext context, ChatState state) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -798,6 +907,18 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                     ),
                     tooltip: 'Ajouter une image',
                   ),
+                IconButton(
+                  onPressed: state.isGenerating
+                      ? null
+                      : () => _showTemplatePicker(context),
+                  icon: Icon(
+                    Icons.description_outlined,
+                    color: state.isGenerating
+                        ? colorScheme.outline
+                        : colorScheme.secondary,
+                  ),
+                  tooltip: 'Modeles de prompts',
+                ),
                 Expanded(
                   child: TextField(
                     controller: _controller,

@@ -34,13 +34,22 @@ class Documents extends Table {
   BoolColumn get isActive => boolean().withDefault(const Constant(false))();
 }
 
+class PromptTemplates extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().withLength(min: 1, max: 100)();
+  TextColumn get content => text()();
+  TextColumn get category => text().withLength(min: 1, max: 50).nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @singleton
-@DriftDatabase(tables: [Conversations, Messages, Documents])
+@DriftDatabase(tables: [Conversations, Messages, Documents, PromptTemplates])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -51,6 +60,9 @@ class AppDatabase extends _$AppDatabase {
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
           await m.createTable(documents);
+        }
+        if (from < 3) {
+          await m.createTable(promptTemplates);
         }
       },
     );
