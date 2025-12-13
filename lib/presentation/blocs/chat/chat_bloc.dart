@@ -53,6 +53,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatCopyMessage>(_onCopyMessage);
     on<ChatRegenerateMessage>(_onRegenerateMessage);
     on<ChatStopGeneration>(_onStopGeneration);
+    on<ChatStreamError>(_onStreamError);
   }
 
   Future<void> _onInitialize(
@@ -176,13 +177,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             add(const ChatThinkingComplete());
             add(const ChatStreamComplete());
           },
-          onError: (e) {
-            emit(state.copyWith(
-              isGenerating: false,
-              isThinking: false,
-              error: e.toString(),
-            ));
-          },
+          onError: (e) => add(ChatStreamError(e.toString())),
         );
       } else {
         _responseSubscription = _gemmaService
@@ -190,12 +185,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             .listen(
           (chunk) => add(ChatStreamChunk(chunk)),
           onDone: () => add(const ChatStreamComplete()),
-          onError: (e) {
-            emit(state.copyWith(
-              isGenerating: false,
-              error: e.toString(),
-            ));
-          },
+          onError: (e) => add(ChatStreamError(e.toString())),
         );
       }
     } catch (e) {
@@ -723,6 +713,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } else {
       emit(state.copyWith(isGenerating: false, isThinking: false));
     }
+  }
+
+  void _onStreamError(
+    ChatStreamError event,
+    Emitter<ChatState> emit,
+  ) {
+    emit(state.copyWith(
+      isGenerating: false,
+      isThinking: false,
+      error: event.error,
+    ));
   }
 
   @override

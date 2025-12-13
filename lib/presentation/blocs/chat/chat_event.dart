@@ -206,3 +206,12 @@ class ChatRegenerateMessage extends ChatEvent {
 class ChatStopGeneration extends ChatEvent {
   const ChatStopGeneration();
 }
+
+class ChatStreamError extends ChatEvent {
+  final String error;
+
+  const ChatStreamError(this.error);
+
+  @override
+  List<Object?> get props => [error];
+}
