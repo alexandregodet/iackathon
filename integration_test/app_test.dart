@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
-
 import 'package:iackathon/data/datasources/gemma_service.dart';
 import 'package:iackathon/data/datasources/rag_service.dart';
 import 'package:iackathon/domain/entities/gemma_model_info.dart';
+import 'package:integration_test/integration_test.dart';
 
 import 'utils/test_app.dart';
 
@@ -1130,7 +1129,8 @@ void main() {
 
       // During generation, stop button should appear
       // Could be stop_circle, stop, or the send button changes
-      final hasStopButton = find.byIcon(Icons.stop).evaluate().isNotEmpty ||
+      final hasStopButton =
+          find.byIcon(Icons.stop).evaluate().isNotEmpty ||
           find.byIcon(Icons.stop_circle).evaluate().isNotEmpty ||
           find.byIcon(Icons.stop_circle_outlined).evaluate().isNotEmpty;
 
@@ -1676,7 +1676,7 @@ void main() {
         // Should show thinking text or psychology icon
         final hasThinkingIndicator =
             find.textContaining('thinking').evaluate().isNotEmpty ||
-                find.byIcon(Icons.psychology).evaluate().isNotEmpty;
+            find.byIcon(Icons.psychology).evaluate().isNotEmpty;
 
         // Allow completion
         await tester.pumpAndSettle(const Duration(seconds: 2));
