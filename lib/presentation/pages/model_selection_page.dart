@@ -108,7 +108,8 @@ class _ModelSelectionPageState extends State<ModelSelectionPage> {
             (model) => _ModelCard(
               model: model,
               isMultimodal: true,
-              isDownloading: _modelState == GemmaModelState.downloading &&
+              isDownloading:
+                  _modelState == GemmaModelState.downloading &&
                   _currentModel?.filename == model.filename,
               downloadProgress: _downloadProgress,
               onNavigationReturn: _refreshState,
@@ -121,7 +122,8 @@ class _ModelSelectionPageState extends State<ModelSelectionPage> {
             (model) => _ModelCard(
               model: model,
               isMultimodal: false,
-              isDownloading: _modelState == GemmaModelState.downloading &&
+              isDownloading:
+                  _modelState == GemmaModelState.downloading &&
                   _currentModel?.filename == model.filename,
               downloadProgress: _downloadProgress,
               onNavigationReturn: _refreshState,
@@ -156,8 +158,11 @@ class _ModelSelectionPageState extends State<ModelSelectionPage> {
     );
   }
 
-  Widget _buildLine(ColorScheme colorScheme, String text,
-      {bool isHighlight = false}) {
+  Widget _buildLine(
+    ColorScheme colorScheme,
+    String text, {
+    bool isHighlight = false,
+  }) {
     return Text(
       text,
       style: TextStyle(
@@ -212,8 +217,8 @@ class _ModelCard extends StatelessWidget {
           color: isDownloading
               ? colorScheme.tertiary
               : isDark
-                  ? colorScheme.primary.withValues(alpha: 0.3)
-                  : colorScheme.outlineVariant,
+              ? colorScheme.primary.withValues(alpha: 0.3)
+              : colorScheme.outlineVariant,
           width: isDownloading ? 2 : 1,
         ),
       ),
@@ -230,10 +235,7 @@ class _ModelCard extends StatelessWidget {
                 // Header row
                 Row(
                   children: [
-                    Text(
-                      '> ',
-                      style: TextStyle(color: colorScheme.primary),
-                    ),
+                    Text('> ', style: TextStyle(color: colorScheme.primary)),
                     Expanded(
                       child: Text(
                         model.name,
@@ -381,9 +383,7 @@ class _ModelCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: textColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: textColor.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: textColor.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
@@ -413,10 +413,7 @@ class _ModelCard extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Text(
-              '> ',
-              style: TextStyle(color: colorScheme.primary),
-            ),
+            Text('> ', style: TextStyle(color: colorScheme.primary)),
             const Expanded(child: Text('auth_required')),
           ],
         ),
@@ -461,16 +458,15 @@ class _ModelCard extends StatelessWidget {
   }
 
   void _navigateToChat(BuildContext context, {String? token}) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatPage(
-          modelInfo: model,
-          huggingFaceToken: token,
-        ),
-      ),
-    ).then((_) {
-      // Refresh state when returning from ChatPage
-      onNavigationReturn?.call();
-    });
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => ChatPage(modelInfo: model, huggingFaceToken: token),
+          ),
+        )
+        .then((_) {
+          // Refresh state when returning from ChatPage
+          onNavigationReturn?.call();
+        });
   }
 }

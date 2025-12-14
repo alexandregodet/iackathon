@@ -19,9 +19,7 @@ class _PromptTemplatesPageState extends State<PromptTemplatesPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Modeles de prompts'),
-      ),
+      appBar: AppBar(title: const Text('Modeles de prompts')),
       body: StreamBuilder<List<PromptTemplate>>(
         stream: _templateService.watchAllTemplates(),
         builder: (context, snapshot) {
@@ -45,15 +43,15 @@ class _PromptTemplatesPageState extends State<PromptTemplatesPage> {
                   Text(
                     'Aucun modele de prompt',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                      color: colorScheme.outline,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Creez des modeles pour reutiliser vos prompts',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                      color: colorScheme.outline,
+                    ),
                   ),
                 ],
               ),
@@ -98,8 +96,8 @@ class _PromptTemplatesPageState extends State<PromptTemplatesPage> {
                     child: Text(
                       template.name,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   if (template.category != null)
@@ -131,9 +129,7 @@ class _PromptTemplatesPageState extends State<PromptTemplatesPage> {
                 template.content,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -148,10 +144,12 @@ class _PromptTemplatesPageState extends State<PromptTemplatesPage> {
   ) async {
     final isEditing = template != null;
     final nameController = TextEditingController(text: template?.name ?? '');
-    final contentController =
-        TextEditingController(text: template?.content ?? '');
-    final categoryController =
-        TextEditingController(text: template?.category ?? '');
+    final contentController = TextEditingController(
+      text: template?.content ?? '',
+    );
+    final categoryController = TextEditingController(
+      text: template?.category ?? '',
+    );
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     final result = await showDialog<bool>(
@@ -383,7 +381,10 @@ class PromptTemplatePicker extends StatelessWidget {
                             subtitle: template.category != null
                                 ? Text(template.category!)
                                 : null,
-                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                            ),
                             onTap: () {
                               onSelected(template.content);
                               Navigator.pop(context);

@@ -41,12 +41,12 @@ class DocumentInfo extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        filePath,
-        totalChunks,
-        createdAt,
-        lastUsedAt,
-        isActive,
-      ];
+    id,
+    name,
+    filePath,
+    totalChunks,
+    createdAt,
+    lastUsedAt,
+    isActive,
+  ];
 }

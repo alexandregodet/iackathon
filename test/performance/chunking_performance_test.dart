@@ -9,7 +9,8 @@ void main() {
       // Generate a large document (~100KB)
       final largeText = List.generate(
         1000,
-        (i) => 'This is paragraph number $i. It contains multiple sentences. '
+        (i) =>
+            'This is paragraph number $i. It contains multiple sentences. '
             'Each sentence has some content to simulate real text. '
             'The RAG system needs to handle documents of various sizes.',
       ).join('\n\n');
@@ -30,15 +31,18 @@ void main() {
       expect(chunks.length, greaterThan(100));
 
       // ignore: avoid_print
-      print('Chunked ${largeText.length} chars into ${chunks.length} chunks '
-          'in ${stopwatch.elapsedMilliseconds}ms');
+      print(
+        'Chunked ${largeText.length} chars into ${chunks.length} chunks '
+        'in ${stopwatch.elapsedMilliseconds}ms',
+      );
     });
 
     test('handles very large document', () {
       // Generate a very large document (~1MB)
       final veryLargeText = List.generate(
         10000,
-        (i) => 'Paragraph $i with substantial content that simulates '
+        (i) =>
+            'Paragraph $i with substantial content that simulates '
             'real-world document text including technical details. ',
       ).join(' ');
 
@@ -57,16 +61,33 @@ void main() {
       expect(stopwatch.elapsedMilliseconds, lessThan(500));
 
       // ignore: avoid_print
-      print('Chunked ${veryLargeText.length} chars into ${chunks.length} chunks '
-          'in ${stopwatch.elapsedMilliseconds}ms');
+      print(
+        'Chunked ${veryLargeText.length} chars into ${chunks.length} chunks '
+        'in ${stopwatch.elapsedMilliseconds}ms',
+      );
     });
 
     test('chunk size affects number of chunks predictably', () {
       final text = 'Word ' * 1000; // 5000 characters
 
-      final chunks100 = _chunkText(text: text, documentId: 1, chunkSize: 100, overlap: 0);
-      final chunks500 = _chunkText(text: text, documentId: 1, chunkSize: 500, overlap: 0);
-      final chunks1000 = _chunkText(text: text, documentId: 1, chunkSize: 1000, overlap: 0);
+      final chunks100 = _chunkText(
+        text: text,
+        documentId: 1,
+        chunkSize: 100,
+        overlap: 0,
+      );
+      final chunks500 = _chunkText(
+        text: text,
+        documentId: 1,
+        chunkSize: 500,
+        overlap: 0,
+      );
+      final chunks1000 = _chunkText(
+        text: text,
+        documentId: 1,
+        chunkSize: 1000,
+        overlap: 0,
+      );
 
       // Smaller chunks = more chunks
       expect(chunks100.length, greaterThan(chunks500.length));
@@ -91,7 +112,10 @@ void main() {
       );
 
       // More overlap means more chunks (redundancy for context)
-      expect(chunksWithOverlap.length, greaterThanOrEqualTo(chunksNoOverlap.length));
+      expect(
+        chunksWithOverlap.length,
+        greaterThanOrEqualTo(chunksNoOverlap.length),
+      );
     });
   });
 
@@ -116,8 +140,10 @@ void main() {
       expect(tokens, greaterThan(0));
 
       // ignore: avoid_print
-      print('Estimated $tokens tokens from ${longMessages.length} messages '
-          'in ${stopwatch.elapsedMilliseconds}ms');
+      print(
+        'Estimated $tokens tokens from ${longMessages.length} messages '
+        'in ${stopwatch.elapsedMilliseconds}ms',
+      );
     });
   });
 }
@@ -159,12 +185,14 @@ List<DocumentChunk> _chunkText({
     final chunkContent = cleanedText.substring(start, end).trim();
 
     if (chunkContent.isNotEmpty) {
-      chunks.add(DocumentChunk(
-        id: 'doc_${documentId}_chunk_$chunkIndex',
-        documentId: documentId,
-        content: chunkContent,
-        chunkIndex: chunkIndex,
-      ));
+      chunks.add(
+        DocumentChunk(
+          id: 'doc_${documentId}_chunk_$chunkIndex',
+          documentId: documentId,
+          content: chunkContent,
+          chunkIndex: chunkIndex,
+        ),
+      );
       chunkIndex++;
     }
 

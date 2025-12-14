@@ -51,7 +51,10 @@ void main() {
     });
 
     test('chunks long text into multiple chunks', () {
-      final longText = List.generate(10, (i) => 'Sentence $i is here.').join(' ');
+      final longText = List.generate(
+        10,
+        (i) => 'Sentence $i is here.',
+      ).join(' ');
       final chunks = _chunkText(
         text: longText,
         documentId: 1,
@@ -170,12 +173,14 @@ List<DocumentChunk> _chunkText({
     final chunkContent = cleanedText.substring(start, end).trim();
 
     if (chunkContent.isNotEmpty) {
-      chunks.add(DocumentChunk(
-        id: 'doc_${documentId}_chunk_$chunkIndex',
-        documentId: documentId,
-        content: chunkContent,
-        chunkIndex: chunkIndex,
-      ));
+      chunks.add(
+        DocumentChunk(
+          id: 'doc_${documentId}_chunk_$chunkIndex',
+          documentId: documentId,
+          content: chunkContent,
+          chunkIndex: chunkIndex,
+        ),
+      );
       chunkIndex++;
     }
 

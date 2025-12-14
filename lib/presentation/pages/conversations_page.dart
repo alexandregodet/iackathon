@@ -31,7 +31,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
     super.dispose();
   }
 
-  List<ConversationInfo> _filterConversations(List<ConversationInfo> conversations) {
+  List<ConversationInfo> _filterConversations(
+    List<ConversationInfo> conversations,
+  ) {
     if (_searchQuery.isEmpty) return conversations;
     final query = _searchQuery.toLowerCase();
     return conversations.where((c) {
@@ -87,7 +89,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final filteredConversations = _filterConversations(state.conversations);
+          final filteredConversations = _filterConversations(
+            state.conversations,
+          );
 
           if (state.conversations.isEmpty) {
             return Center(
@@ -103,15 +107,15 @@ class _ConversationsPageState extends State<ConversationsPage> {
                   Text(
                     'Aucune conversation',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                      color: colorScheme.outline,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Creez une nouvelle conversation pour commencer',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                      color: colorScheme.outline,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
@@ -129,24 +133,20 @@ class _ConversationsPageState extends State<ConversationsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.search_off,
-                    size: 64,
-                    color: colorScheme.outline,
-                  ),
+                  Icon(Icons.search_off, size: 64, color: colorScheme.outline),
                   const SizedBox(height: 16),
                   Text(
                     'Aucun resultat',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                      color: colorScheme.outline,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Aucune conversation ne correspond a "$_searchQuery"',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                      color: colorScheme.outline,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -197,10 +197,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
             onSubmitted: (_) {
               Navigator.of(dialogContext).pop();
               context.read<ChatBloc>().add(
-                    ChatCreateConversation(
-                      title: controller.text.isNotEmpty ? controller.text : null,
-                    ),
-                  );
+                ChatCreateConversation(
+                  title: controller.text.isNotEmpty ? controller.text : null,
+                ),
+              );
               Navigator.of(context).pop();
             },
           ),
@@ -213,10 +213,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 context.read<ChatBloc>().add(
-                      ChatCreateConversation(
-                        title: controller.text.isNotEmpty ? controller.text : null,
-                      ),
-                    );
+                  ChatCreateConversation(
+                    title: controller.text.isNotEmpty ? controller.text : null,
+                  ),
+                );
                 Navigator.of(context).pop();
               },
               child: const Text('Creer'),
@@ -227,12 +227,18 @@ class _ConversationsPageState extends State<ConversationsPage> {
     );
   }
 
-  void _selectConversation(BuildContext context, ConversationInfo conversation) {
+  void _selectConversation(
+    BuildContext context,
+    ConversationInfo conversation,
+  ) {
     context.read<ChatBloc>().add(ChatLoadConversation(conversation.id));
     Navigator.of(context).pop();
   }
 
-  void _deleteConversation(BuildContext context, ConversationInfo conversation) {
+  void _deleteConversation(
+    BuildContext context,
+    ConversationInfo conversation,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -250,8 +256,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.read<ChatBloc>().add(
-                    ChatDeleteConversation(conversation.id),
-                  );
+                ChatDeleteConversation(conversation.id),
+              );
             },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
@@ -263,7 +269,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
     );
   }
 
-  void _renameConversation(BuildContext context, ConversationInfo conversation) {
+  void _renameConversation(
+    BuildContext context,
+    ConversationInfo conversation,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -272,19 +281,17 @@ class _ConversationsPageState extends State<ConversationsPage> {
           title: const Text('Renommer la conversation'),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'Nouveau titre',
-            ),
+            decoration: const InputDecoration(labelText: 'Nouveau titre'),
             autofocus: true,
             onSubmitted: (value) {
               if (value.isNotEmpty) {
                 Navigator.of(dialogContext).pop();
                 context.read<ChatBloc>().add(
-                      ChatRenameConversation(
-                        conversationId: conversation.id,
-                        newTitle: value,
-                      ),
-                    );
+                  ChatRenameConversation(
+                    conversationId: conversation.id,
+                    newTitle: value,
+                  ),
+                );
               }
             },
           ),
@@ -298,11 +305,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 if (controller.text.isNotEmpty) {
                   Navigator.of(dialogContext).pop();
                   context.read<ChatBloc>().add(
-                        ChatRenameConversation(
-                          conversationId: conversation.id,
-                          newTitle: controller.text,
-                        ),
-                      );
+                    ChatRenameConversation(
+                      conversationId: conversation.id,
+                      newTitle: controller.text,
+                    ),
+                  );
                 }
               },
               child: const Text('Renommer'),
@@ -339,11 +346,14 @@ class _ConversationTile extends StatelessWidget {
       color: isSelected ? colorScheme.primaryContainer : null,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor:
-              isSelected ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+          backgroundColor: isSelected
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerHighest,
           child: Icon(
             Icons.chat,
-            color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+            color: isSelected
+                ? colorScheme.onPrimary
+                : colorScheme.onSurfaceVariant,
           ),
         ),
         title: Text(
@@ -368,16 +378,16 @@ class _ConversationTile extends StatelessWidget {
               children: [
                 Text(
                   dateFormat.format(conversation.updatedAt),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.outline,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '${conversation.messageCount} messages',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.outline,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
                 ),
               ],
             ),

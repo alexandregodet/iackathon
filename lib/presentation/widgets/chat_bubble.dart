@@ -38,8 +38,9 @@ class _ChatBubbleState extends State<ChatBubble> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -51,7 +52,12 @@ class _ChatBubbleState extends State<ChatBubble> {
               onLongPress: !isUser && !widget.message.isStreaming
                   ? () => setState(() => _showActions = !_showActions)
                   : null,
-              child: _buildMessageContainer(context, isUser, colorScheme, isDark),
+              child: _buildMessageContainer(
+                context,
+                isUser,
+                colorScheme,
+                isDark,
+              ),
             ),
           ),
           if (isUser) ...[
@@ -63,7 +69,11 @@ class _ChatBubbleState extends State<ChatBubble> {
     );
   }
 
-  Widget _buildAvatar(ColorScheme colorScheme, bool isDark, {required bool isUser}) {
+  Widget _buildAvatar(
+    ColorScheme colorScheme,
+    bool isDark, {
+    required bool isUser,
+  }) {
     return Container(
       width: 32,
       height: 32,
@@ -106,8 +116,8 @@ class _ChatBubbleState extends State<ChatBubble> {
         color: isUser
             ? colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.1)
             : isDark
-                ? colorScheme.surfaceContainerHigh
-                : colorScheme.surfaceContainerLow,
+            ? colorScheme.surfaceContainerHigh
+            : colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: isUser
@@ -204,27 +214,22 @@ class _ChatBubbleState extends State<ChatBubble> {
       decoration: BoxDecoration(
         color: colorScheme.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
             onTap: widget.message.hasThinking
-                ? () => setState(() => _isThinkingExpanded = !_isThinkingExpanded)
+                ? () =>
+                      setState(() => _isThinkingExpanded = !_isThinkingExpanded)
                 : null,
             borderRadius: BorderRadius.circular(4),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.psychology,
-                    size: 14,
-                    color: colorScheme.primary,
-                  ),
+                  Icon(Icons.psychology, size: 14, color: colorScheme.primary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -294,11 +299,7 @@ class _ChatBubbleState extends State<ChatBubble> {
     if (isUser) {
       return Text(
         content,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 13,
-          height: 1.5,
-        ),
+        style: TextStyle(color: textColor, fontSize: 13, height: 1.5),
       );
     }
 
@@ -436,10 +437,7 @@ class _ChatBubbleState extends State<ChatBubble> {
       children: [
         Text(
           '~$tokens tokens',
-          style: TextStyle(
-            fontSize: 9,
-            color: colorScheme.outline,
-          ),
+          style: TextStyle(fontSize: 9, color: colorScheme.outline),
         ),
       ],
     );

@@ -49,14 +49,18 @@ void main() {
           false,
         );
         expect(
-          const ChatState(modelState: GemmaModelState.notInstalled).isModelReady,
+          const ChatState(
+            modelState: GemmaModelState.notInstalled,
+          ).isModelReady,
           false,
         );
       });
 
       test('isModelInstalled', () {
         expect(
-          const ChatState(modelState: GemmaModelState.installed).isModelInstalled,
+          const ChatState(
+            modelState: GemmaModelState.installed,
+          ).isModelInstalled,
           true,
         );
         expect(
@@ -64,14 +68,18 @@ void main() {
           true,
         );
         expect(
-          const ChatState(modelState: GemmaModelState.notInstalled).isModelInstalled,
+          const ChatState(
+            modelState: GemmaModelState.notInstalled,
+          ).isModelInstalled,
           false,
         );
       });
 
       test('isDownloading', () {
         expect(
-          const ChatState(modelState: GemmaModelState.downloading).isDownloading,
+          const ChatState(
+            modelState: GemmaModelState.downloading,
+          ).isDownloading,
           true,
         );
         expect(
@@ -138,15 +146,21 @@ void main() {
 
       test('isEmbedderInstalled', () {
         expect(
-          const ChatState(embedderState: EmbedderState.installed).isEmbedderInstalled,
+          const ChatState(
+            embedderState: EmbedderState.installed,
+          ).isEmbedderInstalled,
           true,
         );
         expect(
-          const ChatState(embedderState: EmbedderState.ready).isEmbedderInstalled,
+          const ChatState(
+            embedderState: EmbedderState.ready,
+          ).isEmbedderInstalled,
           true,
         );
         expect(
-          const ChatState(embedderState: EmbedderState.notInstalled).isEmbedderInstalled,
+          const ChatState(
+            embedderState: EmbedderState.notInstalled,
+          ).isEmbedderInstalled,
           false,
         );
       });
@@ -211,9 +225,30 @@ void main() {
         final now = DateTime.now();
         final state = ChatState(
           documents: [
-            DocumentInfo(id: 1, name: 'a', filePath: '/a', totalChunks: 1, createdAt: now, isActive: true),
-            DocumentInfo(id: 2, name: 'b', filePath: '/b', totalChunks: 1, createdAt: now, isActive: false),
-            DocumentInfo(id: 3, name: 'c', filePath: '/c', totalChunks: 1, createdAt: now, isActive: true),
+            DocumentInfo(
+              id: 1,
+              name: 'a',
+              filePath: '/a',
+              totalChunks: 1,
+              createdAt: now,
+              isActive: true,
+            ),
+            DocumentInfo(
+              id: 2,
+              name: 'b',
+              filePath: '/b',
+              totalChunks: 1,
+              createdAt: now,
+              isActive: false,
+            ),
+            DocumentInfo(
+              id: 3,
+              name: 'c',
+              filePath: '/c',
+              totalChunks: 1,
+              createdAt: now,
+              isActive: true,
+            ),
           ],
         );
 
@@ -239,9 +274,24 @@ void main() {
         final state = ChatState(
           currentConversationId: 2,
           conversations: [
-            ConversationInfo(id: 1, title: 'First', createdAt: now, updatedAt: now),
-            ConversationInfo(id: 2, title: 'Second', createdAt: now, updatedAt: now),
-            ConversationInfo(id: 3, title: 'Third', createdAt: now, updatedAt: now),
+            ConversationInfo(
+              id: 1,
+              title: 'First',
+              createdAt: now,
+              updatedAt: now,
+            ),
+            ConversationInfo(
+              id: 2,
+              title: 'Second',
+              createdAt: now,
+              updatedAt: now,
+            ),
+            ConversationInfo(
+              id: 3,
+              title: 'Third',
+              createdAt: now,
+              updatedAt: now,
+            ),
           ],
         );
 
@@ -255,7 +305,12 @@ void main() {
         final state = ChatState(
           currentConversationId: 99,
           conversations: [
-            ConversationInfo(id: 1, title: 'First', createdAt: now, updatedAt: now),
+            ConversationInfo(
+              id: 1,
+              title: 'First',
+              createdAt: now,
+              updatedAt: now,
+            ),
           ],
         );
 
@@ -376,10 +431,7 @@ void main() {
     group('error helpers', () {
       test('hasError', () {
         expect(const ChatState().hasError, false);
-        expect(
-          ChatState(error: ModelError.notLoaded()).hasError,
-          true,
-        );
+        expect(ChatState(error: ModelError.notLoaded()).hasError, true);
       });
 
       test('hasRagError', () {
@@ -479,19 +531,35 @@ void main() {
           selectedModel: AvailableModels.deepSeekR1,
           downloadProgress: 1.0,
           messages: [
-            ChatMessage(id: '1', role: MessageRole.user, content: 'Hi', timestamp: now),
+            ChatMessage(
+              id: '1',
+              role: MessageRole.user,
+              content: 'Hi',
+              timestamp: now,
+            ),
           ],
           isGenerating: true,
           error: ModelError.notLoaded(),
           conversations: [
-            ConversationInfo(id: 1, title: 'Test', createdAt: now, updatedAt: now),
+            ConversationInfo(
+              id: 1,
+              title: 'Test',
+              createdAt: now,
+              updatedAt: now,
+            ),
           ],
           currentConversationId: 1,
           isLoadingConversations: true,
           embedderState: EmbedderState.ready,
           embedderDownloadProgress: 1.0,
           documents: [
-            DocumentInfo(id: 1, name: 'doc', filePath: '/p', totalChunks: 5, createdAt: now),
+            DocumentInfo(
+              id: 1,
+              name: 'doc',
+              filePath: '/p',
+              totalChunks: 5,
+              createdAt: now,
+            ),
           ],
           isProcessingDocument: true,
           documentProcessingCurrent: 3,

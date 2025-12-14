@@ -51,7 +51,10 @@ void main() {
     test('toString returns formatted string', () {
       final error = NetworkError.noConnection();
 
-      expect(error.toString(), '[NETWORK_NO_CONNECTION] No network connection available');
+      expect(
+        error.toString(),
+        '[NETWORK_NO_CONNECTION] No network connection available',
+      );
     });
   });
 

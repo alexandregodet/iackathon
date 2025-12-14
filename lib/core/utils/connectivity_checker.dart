@@ -7,8 +7,9 @@ class ConnectivityChecker {
   /// Utilise un DNS lookup comme test leger de connectivite
   static Future<bool> hasConnection() async {
     try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 5));
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 5));
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException catch (_) {
       return false;
@@ -22,8 +23,9 @@ class ConnectivityChecker {
   /// Verifie la connectivite vers un hote specifique
   static Future<bool> canReachHost(String host) async {
     try {
-      final result = await InternetAddress.lookup(host)
-          .timeout(const Duration(seconds: 5));
+      final result = await InternetAddress.lookup(
+        host,
+      ).timeout(const Duration(seconds: 5));
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
       return false;

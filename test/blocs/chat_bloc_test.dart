@@ -65,7 +65,11 @@ void main() {
         ),
         isA<ChatState>()
             .having((s) => s.selectedModel, 'selectedModel', testModel)
-            .having((s) => s.modelState, 'modelState', GemmaModelState.installed),
+            .having(
+              (s) => s.modelState,
+              'modelState',
+              GemmaModelState.installed,
+            ),
       ],
     );
 
@@ -97,20 +101,68 @@ void main() {
       wait: const Duration(milliseconds: 200),
       expect: () => [
         isA<ChatState>()
-            .having((s) => s.modelState, 'modelState', GemmaModelState.downloading)
+            .having(
+              (s) => s.modelState,
+              'modelState',
+              GemmaModelState.downloading,
+            )
             .having((s) => s.downloadProgress, 'downloadProgress', 0.0),
         // Progress updates (multiple states)
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.downloadProgress, 'downloadProgress', greaterThan(0)),
-        isA<ChatState>().having((s) => s.modelState, 'modelState', GemmaModelState.installed),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.downloadProgress,
+          'downloadProgress',
+          greaterThan(0),
+        ),
+        isA<ChatState>().having(
+          (s) => s.modelState,
+          'modelState',
+          GemmaModelState.installed,
+        ),
       ],
     );
 
@@ -132,8 +184,16 @@ void main() {
       act: (bloc) => bloc.add(const ChatLoadModel()),
       wait: const Duration(milliseconds: 100),
       expect: () => [
-        isA<ChatState>().having((s) => s.modelState, 'modelState', GemmaModelState.loading),
-        isA<ChatState>().having((s) => s.modelState, 'modelState', GemmaModelState.ready),
+        isA<ChatState>().having(
+          (s) => s.modelState,
+          'modelState',
+          GemmaModelState.loading,
+        ),
+        isA<ChatState>().having(
+          (s) => s.modelState,
+          'modelState',
+          GemmaModelState.ready,
+        ),
       ],
     );
   });
@@ -236,7 +296,11 @@ void main() {
         isA<ChatState>()
             .having((s) => s.isGenerating, 'isGenerating', false)
             .having((s) => s.messages.last.isStreaming, 'isStreaming', false)
-            .having((s) => s.messages.last.content, 'content', 'Partial response...'),
+            .having(
+              (s) => s.messages.last.content,
+              'content',
+              'Partial response...',
+            ),
       ],
     );
   });
@@ -245,15 +309,28 @@ void main() {
     blocTest<ChatBloc, ChatState>(
       'creates new conversation',
       build: () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
-      act: (bloc) => bloc.add(const ChatCreateConversation(title: 'Test Conversation')),
+      act: (bloc) =>
+          bloc.add(const ChatCreateConversation(title: 'Test Conversation')),
       wait: const Duration(milliseconds: 100),
       expect: () => [
         isA<ChatState>()
-            .having((s) => s.currentConversationId, 'currentConversationId', isNotNull)
+            .having(
+              (s) => s.currentConversationId,
+              'currentConversationId',
+              isNotNull,
+            )
             .having((s) => s.messages, 'messages', isEmpty),
         // Load conversations called
-        isA<ChatState>().having((s) => s.isLoadingConversations, 'isLoading', true),
-        isA<ChatState>().having((s) => s.conversations, 'conversations', isNotEmpty),
+        isA<ChatState>().having(
+          (s) => s.isLoadingConversations,
+          'isLoading',
+          true,
+        ),
+        isA<ChatState>().having(
+          (s) => s.conversations,
+          'conversations',
+          isNotEmpty,
+        ),
       ],
     );
 
@@ -261,15 +338,19 @@ void main() {
       'loads conversations list',
       setUp: () async {
         // Add a test conversation
-        await testDatabase.into(testDatabase.conversations).insert(
-              ConversationsCompanion.insert(title: 'Test Conv'),
-            );
+        await testDatabase
+            .into(testDatabase.conversations)
+            .insert(ConversationsCompanion.insert(title: 'Test Conv'));
       },
       build: () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
       act: (bloc) => bloc.add(const ChatLoadConversations()),
       wait: const Duration(milliseconds: 100),
       expect: () => [
-        isA<ChatState>().having((s) => s.isLoadingConversations, 'isLoading', true),
+        isA<ChatState>().having(
+          (s) => s.isLoadingConversations,
+          'isLoading',
+          true,
+        ),
         isA<ChatState>()
             .having((s) => s.isLoadingConversations, 'isLoading', false)
             .having((s) => s.conversations.length, 'conversations.length', 1),
@@ -279,13 +360,15 @@ void main() {
     blocTest<ChatBloc, ChatState>(
       'deletes conversation',
       setUp: () async {
-        await testDatabase.into(testDatabase.conversations).insert(
-              ConversationsCompanion.insert(title: 'To Delete'),
-            );
+        await testDatabase
+            .into(testDatabase.conversations)
+            .insert(ConversationsCompanion.insert(title: 'To Delete'));
       },
       build: () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
       act: (bloc) async {
-        final convs = await testDatabase.select(testDatabase.conversations).get();
+        final convs = await testDatabase
+            .select(testDatabase.conversations)
+            .get();
         if (convs.isNotEmpty) {
           bloc.emit(bloc.state.copyWith(currentConversationId: convs.first.id));
           bloc.add(ChatDeleteConversation(convs.first.id));
@@ -293,14 +376,29 @@ void main() {
       },
       wait: const Duration(milliseconds: 100),
       expect: () => [
+        isA<ChatState>().having(
+          (s) => s.currentConversationId,
+          'currentConversationId',
+          isNotNull,
+        ),
         isA<ChatState>()
-            .having((s) => s.currentConversationId, 'currentConversationId', isNotNull),
-        isA<ChatState>()
-            .having((s) => s.currentConversationId, 'currentConversationId', null)
+            .having(
+              (s) => s.currentConversationId,
+              'currentConversationId',
+              null,
+            )
             .having((s) => s.messages, 'messages', isEmpty),
         // Load conversations after delete
-        isA<ChatState>().having((s) => s.isLoadingConversations, 'isLoading', true),
-        isA<ChatState>().having((s) => s.conversations, 'conversations', isEmpty),
+        isA<ChatState>().having(
+          (s) => s.isLoadingConversations,
+          'isLoading',
+          true,
+        ),
+        isA<ChatState>().having(
+          (s) => s.conversations,
+          'conversations',
+          isEmpty,
+        ),
       ],
     );
   });
@@ -331,8 +429,16 @@ void main() {
       act: (bloc) => bloc.add(const ChatLoadEmbedder()),
       wait: const Duration(milliseconds: 100),
       expect: () => [
-        isA<ChatState>().having((s) => s.embedderState, 'state', EmbedderState.loading),
-        isA<ChatState>().having((s) => s.embedderState, 'state', EmbedderState.ready),
+        isA<ChatState>().having(
+          (s) => s.embedderState,
+          'state',
+          EmbedderState.loading,
+        ),
+        isA<ChatState>().having(
+          (s) => s.embedderState,
+          'state',
+          EmbedderState.ready,
+        ),
       ],
     );
   });
@@ -404,9 +510,7 @@ void main() {
     });
 
     test('copyWith clears error when clearError is true', () {
-      final original = ChatState(
-        error: ModelError.notLoaded(),
-      );
+      final original = ChatState(error: ModelError.notLoaded());
 
       final copied = original.copyWith(clearError: true);
 

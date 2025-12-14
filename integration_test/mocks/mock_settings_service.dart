@@ -10,8 +10,9 @@ class MockSettingsService extends Mock implements SettingsService {
   int _themeMode = 0;
 
   @override
-  final ValueNotifier<ThemeMode> themeModeNotifier =
-      ValueNotifier(ThemeMode.system);
+  final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(
+    ThemeMode.system,
+  );
 
   @override
   Future<void> init() async {

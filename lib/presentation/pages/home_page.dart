@@ -42,19 +42,16 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Row(
           children: [
-            Text(
-              '> ',
-              style: TextStyle(color: colorScheme.primary),
-            ),
+            Text('> ', style: TextStyle(color: colorScheme.primary)),
             const Text('IAckathon'),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsPage()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SettingsPage())),
             tooltip: 'config',
           ),
         ],
@@ -88,9 +85,21 @@ class _HomePageState extends State<HomePage> {
                 _buildLine(colorScheme, '# Features'),
                 const SizedBox(height: 8),
                 _buildFeatureLine(colorScheme, 'local', 'On-device inference'),
-                _buildFeatureLine(colorScheme, 'offline', 'No network required'),
-                _buildFeatureLine(colorScheme, 'multimodal', 'Text + Image support'),
-                _buildFeatureLine(colorScheme, 'thinking', 'DeepSeek reasoning'),
+                _buildFeatureLine(
+                  colorScheme,
+                  'offline',
+                  'No network required',
+                ),
+                _buildFeatureLine(
+                  colorScheme,
+                  'multimodal',
+                  'Text + Image support',
+                ),
+                _buildFeatureLine(
+                  colorScheme,
+                  'thinking',
+                  'DeepSeek reasoning',
+                ),
                 _buildFeatureLine(colorScheme, 'rag', 'PDF document context'),
               ],
             ),
@@ -120,7 +129,9 @@ class _HomePageState extends State<HomePage> {
                     : colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
-                  color: colorScheme.primary.withValues(alpha: isDark ? 0.5 : 0.3),
+                  color: colorScheme.primary.withValues(
+                    alpha: isDark ? 0.5 : 0.3,
+                  ),
                 ),
               ),
               child: Row(
@@ -155,17 +166,12 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const ModelSelectionPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const ModelSelectionPage()),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      '> ',
-                      style: TextStyle(color: colorScheme.onPrimary),
-                    ),
+                    Text('> ', style: TextStyle(color: colorScheme.onPrimary)),
                     const Text('SELECT_MODEL'),
                   ],
                 ),
@@ -192,9 +198,7 @@ class _HomePageState extends State<HomePage> {
             ? colorScheme.surfaceContainerLow
             : colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +207,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildLine(ColorScheme colorScheme, String text, {bool isHighlight = false}) {
+  Widget _buildLine(
+    ColorScheme colorScheme,
+    String text, {
+    bool isHighlight = false,
+  }) {
     return Text(
       text,
       style: TextStyle(
@@ -217,10 +225,7 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Text(
-            '  - ',
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
-          ),
+          Text('  - ', style: TextStyle(color: colorScheme.onSurfaceVariant)),
           Text(
             key,
             style: TextStyle(
@@ -228,10 +233,7 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          Text(
-            ': ',
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
-          ),
+          Text(': ', style: TextStyle(color: colorScheme.onSurfaceVariant)),
           Expanded(
             child: Text(
               value,

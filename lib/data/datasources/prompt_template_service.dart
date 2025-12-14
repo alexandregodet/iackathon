@@ -18,9 +18,9 @@ class PromptTemplateService {
   }
 
   Future<List<PromptTemplate>> getTemplatesByCategory(String category) async {
-    return await (_db.select(_db.promptTemplates)
-          ..where((t) => t.category.equals(category)))
-        .get();
+    return await (_db.select(
+      _db.promptTemplates,
+    )..where((t) => t.category.equals(category))).get();
   }
 
   Future<PromptTemplate> createTemplate({
@@ -28,16 +28,18 @@ class PromptTemplateService {
     required String content,
     String? category,
   }) async {
-    final id = await _db.into(_db.promptTemplates).insert(
+    final id = await _db
+        .into(_db.promptTemplates)
+        .insert(
           PromptTemplatesCompanion.insert(
             name: name,
             content: content,
             category: Value(category),
           ),
         );
-    return await (_db.select(_db.promptTemplates)
-          ..where((t) => t.id.equals(id)))
-        .getSingle();
+    return await (_db.select(
+      _db.promptTemplates,
+    )..where((t) => t.id.equals(id))).getSingle();
   }
 
   Future<void> updateTemplate({
@@ -46,8 +48,9 @@ class PromptTemplateService {
     required String content,
     String? category,
   }) async {
-    await (_db.update(_db.promptTemplates)..where((t) => t.id.equals(id)))
-        .write(
+    await (_db.update(
+      _db.promptTemplates,
+    )..where((t) => t.id.equals(id))).write(
       PromptTemplatesCompanion(
         name: Value(name),
         content: Value(content),

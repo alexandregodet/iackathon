@@ -37,11 +37,11 @@ class ConversationInfo extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        createdAt,
-        updatedAt,
-        messageCount,
-        lastMessage,
-      ];
+    id,
+    title,
+    createdAt,
+    updatedAt,
+    messageCount,
+    lastMessage,
+  ];
 }

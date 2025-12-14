@@ -53,9 +53,11 @@ class RagService {
   bool get isReady => _state == EmbedderState.ready && _vectorStoreInitialized;
 
   // Embedding model info (EmbeddingGemma 300M mixed-precision)
-  static const String _cdnBaseUrl = 'https://storage.kast.maintenance-coach.com/cdn/ai_models';
+  static const String _cdnBaseUrl =
+      'https://storage.kast.maintenance-coach.com/cdn/ai_models';
   static const _embeddingModelUrl = '$_cdnBaseUrl/embeddinggemma-300m.tflite';
-  static const _tokenizerUrl = '$_cdnBaseUrl/embeddinggemma-sentencepiece.model';
+  static const _tokenizerUrl =
+      '$_cdnBaseUrl/embeddinggemma-sentencepiece.model';
 
   Future<void> checkEmbedderStatus() async {
     try {
@@ -72,9 +74,7 @@ class RagService {
     }
   }
 
-  Future<void> downloadEmbedder({
-    void Function(double)? onProgress,
-  }) async {
+  Future<void> downloadEmbedder({void Function(double)? onProgress}) async {
     AppLogger.info('Demarrage du telechargement de l\'embedder', 'RagService');
 
     // Verifier la connectivite avant de telecharger
@@ -97,12 +97,14 @@ class RagService {
           .modelFromNetwork(_embeddingModelUrl)
           .tokenizerFromNetwork(_tokenizerUrl)
           .withModelProgress((progress) {
-            _downloadProgress = progress.toDouble() / 100.0 * 0.8; // 80% for model
+            _downloadProgress =
+                progress.toDouble() / 100.0 * 0.8; // 80% for model
             _progressController.add(_downloadProgress);
             onProgress?.call(_downloadProgress);
           })
           .withTokenizerProgress((progress) {
-            _downloadProgress = 0.8 + (progress.toDouble() / 100.0 * 0.2); // 20% for tokenizer
+            _downloadProgress =
+                0.8 + (progress.toDouble() / 100.0 * 0.2); // 20% for tokenizer
             _progressController.add(_downloadProgress);
             onProgress?.call(_downloadProgress);
           })
@@ -112,7 +114,12 @@ class RagService {
       _state = EmbedderState.installed;
       _stateController.add(_state);
     } catch (e, stack) {
-      AppLogger.error('Echec du telechargement de l\'embedder', tag: 'RagService', error: e, stackTrace: stack);
+      AppLogger.error(
+        'Echec du telechargement de l\'embedder',
+        tag: 'RagService',
+        error: e,
+        stackTrace: stack,
+      );
       _state = EmbedderState.error;
 
       if (e is AppError) {
@@ -144,7 +151,12 @@ class RagService {
       _state = EmbedderState.ready;
       _stateController.add(_state);
     } catch (e, stack) {
-      AppLogger.error('Echec du chargement de l\'embedder', tag: 'RagService', error: e, stackTrace: stack);
+      AppLogger.error(
+        'Echec du chargement de l\'embedder',
+        tag: 'RagService',
+        error: e,
+        stackTrace: stack,
+      );
       _state = EmbedderState.error;
 
       if (e is AppError) {
@@ -188,12 +200,24 @@ class RagService {
 
     try {
       final text = await ReadPdfText.getPDFtext(filePath);
-      AppLogger.debug('Extraction terminee: ${text.length} caracteres', 'RagService');
+      AppLogger.debug(
+        'Extraction terminee: ${text.length} caracteres',
+        'RagService',
+      );
       return text;
     } catch (e, stack) {
-      AppLogger.error('Erreur extraction PDF', tag: 'RagService', error: e, stackTrace: stack);
+      AppLogger.error(
+        'Erreur extraction PDF',
+        tag: 'RagService',
+        error: e,
+        stackTrace: stack,
+      );
       final fileName = filePath.split('/').last.split('\\').last;
-      throw RagError.pdfExtractionFailed(fileName: fileName, original: e, stack: stack);
+      throw RagError.pdfExtractionFailed(
+        fileName: fileName,
+        original: e,
+        stack: stack,
+      );
     }
   }
 
@@ -229,12 +253,14 @@ class RagService {
       final chunkContent = cleanedText.substring(start, end).trim();
 
       if (chunkContent.isNotEmpty) {
-        chunks.add(DocumentChunk(
-          id: 'doc_${documentId}_chunk_$chunkIndex',
-          documentId: documentId,
-          content: chunkContent,
-          chunkIndex: chunkIndex,
-        ));
+        chunks.add(
+          DocumentChunk(
+            id: 'doc_${documentId}_chunk_$chunkIndex',
+            documentId: documentId,
+            content: chunkContent,
+            chunkIndex: chunkIndex,
+          ),
+        );
         chunkIndex++;
       }
 
@@ -260,7 +286,12 @@ class RagService {
       final embedding = await _embedder!.generateEmbedding(text);
       return embedding;
     } catch (e, stack) {
-      AppLogger.error('Erreur generation embedding', tag: 'RagService', error: e, stackTrace: stack);
+      AppLogger.error(
+        'Erreur generation embedding',
+        tag: 'RagService',
+        error: e,
+        stackTrace: stack,
+      );
       if (e is AppError) rethrow;
       throw RagError.embeddingFailed(original: e, stack: stack);
     }
@@ -281,7 +312,8 @@ class RagService {
       id: chunk.id,
       content: chunk.content,
       embedding: embedding,
-      metadata: '{"document_id": ${chunk.documentId}, "chunk_index": ${chunk.chunkIndex}}',
+      metadata:
+          '{"document_id": ${chunk.documentId}, "chunk_index": ${chunk.chunkIndex}}',
     );
   }
 
@@ -312,7 +344,10 @@ class RagService {
       threshold: threshold,
     );
 
-    AppLogger.debug('Recherche similaire: ${results.length} resultats', 'RagService');
+    AppLogger.debug(
+      'Recherche similaire: ${results.length} resultats',
+      'RagService',
+    );
     return results.map((r) => r.content).toList();
   }
 

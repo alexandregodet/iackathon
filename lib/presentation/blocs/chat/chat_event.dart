@@ -86,10 +86,7 @@ class ChatDocumentSelected extends ChatEvent {
   final String filePath;
   final String fileName;
 
-  const ChatDocumentSelected({
-    required this.filePath,
-    required this.fileName,
-  });
+  const ChatDocumentSelected({required this.filePath, required this.fileName});
 
   @override
   List<Object?> get props => [filePath, fileName];
@@ -112,10 +109,7 @@ class ChatToggleDocument extends ChatEvent {
   final int documentId;
   final bool isActive;
 
-  const ChatToggleDocument({
-    required this.documentId,
-    required this.isActive,
-  });
+  const ChatToggleDocument({required this.documentId, required this.isActive});
 
   @override
   List<Object?> get props => [documentId, isActive];

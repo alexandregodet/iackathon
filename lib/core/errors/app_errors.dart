@@ -238,14 +238,14 @@ class StorageError extends AppError {
   @override
   bool get isRecoverable => code != 'STORAGE_FULL';
 
-  factory StorageError.insufficientSpace({
-    int? requiredMb,
-    StackTrace? stack,
-  }) {
-    final space = requiredMb != null ? 'au moins $requiredMb Mo' : 'de l\'espace';
+  factory StorageError.insufficientSpace({int? requiredMb, StackTrace? stack}) {
+    final space = requiredMb != null
+        ? 'au moins $requiredMb Mo'
+        : 'de l\'espace';
     return StorageError._(
       code: 'STORAGE_FULL',
-      message: 'Insufficient storage space${requiredMb != null ? ', need $requiredMb MB' : ''}',
+      message:
+          'Insufficient storage space${requiredMb != null ? ', need $requiredMb MB' : ''}',
       userMessage: 'Espace de stockage insuffisant. Liberez $space.',
       stackTrace: stack,
     );

@@ -67,7 +67,9 @@ void main() {
     testWidgets('Select model and navigate to ChatPage', (tester) async {
       // Configure mock to be ready immediately
       TestApp.mockGemmaService.setModelState(GemmaModelState.ready);
-      TestApp.mockGemmaService.setCurrentModel(AvailableModels.multimodal.first);
+      TestApp.mockGemmaService.setCurrentModel(
+        AvailableModels.multimodal.first,
+      );
 
       await tester.pumpWidget(TestApp.buildApp());
       await tester.pumpAndSettle();
@@ -309,7 +311,9 @@ void main() {
       await TestApp.initialize();
       TestApp.mockGemmaService.setModelState(GemmaModelState.ready);
       // Set a multimodal model
-      TestApp.mockGemmaService.setCurrentModel(AvailableModels.multimodal.first);
+      TestApp.mockGemmaService.setCurrentModel(
+        AvailableModels.multimodal.first,
+      );
     });
 
     tearDown(() async {
@@ -347,7 +351,9 @@ void main() {
       await TestApp.tearDown();
     });
 
-    testWidgets('Shows download button when model not installed', (tester) async {
+    testWidgets('Shows download button when model not installed', (
+      tester,
+    ) async {
       TestApp.mockGemmaService.setModelState(GemmaModelState.notInstalled);
 
       await tester.pumpWidget(TestApp.buildApp());
@@ -364,7 +370,9 @@ void main() {
       expect(find.textContaining('Telecharger'), findsWidgets);
     });
 
-    testWidgets('Shows load button when model installed but not loaded', (tester) async {
+    testWidgets('Shows load button when model installed but not loaded', (
+      tester,
+    ) async {
       TestApp.mockGemmaService.setModelState(GemmaModelState.installed);
 
       await tester.pumpWidget(TestApp.buildApp());
@@ -550,8 +558,7 @@ void main() {
       await TestApp.tearDown();
     });
 
-    testWidgets('Create conversation and view in history',
-        (tester) async {
+    testWidgets('Create conversation and view in history', (tester) async {
       await tester.pumpWidget(TestApp.buildApp());
       await tester.pumpAndSettle();
 
@@ -645,8 +652,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Theme should be light
-      expect(TestApp.mockSettingsService.themeModeNotifier.value,
-          ThemeMode.light);
+      expect(
+        TestApp.mockSettingsService.themeModeNotifier.value,
+        ThemeMode.light,
+      );
     });
 
     testWidgets('Change theme to dark mode', (tester) async {
@@ -663,7 +672,9 @@ void main() {
 
       // Theme should be dark
       expect(
-          TestApp.mockSettingsService.themeModeNotifier.value, ThemeMode.dark);
+        TestApp.mockSettingsService.themeModeNotifier.value,
+        ThemeMode.dark,
+      );
     });
   });
 
@@ -809,7 +820,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Send message
-        await tester.enterText(find.byType(TextField), 'Explain quantum physics');
+        await tester.enterText(
+          find.byType(TextField),
+          'Explain quantum physics',
+        );
         await tester.tap(find.byIcon(Icons.arrow_forward));
 
         // Pump to allow stream to start
@@ -880,15 +894,14 @@ void main() {
     testWidgets('Copy message action', (tester) async {
       // Set up clipboard mock
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-        SystemChannels.platform,
-        (MethodCall methodCall) async {
-          if (methodCall.method == 'Clipboard.setData') {
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall methodCall,
+          ) async {
+            if (methodCall.method == 'Clipboard.setData') {
+              return null;
+            }
             return null;
-          }
-          return null;
-        },
-      );
+          });
 
       await tester.pumpWidget(TestApp.buildApp());
       await tester.pumpAndSettle();
@@ -983,7 +996,9 @@ void main() {
       // Don't tap PDF - it opens file picker which can't work in tests
     });
 
-    testWidgets('Embedder state is checked on attachment menu open', (tester) async {
+    testWidgets('Embedder state is checked on attachment menu open', (
+      tester,
+    ) async {
       TestApp.mockRagService.setEmbedderState(EmbedderState.notInstalled);
 
       await tester.pumpWidget(TestApp.buildApp());
@@ -1014,8 +1029,9 @@ void main() {
       await TestApp.tearDown();
     });
 
-    testWidgets('Multimodal model shows image option in attachment menu',
-        (tester) async {
+    testWidgets('Multimodal model shows image option in attachment menu', (
+      tester,
+    ) async {
       await tester.pumpWidget(TestApp.buildApp());
       await tester.pumpAndSettle();
 
@@ -1423,7 +1439,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('Template option is available in attachment menu', (tester) async {
+    testWidgets('Template option is available in attachment menu', (
+      tester,
+    ) async {
       await tester.pumpWidget(TestApp.buildApp());
       await tester.pumpAndSettle();
 
@@ -1455,7 +1473,9 @@ void main() {
       TestApp.mockRagService.setEmbedderState(EmbedderState.ready);
 
       // Generate embedding
-      final embedding = await TestApp.mockRagService.generateEmbedding('Test text');
+      final embedding = await TestApp.mockRagService.generateEmbedding(
+        'Test text',
+      );
       expect(embedding, isNotEmpty);
       expect(embedding.length, 256); // Mock returns 256 dimensions
     });
@@ -1785,10 +1805,7 @@ void main() {
       await navigateToChat(tester);
 
       // Enter multiline text
-      await tester.enterText(
-        find.byType(TextField),
-        'Line 1\nLine 2\nLine 3',
-      );
+      await tester.enterText(find.byType(TextField), 'Line 1\nLine 2\nLine 3');
       await tester.tap(find.byIcon(Icons.arrow_forward));
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
@@ -2070,7 +2087,10 @@ void main() {
 
       // Should show multimodal empty state
       expect(find.text('Demarrez une conversation'), findsOneWidget);
-      expect(find.text('Posez une question ou envoyez une image'), findsOneWidget);
+      expect(
+        find.text('Posez une question ou envoyez une image'),
+        findsOneWidget,
+      );
       expect(find.text('Vision activee'), findsOneWidget);
     });
   });

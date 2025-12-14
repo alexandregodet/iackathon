@@ -34,9 +34,11 @@ class FileCoverage {
 class CoverageReport {
   final Map<String, FileCoverage> files = {};
 
-  int get totalLinesFound => files.values.fold(0, (sum, f) => sum + f.linesFound);
+  int get totalLinesFound =>
+      files.values.fold(0, (sum, f) => sum + f.linesFound);
   int get totalLinesHit => files.values.fold(0, (sum, f) => sum + f.linesHit);
-  double get totalCoverage => totalLinesFound > 0 ? (totalLinesHit / totalLinesFound) * 100 : 0;
+  double get totalCoverage =>
+      totalLinesFound > 0 ? (totalLinesHit / totalLinesFound) * 100 : 0;
 
   void parse(String content) {
     FileCoverage? current;
@@ -65,7 +67,10 @@ class CoverageReport {
     }
   }
 
-  List<FileCoverage> getSortedFiles({String sortBy = 'coverage', double? minThreshold}) {
+  List<FileCoverage> getSortedFiles({
+    String sortBy = 'coverage',
+    double? minThreshold,
+  }) {
     var sorted = files.values.toList();
 
     if (minThreshold != null) {
@@ -106,31 +111,56 @@ const dim = '\x1B[2m';
 
 void printSummary(CoverageReport report) {
   print('');
-  print('$bold╔══════════════════════════════════════════════════════════════╗$reset');
-  print('$bold║                    RAPPORT DE COVERAGE                       ║$reset');
-  print('$bold╚══════════════════════════════════════════════════════════════╝$reset');
+  print(
+    '$bold╔══════════════════════════════════════════════════════════════╗$reset',
+  );
+  print(
+    '$bold║                    RAPPORT DE COVERAGE                       ║$reset',
+  );
+  print(
+    '$bold╚══════════════════════════════════════════════════════════════╝$reset',
+  );
   print('');
 
   final color = getColor(report.totalCoverage);
-  print('  Coverage total: $color${report.totalCoverage.toStringAsFixed(1)}%$reset');
-  print('  Lignes couvertes: ${report.totalLinesHit} / ${report.totalLinesFound}');
+  print(
+    '  Coverage total: $color${report.totalCoverage.toStringAsFixed(1)}%$reset',
+  );
+  print(
+    '  Lignes couvertes: ${report.totalLinesHit} / ${report.totalLinesFound}',
+  );
   print('  Fichiers analyses: ${report.files.length}');
   print('');
-  print('  ${getBar(report.totalCoverage, 50)} $color${report.totalCoverage.toStringAsFixed(1)}%$reset');
+  print(
+    '  ${getBar(report.totalCoverage, 50)} $color${report.totalCoverage.toStringAsFixed(1)}%$reset',
+  );
   print('');
 }
 
-void printDetails(CoverageReport report, {String sortBy = 'coverage', double? minThreshold}) {
-  final files = report.getSortedFiles(sortBy: sortBy, minThreshold: minThreshold);
+void printDetails(
+  CoverageReport report, {
+  String sortBy = 'coverage',
+  double? minThreshold,
+}) {
+  final files = report.getSortedFiles(
+    sortBy: sortBy,
+    minThreshold: minThreshold,
+  );
 
   if (files.isEmpty) {
     print('${dim}Aucun fichier ne correspond aux criteres.$reset');
     return;
   }
 
-  print('$bold┌─────────────────────────────────────────────────────────────────────────┐$reset');
-  print('$bold│ Fichier                                        │ Coverage │   Lignes  │$reset');
-  print('$bold├─────────────────────────────────────────────────────────────────────────┤$reset');
+  print(
+    '$bold┌─────────────────────────────────────────────────────────────────────────┐$reset',
+  );
+  print(
+    '$bold│ Fichier                                        │ Coverage │   Lignes  │$reset',
+  );
+  print(
+    '$bold├─────────────────────────────────────────────────────────────────────────┤$reset',
+  );
 
   for (final file in files) {
     final color = getColor(file.coverage);
@@ -141,7 +171,9 @@ void printDetails(CoverageReport report, {String sortBy = 'coverage', double? mi
     print('│ $name │ $color$cov$reset │ $lines │');
   }
 
-  print('$bold└─────────────────────────────────────────────────────────────────────────┘$reset');
+  print(
+    '$bold└─────────────────────────────────────────────────────────────────────────┘$reset',
+  );
   print('');
 }
 
@@ -164,10 +196,14 @@ void printByFolder(CoverageReport report) {
 
   final sortedFolders = folders.entries.toList()
     ..sort((a, b) {
-      final covA = a.value.fold<int>(0, (s, f) => s + f.linesHit) /
-                   a.value.fold<int>(0, (s, f) => s + f.linesFound) * 100;
-      final covB = b.value.fold<int>(0, (s, f) => s + f.linesHit) /
-                   b.value.fold<int>(0, (s, f) => s + f.linesFound) * 100;
+      final covA =
+          a.value.fold<int>(0, (s, f) => s + f.linesHit) /
+          a.value.fold<int>(0, (s, f) => s + f.linesFound) *
+          100;
+      final covB =
+          b.value.fold<int>(0, (s, f) => s + f.linesHit) /
+          b.value.fold<int>(0, (s, f) => s + f.linesFound) *
+          100;
       return covA.compareTo(covB);
     });
 
@@ -177,7 +213,9 @@ void printByFolder(CoverageReport report) {
     final coverage = linesFound > 0 ? (linesHit / linesFound) * 100 : 0.0;
     final color = getColor(coverage);
 
-    print('  ${entry.key.padRight(40)} $color${coverage.toStringAsFixed(1).padLeft(5)}%$reset  ${getBar(coverage, 20)}');
+    print(
+      '  ${entry.key.padRight(40)} $color${coverage.toStringAsFixed(1).padLeft(5)}%$reset  ${getBar(coverage, 20)}',
+    );
   }
   print('');
 }
@@ -230,14 +268,22 @@ void generateHtml(CoverageReport report, String outputPath) {
 
   <div class="summary">
     <div class="summary-item">
-      <div class="summary-value" style="color: ${report.totalCoverage >= 80 ? '#00cec9' : report.totalCoverage >= 60 ? '#fdcb6e' : '#e74c3c'}">
+      <div class="summary-value" style="color: ${report.totalCoverage >= 80
+      ? '#00cec9'
+      : report.totalCoverage >= 60
+      ? '#fdcb6e'
+      : '#e74c3c'}">
         ${report.totalCoverage.toStringAsFixed(1)}%
       </div>
       <div class="summary-label">Coverage Total</div>
     </div>
     <div class="summary-item">
       <div class="progress">
-        <div class="progress-bar ${report.totalCoverage >= 80 ? 'green' : report.totalCoverage >= 60 ? 'yellow' : 'red'}"
+        <div class="progress-bar ${report.totalCoverage >= 80
+      ? 'green'
+      : report.totalCoverage >= 60
+      ? 'yellow'
+      : 'red'}"
              style="width: ${report.totalCoverage}%"></div>
       </div>
     </div>
@@ -268,7 +314,11 @@ void generateHtml(CoverageReport report, String outputPath) {
 
   final sortedFiles = report.getSortedFiles(sortBy: 'coverage');
   for (final file in sortedFiles) {
-    final colorClass = file.coverage >= 80 ? 'green' : file.coverage >= 60 ? 'yellow' : 'red';
+    final colorClass = file.coverage >= 80
+        ? 'green'
+        : file.coverage >= 60
+        ? 'yellow'
+        : 'red';
     buffer.writeln('''
       <tr>
         <td class="file-path">${file.shortPath}</td>

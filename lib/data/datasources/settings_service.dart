@@ -12,8 +12,9 @@ class SettingsService {
   SharedPreferences? _prefs;
 
   // Theme notifier for reactive updates
-  final ValueNotifier<ThemeMode> themeModeNotifier =
-      ValueNotifier(ThemeMode.system);
+  final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(
+    ThemeMode.system,
+  );
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();

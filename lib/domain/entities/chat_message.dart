@@ -26,7 +26,8 @@ class ChatMessage extends Equatable {
   });
 
   bool get hasImage => imageBytes != null;
-  bool get hasThinking => thinkingContent != null && thinkingContent!.isNotEmpty;
+  bool get hasThinking =>
+      thinkingContent != null && thinkingContent!.isNotEmpty;
 
   ChatMessage copyWith({
     String? id,
@@ -52,13 +53,13 @@ class ChatMessage extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        role,
-        content,
-        timestamp,
-        isStreaming,
-        imageBytes,
-        thinkingContent,
-        isThinkingComplete,
-      ];
+    id,
+    role,
+    content,
+    timestamp,
+    isStreaming,
+    imageBytes,
+    thinkingContent,
+    isThinkingComplete,
+  ];
 }

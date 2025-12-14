@@ -78,7 +78,8 @@ class MockGemmaService extends Mock implements GemmaService {
   Future<void> checkModelStatus(GemmaModelInfo modelInfo) async {
     _currentModel = modelInfo;
     // If already ready or notInstalled, preserve state. Otherwise simulate installed.
-    if (_state != GemmaModelState.ready && _state != GemmaModelState.notInstalled) {
+    if (_state != GemmaModelState.ready &&
+        _state != GemmaModelState.notInstalled) {
       _state = GemmaModelState.installed;
       _stateController.add(_state);
     }
@@ -120,7 +121,10 @@ class MockGemmaService extends Mock implements GemmaService {
   }
 
   @override
-  Stream<String> generateResponse(String userMessage, {Uint8List? imageBytes}) async* {
+  Stream<String> generateResponse(
+    String userMessage, {
+    Uint8List? imageBytes,
+  }) async* {
     // Return mock response token by token
     final response = _getNextResponse();
     final words = response.split(' ');
@@ -157,10 +161,7 @@ class MockGemmaService extends Mock implements GemmaService {
 
     for (final word in words) {
       await Future.delayed(const Duration(milliseconds: 10));
-      yield GemmaStreamResponse(
-        textChunk: '$word ',
-        isThinkingPhase: false,
-      );
+      yield GemmaStreamResponse(textChunk: '$word ', isThinkingPhase: false);
     }
   }
 

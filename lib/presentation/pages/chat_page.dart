@@ -23,11 +23,7 @@ class ChatPage extends StatelessWidget {
   final GemmaModelInfo modelInfo;
   final String? huggingFaceToken;
 
-  const ChatPage({
-    super.key,
-    required this.modelInfo,
-    this.huggingFaceToken,
-  });
+  const ChatPage({super.key, required this.modelInfo, this.huggingFaceToken});
 
   @override
   Widget build(BuildContext context) {
@@ -48,10 +44,7 @@ class _ChatPageContent extends StatefulWidget {
   final GemmaModelInfo modelInfo;
   final String? huggingFaceToken;
 
-  const _ChatPageContent({
-    required this.modelInfo,
-    this.huggingFaceToken,
-  });
+  const _ChatPageContent({required this.modelInfo, this.huggingFaceToken});
 
   @override
   State<_ChatPageContent> createState() => _ChatPageContentState();
@@ -259,14 +252,14 @@ class _ChatPageContentState extends State<_ChatPageContent> {
 
     if (result != null && result.files.single.path != null) {
       final file = result.files.single;
-      bloc.add(ChatDocumentSelected(
-        filePath: file.path!,
-        fileName: file.name,
-      ));
+      bloc.add(ChatDocumentSelected(filePath: file.path!, fileName: file.name));
     }
   }
 
-  Future<bool> _showEmbedderDialog(BuildContext context, ChatState state) async {
+  Future<bool> _showEmbedderDialog(
+    BuildContext context,
+    ChatState state,
+  ) async {
     final colorScheme = Theme.of(context).colorScheme;
     final bloc = context.read<ChatBloc>();
 
@@ -346,15 +339,17 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                       FilledButton(
                         onPressed: () {
                           context.read<ChatBloc>().add(
-                                const ChatDownloadEmbedder(),
-                              );
+                            const ChatDownloadEmbedder(),
+                          );
                         },
                         child: const Text('Telecharger'),
                       ),
                     if (isInstalled)
                       FilledButton(
                         onPressed: () {
-                          context.read<ChatBloc>().add(const ChatLoadEmbedder());
+                          context.read<ChatBloc>().add(
+                            const ChatLoadEmbedder(),
+                          );
                         },
                         child: const Text('Charger'),
                       ),
@@ -421,8 +416,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                       Text(
                         'Les documents actifs seront utilises pour enrichir vos questions.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.outline,
-                            ),
+                          color: colorScheme.outline,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       if (state.documents.isEmpty)
@@ -477,11 +472,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
           Icons.picture_as_pdf,
           color: doc.isActive ? colorScheme.primary : colorScheme.outline,
         ),
-        title: Text(
-          doc.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(
           '${doc.totalChunks} chunks',
           style: Theme.of(context).textTheme.bodySmall,
@@ -493,11 +484,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
               value: doc.isActive,
               onChanged: (value) {
                 context.read<ChatBloc>().add(
-                      ChatToggleDocument(
-                        documentId: doc.id,
-                        isActive: value,
-                      ),
-                    );
+                  ChatToggleDocument(documentId: doc.id, isActive: value),
+                );
               },
             ),
             IconButton(
@@ -562,7 +550,9 @@ class _ChatPageContentState extends State<_ChatPageContent> {
         content: Row(
           children: [
             Icon(
-              error.isRecoverable ? Icons.warning_amber_rounded : Icons.error_rounded,
+              error.isRecoverable
+                  ? Icons.warning_amber_rounded
+                  : Icons.error_rounded,
               color: colorScheme.onError,
               size: 20,
             ),
@@ -593,7 +583,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     final bloc = context.read<ChatBloc>();
     final errorCode = error.code as String;
 
-    if (errorCode.startsWith('NETWORK_') || errorCode == 'MODEL_LOADING_FAILED') {
+    if (errorCode.startsWith('NETWORK_') ||
+        errorCode == 'MODEL_LOADING_FAILED') {
       if (bloc.state.modelState == GemmaModelState.error) {
         bloc.add(ChatDownloadModel(huggingFaceToken: widget.huggingFaceToken));
       }
@@ -607,8 +598,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     if (text.isEmpty && _selectedImageBytes == null) return;
 
     context.read<ChatBloc>().add(
-          ChatSendMessage(text, imageBytes: _selectedImageBytes),
-        );
+      ChatSendMessage(text, imageBytes: _selectedImageBytes),
+    );
     _controller.clear();
     _clearSelectedImage();
     _scrollToBottom();
@@ -625,113 +616,117 @@ class _ChatPageContentState extends State<_ChatPageContent> {
       },
       child: Scaffold(
         appBar: AppBar(
-        title: BlocBuilder<ChatBloc, ChatState>(
-          builder: (context, state) {
-            final title = state.currentConversation != null
-                ? state.currentConversation!.title
-                : widget.modelInfo.name;
-            return Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    title,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _buildModelStatusBadge(context, state),
-              ],
-            );
-          },
-        ),
-        actions: [
-          BlocBuilder<ChatBloc, ChatState>(
+          title: BlocBuilder<ChatBloc, ChatState>(
             builder: (context, state) {
-              if (!state.isModelReady) return const SizedBox.shrink();
+              final title = state.currentConversation != null
+                  ? state.currentConversation!.title
+                  : widget.modelInfo.name;
               return Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.history),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => BlocProvider.value(
-                            value: context.read<ChatBloc>(),
-                            child: const ConversationsPage(),
-                          ),
-                        ),
-                      );
-                    },
-                    tooltip: 'Historique des conversations',
+                  Flexible(
+                    child: Text(
+                      title,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.settings_suggest),
-                    onPressed: _showSystemPromptDialog,
-                    tooltip: 'Instructions systeme',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.memory),
-                    onPressed: () => _showUnloadConfirmDialog(context),
-                    tooltip: 'Liberer la memoire',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () {
-                      context.read<ChatBloc>().add(const ChatClearConversation());
-                    },
-                    tooltip: 'Effacer la conversation',
-                  ),
+                  const SizedBox(width: 8),
+                  _buildModelStatusBadge(context, state),
                 ],
               );
             },
           ),
-        ],
-      ),
-      body: BlocConsumer<ChatBloc, ChatState>(
-        listenWhen: (previous, current) {
-          // Seulement ecouter les nouvelles erreurs
-          return (current.hasError && previous.error != current.error) ||
-              (current.isGenerating && !previous.isGenerating);
-        },
-        listener: (context, state) {
-          if (state.hasError) {
-            _showErrorSnackBar(context, state);
-          }
-          if (state.isGenerating) {
-            _scrollToBottom();
-          }
-        },
-        builder: (context, state) {
-          if (!state.isModelReady) {
-            return ModelStatusCard(
-              state: state,
-              onDownload: () {
-                context.read<ChatBloc>().add(
-                      ChatDownloadModel(huggingFaceToken: widget.huggingFaceToken),
-                    );
+          actions: [
+            BlocBuilder<ChatBloc, ChatState>(
+              builder: (context, state) {
+                if (!state.isModelReady) return const SizedBox.shrink();
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.history),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: context.read<ChatBloc>(),
+                              child: const ConversationsPage(),
+                            ),
+                          ),
+                        );
+                      },
+                      tooltip: 'Historique des conversations',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.settings_suggest),
+                      onPressed: _showSystemPromptDialog,
+                      tooltip: 'Instructions systeme',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.memory),
+                      onPressed: () => _showUnloadConfirmDialog(context),
+                      tooltip: 'Liberer la memoire',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () {
+                        context.read<ChatBloc>().add(
+                          const ChatClearConversation(),
+                        );
+                      },
+                      tooltip: 'Effacer la conversation',
+                    ),
+                  ],
+                );
               },
-              onLoad: () {
-                context.read<ChatBloc>().add(const ChatLoadModel());
-              },
-            );
-          }
+            ),
+          ],
+        ),
+        body: BlocConsumer<ChatBloc, ChatState>(
+          listenWhen: (previous, current) {
+            // Seulement ecouter les nouvelles erreurs
+            return (current.hasError && previous.error != current.error) ||
+                (current.isGenerating && !previous.isGenerating);
+          },
+          listener: (context, state) {
+            if (state.hasError) {
+              _showErrorSnackBar(context, state);
+            }
+            if (state.isGenerating) {
+              _scrollToBottom();
+            }
+          },
+          builder: (context, state) {
+            if (!state.isModelReady) {
+              return ModelStatusCard(
+                state: state,
+                onDownload: () {
+                  context.read<ChatBloc>().add(
+                    ChatDownloadModel(
+                      huggingFaceToken: widget.huggingFaceToken,
+                    ),
+                  );
+                },
+                onLoad: () {
+                  context.read<ChatBloc>().add(const ChatLoadModel());
+                },
+              );
+            }
 
-          return Column(
-            children: [
-              Expanded(
-                child: state.messages.isEmpty
-                    ? _buildEmptyState(context, state)
-                    : _buildMessageList(state.messages, state),
-              ),
-              if (state.messages.isNotEmpty)
-                _buildContextIndicator(context, state),
-              _buildInputBar(context, state),
-            ],
-          );
-        },
-      ),
+            return Column(
+              children: [
+                Expanded(
+                  child: state.messages.isEmpty
+                      ? _buildEmptyState(context, state)
+                      : _buildMessageList(state.messages, state),
+                ),
+                if (state.messages.isNotEmpty)
+                  _buildContextIndicator(context, state),
+                _buildInputBar(context, state),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -753,24 +748,27 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             const SizedBox(height: 16),
             Text(
               'Demarrez une conversation',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: colorScheme.outline,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: colorScheme.outline),
             ),
             const SizedBox(height: 8),
             Text(
               state.isMultimodal
                   ? 'Posez une question ou envoyez une image'
                   : 'Posez une question au modele',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.outline,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colorScheme.outline),
               textAlign: TextAlign.center,
             ),
             if (state.isMultimodal) ...[
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.tertiaryContainer,
                   borderRadius: BorderRadius.circular(16),
@@ -787,8 +785,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                     Text(
                       'Vision activee',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: colorScheme.onTertiaryContainer,
-                          ),
+                        color: colorScheme.onTertiaryContainer,
+                      ),
                     ),
                   ],
                 ),
@@ -828,7 +826,9 @@ class _ChatPageContentState extends State<_ChatPageContent> {
               : null,
           onRegenerate: isLastAssistant
               ? () {
-                  context.read<ChatBloc>().add(ChatRegenerateMessage(message.id));
+                  context.read<ChatBloc>().add(
+                    ChatRegenerateMessage(message.id),
+                  );
                 }
               : null,
         );
@@ -916,7 +916,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
           if (state.isContextNearlyFull) ...[
             const SizedBox(width: 8),
             Tooltip(
-              message: 'Le contexte est presque plein.\nCreez une nouvelle conversation.',
+              message:
+                  'Le contexte est presque plein.\nCreez une nouvelle conversation.',
               child: Icon(
                 Icons.warning_amber,
                 size: 18,
@@ -1011,10 +1012,12 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                         hintText: state.isGenerating
                             ? '> processing...'
                             : _selectedImageBytes != null
-                                ? '> describe image...'
-                                : '> enter message...',
+                            ? '> describe image...'
+                            : '> enter message...',
                         hintStyle: TextStyle(
-                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.5,
+                          ),
                           fontSize: 14,
                         ),
                         border: InputBorder.none,
@@ -1047,7 +1050,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     ColorScheme colorScheme,
     bool isDark,
   ) {
-    final hasAttachments = state.hasActiveDocuments || _selectedImageBytes != null;
+    final hasAttachments =
+        state.hasActiveDocuments || _selectedImageBytes != null;
     final isDisabled = state.isGenerating || state.isProcessingDocument;
 
     return SizedBox(
@@ -1068,8 +1072,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 color: hasAttachments
                     ? colorScheme.primary.withValues(alpha: 0.5)
                     : isDark
-                        ? colorScheme.primary.withValues(alpha: 0.3)
-                        : colorScheme.outlineVariant,
+                    ? colorScheme.primary.withValues(alpha: 0.3)
+                    : colorScheme.outlineVariant,
               ),
             ),
             child: Badge(
@@ -1083,8 +1087,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 color: isDisabled
                     ? colorScheme.outline
                     : hasAttachments
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
                 size: 22,
               ),
             ),
@@ -1123,7 +1127,9 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             ),
             child: Icon(
               state.isGenerating ? Icons.stop : Icons.arrow_forward,
-              color: state.isGenerating ? colorScheme.error : colorScheme.primary,
+              color: state.isGenerating
+                  ? colorScheme.error
+                  : colorScheme.primary,
               size: 20,
             ),
           ),
@@ -1165,10 +1171,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
               ),
               child: Row(
                 children: [
-                  Text(
-                    '> ',
-                    style: TextStyle(color: colorScheme.primary),
-                  ),
+                  Text('> ', style: TextStyle(color: colorScheme.primary)),
                   Text(
                     'attach',
                     style: TextStyle(
@@ -1204,7 +1207,9 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 context: context,
                 icon: Icons.image,
                 label: 'image',
-                subtitle: _selectedImageBytes != null ? 'attached' : 'add photo',
+                subtitle: _selectedImageBytes != null
+                    ? 'attached'
+                    : 'add photo',
                 isActive: _selectedImageBytes != null,
                 onTap: () {
                   Navigator.pop(context);
@@ -1246,8 +1251,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     final color = isActive
         ? colorScheme.primary
         : useSecondary
-            ? colorScheme.secondary
-            : colorScheme.onSurfaceVariant;
+        ? colorScheme.secondary
+        : colorScheme.onSurfaceVariant;
 
     return Material(
       color: Colors.transparent,
@@ -1264,9 +1269,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: color.withValues(alpha: 0.3),
-                  ),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
                 child: Icon(icon, size: 18, color: color),
               ),
@@ -1293,11 +1296,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 ),
               ),
               if (isActive)
-                Icon(
-                  Icons.check_circle,
-                  size: 18,
-                  color: colorScheme.primary,
-                ),
+                Icon(Icons.check_circle, size: 18, color: colorScheme.primary),
             ],
           ),
         ),
@@ -1359,10 +1358,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
           const SizedBox(width: 8),
           Text(
             '# image attached',
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 11,
-            ),
+            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 11),
           ),
         ],
       ),
@@ -1404,11 +1400,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
 
     return Tooltip(
       message: tooltip,
-      child: Icon(
-        icon,
-        size: 16,
-        color: badgeColor,
-      ),
+      child: Icon(icon, size: 16, color: badgeColor),
     );
   }
 }

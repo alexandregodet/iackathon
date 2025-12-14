@@ -67,7 +67,8 @@ class ChatState extends Equatable {
   });
 
   bool get isModelReady => modelState == GemmaModelState.ready;
-  bool get isModelInstalled => modelState == GemmaModelState.installed || isModelReady;
+  bool get isModelInstalled =>
+      modelState == GemmaModelState.installed || isModelReady;
   bool get isDownloading => modelState == GemmaModelState.downloading;
   bool get isLoading => modelState == GemmaModelState.loading;
   bool get isMultimodal => selectedModel?.isMultimodal ?? false;
@@ -89,9 +90,9 @@ class ChatState extends Equatable {
   bool get hasCurrentConversation => currentConversationId != null;
   ConversationInfo? get currentConversation => hasCurrentConversation
       ? conversations.cast<ConversationInfo?>().firstWhere(
-            (c) => c?.id == currentConversationId,
-            orElse: () => null,
-          )
+          (c) => c?.id == currentConversationId,
+          orElse: () => null,
+        )
       : null;
 
   // Context usage getters
@@ -180,26 +181,26 @@ class ChatState extends Equatable {
 
   @override
   List<Object?> get props => [
-        modelState,
-        selectedModel,
-        downloadProgress,
-        messages,
-        isGenerating,
-        error,
-        // Conversation
-        conversations,
-        currentConversationId,
-        isLoadingConversations,
-        // RAG
-        embedderState,
-        embedderDownloadProgress,
-        documents,
-        isProcessingDocument,
-        documentProcessingCurrent,
-        documentProcessingTotal,
-        ragError,
-        // Thinking
-        isThinking,
-        currentThinkingContent,
-      ];
+    modelState,
+    selectedModel,
+    downloadProgress,
+    messages,
+    isGenerating,
+    error,
+    // Conversation
+    conversations,
+    currentConversationId,
+    isLoadingConversations,
+    // RAG
+    embedderState,
+    embedderDownloadProgress,
+    documents,
+    isProcessingDocument,
+    documentProcessingCurrent,
+    documentProcessingTotal,
+    ragError,
+    // Thinking
+    isThinking,
+    currentThinkingContent,
+  ];
 }

@@ -98,9 +98,9 @@ class ModelStatusCard extends StatelessWidget {
 
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
       textAlign: TextAlign.center,
     );
   }
@@ -134,8 +134,8 @@ class ModelStatusCard extends StatelessWidget {
         Text(
           subtitle,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isError ? colorScheme.error : colorScheme.onSurfaceVariant,
-              ),
+            color: isError ? colorScheme.error : colorScheme.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
         ),
         if (isError && state.isErrorRecoverable) ...[
@@ -143,18 +143,24 @@ class ModelStatusCard extends StatelessWidget {
           Text(
             'Appuyez sur Reessayer pour continuer',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              color: colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
-        if (model != null && state.modelState == GemmaModelState.notInstalled) ...[
+        if (model != null &&
+            state.modelState == GemmaModelState.notInstalled) ...[
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             children: [
               if (model.isMultimodal)
-                _buildChip(context, 'Vision', Icons.visibility, isHighlighted: true),
+                _buildChip(
+                  context,
+                  'Vision',
+                  Icons.visibility,
+                  isHighlighted: true,
+                ),
               if (model.requiresAuth)
                 _buildChip(context, 'Auth requise', Icons.lock),
             ],
@@ -194,10 +200,10 @@ class ModelStatusCard extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isHighlighted
-                      ? colorScheme.onTertiaryContainer
-                      : colorScheme.onSurfaceVariant,
-                ),
+              color: isHighlighted
+                  ? colorScheme.onTertiaryContainer
+                  : colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

@@ -85,16 +85,13 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Theme',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
+                  Text('Theme', style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 4),
                   Text(
                     'Choisissez le theme de l\'application',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
                   ),
                   const SizedBox(height: 12),
                   SegmentedButton<int>(
@@ -147,9 +144,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 4),
                   Text(
                     'Nombre maximum de tokens dans la reponse',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
                   ),
                   Slider(
                     value: _maxTokens.toDouble(),
@@ -174,9 +171,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 4),
                   Text(
                     'Controle la creativite des reponses (0 = deterministe, 1 = creatif)',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
                   ),
                   Slider(
                     value: _temperature,
@@ -211,9 +208,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Text(
                     'Definissez le comportement par defaut de l\'assistant',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -262,9 +259,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       const SizedBox(width: 12),
                       Text(
                         'IAckathon',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -276,9 +272,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 4),
                   Text(
                     'Version 1.0.0',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
                   ),
                 ],
               ),
@@ -311,9 +307,9 @@ class _SettingsPageState extends State<SettingsPage> {
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.primary,
-              ),
+            fontWeight: FontWeight.bold,
+            color: colorScheme.primary,
+          ),
         ),
       ],
     );

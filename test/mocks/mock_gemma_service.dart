@@ -113,7 +113,10 @@ class MockGemmaService extends Mock implements GemmaService {
   }
 
   @override
-  Stream<String> generateResponse(String userMessage, {Uint8List? imageBytes}) async* {
+  Stream<String> generateResponse(
+    String userMessage, {
+    Uint8List? imageBytes,
+  }) async* {
     final response = _getNextResponse();
     final words = response.split(' ');
 
@@ -140,10 +143,7 @@ class MockGemmaService extends Mock implements GemmaService {
 
     for (final word in words) {
       await Future.delayed(const Duration(milliseconds: 5));
-      yield GemmaStreamResponse(
-        textChunk: '$word ',
-        isThinkingPhase: false,
-      );
+      yield GemmaStreamResponse(textChunk: '$word ', isThinkingPhase: false);
     }
   }
 

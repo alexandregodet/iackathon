@@ -106,12 +106,14 @@ class MockRagService extends Mock implements RagService {
     for (var i = 0; i < sentences.length; i++) {
       final content = sentences[i].trim();
       if (content.isNotEmpty) {
-        chunks.add(DocumentChunk(
-          id: 'doc_${documentId}_chunk_$i',
-          documentId: documentId,
-          content: content,
-          chunkIndex: i,
-        ));
+        chunks.add(
+          DocumentChunk(
+            id: 'doc_${documentId}_chunk_$i',
+            documentId: documentId,
+            content: content,
+            chunkIndex: i,
+          ),
+        );
       }
     }
 
