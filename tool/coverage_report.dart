@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+// ignore_for_file: avoid_print
 // Script pour analyser et afficher le rapport de coverage lcov.info
 //
 // Usage:
