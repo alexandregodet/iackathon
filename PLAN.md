@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-Projet Flutter pour hackathon IA avec LLM local (Gemma) integre sur device.
+Application Flutter de chat IA avec LLM local (Gemma) et RAG (Retrieval-Augmented Generation) entierement on-device.
 
 ### Configuration du projet
 
@@ -15,6 +15,7 @@ Projet Flutter pour hackathon IA avec LLM local (Gemma) integre sur device.
 | Base de donnees | Drift (SQLite) |
 | Theme | Material 3 |
 | LLM | flutter_gemma 0.11.13 |
+| Embeddings | EmbeddingGemma 300M |
 
 ---
 
@@ -39,15 +40,12 @@ Projet Flutter pour hackathon IA avec LLM local (Gemma) integre sur device.
   ├── core/
   │   ├── di/          # Injection de dependances
   │   ├── theme/       # Themes Material 3
-  │   └── utils/       # Utilitaires
+  │   ├── errors/      # Gestion d'erreurs structuree
+  │   └── utils/       # Utilitaires (logger, connectivity)
   ├── data/
-  │   ├── datasources/ # Sources de donnees (DB, API)
-  │   ├── models/      # Modeles de donnees
-  │   └── repositories/# Implementation des repos
+  │   └── datasources/ # Sources de donnees (DB, Services)
   ├── domain/
-  │   ├── entities/    # Entites metier
-  │   ├── repositories/# Interfaces des repos
-  │   └── usecases/    # Cas d'utilisation
+  │   └── entities/    # Entites metier
   └── presentation/
       ├── blocs/       # BLoCs
       ├── pages/       # Pages/Ecrans
@@ -59,6 +57,8 @@ Projet Flutter pour hackathon IA avec LLM local (Gemma) integre sur device.
 - [x] Tables creees :
   - `Conversations` : id, title, createdAt, updatedAt
   - `Messages` : id, conversationId, role, content, createdAt
+  - `Documents` : id, name, filePath, totalChunks, isActive, createdAt
+  - `PromptTemplates` : id, name, content, category, createdAt
 
 ### 1.5 Theme Material 3
 - [x] Theme clair configure
@@ -70,41 +70,51 @@ Projet Flutter pour hackathon IA avec LLM local (Gemma) integre sur device.
 ## Phase 2 : Integration flutter_gemma (COMPLETE)
 
 ### 2.1 Installation et configuration
-- [x] Ajouter la dependance flutter_gemma 0.11.13
-- [x] Configurer les permissions Android (Internet, OpenCL, largeHeap)
-- [x] Modele configure : Gemma 3 1B IT (GPU optimized)
-- [x] URL du modele : HuggingFace aspect11/gemma-3-1b-it
+- [x] Dependance flutter_gemma 0.11.13
+- [x] Permissions Android (Internet, OpenCL, largeHeap)
+- [x] Support multi-modeles (Gemma2, Gemma3)
+- [x] Support modeles multimodaux (vision)
 
 ### 2.2 Service IA (GemmaService)
 - [x] `GemmaService` singleton avec injectable
 - [x] Verification de l'installation du modele
 - [x] Telechargement avec progression
 - [x] Chargement du modele en memoire
-- [x] Generation de reponses (sync et stream)
+- [x] Generation de reponses (stream)
 - [x] Gestion des etats : notInstalled, downloading, installed, loading, ready, error
+- [x] Support HuggingFace token (modeles proteges)
 
 ### 2.3 ChatBloc
-- [x] Events : Initialize, DownloadModel, LoadModel, SendMessage, StreamChunk, ClearConversation
+- [x] Events complets : Initialize, DownloadModel, LoadModel, SendMessage, StopGeneration, etc.
 - [x] States avec : modelState, downloadProgress, messages, isGenerating, error
+- [x] Gestion du contexte (tokens usage)
+- [x] Support regeneration de message
 
 ---
 
 ## Phase 3 : Interface Chat (COMPLETE)
 
 ### 3.1 Pages
-- [x] HomePage - Ecran d'accueil avec bouton "Demarrer une conversation"
+- [x] HomePage - Ecran d'accueil avec navigation
+- [x] ModelSelectionPage - Selection du modele Gemma
 - [x] ChatPage - Interface de chat complete
+- [x] ConversationsPage - Historique des conversations
+- [x] SettingsPage - Parametres de l'application
+- [x] PromptTemplatesPage - Gestion des modeles de prompts
 
 ### 3.2 Widgets
-- [x] ChatBubble - Bulle de message (user/assistant)
+- [x] ChatBubble - Bulle de message (user/assistant) avec markdown
 - [x] ModelStatusCard - Carte de statut du modele (download, load, error)
 
 ### 3.3 Fonctionnalites UI
 - [x] Liste de messages scrollable
 - [x] Champ de saisie avec envoi
 - [x] Indicateur de generation en cours
+- [x] Bouton stop generation
 - [x] Bouton effacer conversation
-- [x] Gestion des erreurs avec SnackBar
+- [x] Copier / Regenerer message
+- [x] Indicateur contexte (tokens utilises)
+- [x] Gestion des erreurs avec SnackBar + retry
 
 ---
 
@@ -114,22 +124,98 @@ Projet Flutter pour hackathon IA avec LLM local (Gemma) integre sur device.
 - [x] Sauvegarder les messages dans Drift
 - [x] Liste des conversations historiques
 - [x] Reprendre une conversation
+- [x] Supprimer une conversation
 
 ### 4.2 Parametres du modele
-- [x] Page de parametres
-- [x] Configuration temperature
-- [x] Configuration max tokens
-- [ ] Selection du modele (Gemma 1B, 2B, autres)
+- [x] Page de parametres complete
+- [x] Configuration temperature (0-1)
+- [x] Configuration max tokens (256-4096)
+- [x] Selection du theme (auto/clair/sombre)
 
 ### 4.3 Fonctionnalites assistant
 - [x] Prompts systeme personnalisables
-- [ ] Templates de conversation
-- [ ] Export des conversations
+- [x] Templates de conversation (CRUD)
+- [x] Picker de templates dans le chat
 
-### 4.4 Optimisations
-- [ ] Cache des reponses frequentes
-- [ ] Gestion memoire du modele
-- [ ] Mode hors-ligne complet
+### 4.4 Gestion d'erreurs
+- [x] Classes d'erreurs structurees (AppError, NetworkError, RagError)
+- [x] Messages utilisateur localises
+- [x] Retry automatique pour erreurs recuperables
+- [x] Logger applicatif (AppLogger)
+
+---
+
+## Phase 5 : RAG - Retrieval-Augmented Generation (COMPLETE)
+
+### 5.1 Service RAG (RagService)
+- [x] Telechargement embedder EmbeddingGemma 300M
+- [x] Extraction texte PDF (read_pdf_text)
+- [x] Chunking de documents (overlap)
+- [x] Generation d'embeddings
+- [x] Vector store SQLite local
+
+### 5.2 Fonctionnalites RAG
+- [x] Upload de documents PDF
+- [x] Indicateur de traitement (chunks progress)
+- [x] Activer/Desactiver documents
+- [x] Supprimer documents
+- [x] Recherche semantique (similarity search)
+- [x] Augmentation automatique des prompts avec contexte
+
+---
+
+## Phase 6 : Fonctionnalites Multimodales (COMPLETE)
+
+### 6.1 Support Vision
+- [x] Detection modeles multimodaux
+- [x] Picker d'image (camera + galerie)
+- [x] Preview image avant envoi
+- [x] Envoi image + texte au modele
+
+### 6.2 Text-to-Speech
+- [x] Service TTS (flutter_tts)
+- [x] Lecture vocale des reponses
+
+---
+
+## Phase 7 : Tests et Qualite (COMPLETE)
+
+### 7.1 Tests unitaires
+- [x] Tests ChatBloc (bloc_test)
+  - Initialize, Download, Load, SendMessage
+  - Conversation management (CRUD)
+  - RAG embedder states
+  - Stop generation, error handling
+- [x] Tests entites
+  - ChatMessage (copyWith, equality, hasImage, hasThinking)
+  - DocumentInfo (copyWith, equality)
+- [x] Tests ChatState
+  - isModelReady, isEmbedderReady
+  - estimatedTokensUsed, contextUsagePercent
+  - copyWith, clearError
+
+### 7.2 Tests d'integration E2E
+- [x] Infrastructure (integration_test/)
+- [x] Mocks complets (GemmaService, RagService, TtsService, SettingsService)
+- [x] TestApp avec DI in-memory
+- [x] Tests Navigation (HomePage, ModelSelection, Settings)
+- [x] Tests Chat (send message, attachment menu)
+- [x] Tests Conversations (create, load, history)
+- [x] Tests RAG (PDF option, embedder states)
+- [x] Tests Multimodal (image option)
+- [x] Tests Error Handling (download/load states)
+- [x] Tests Theme (switch light/dark/auto)
+- [x] Tests System Prompt (dialog)
+- [x] Tests Clear Conversation
+
+### 7.3 Tests de performance
+- [x] Chunking performance (large documents)
+- [x] Token estimation performance
+- [x] Chunk size/overlap impact
+
+### 7.4 Optimisations (A FAIRE)
+- [ ] Gestion memoire du modele (unload)
+- [ ] Cache des embeddings
 
 ---
 
@@ -153,6 +239,91 @@ flutter build apk
 
 # Build Windows
 flutter build windows
+
+# Tests unitaires
+flutter test
+
+# Tests unitaires avec coverage
+flutter test --coverage
+
+# Tests d'integration
+flutter test integration_test/
+
+# Tests specifiques
+flutter test test/blocs/chat_bloc_test.dart
+flutter test test/entities/
+flutter test test/services/
+flutter test test/performance/
+```
+
+---
+
+## Structure des fichiers cles
+
+```
+lib/
+├── main.dart                           # Point d'entree
+├── core/
+│   ├── di/injection.dart               # Configuration get_it
+│   ├── theme/app_theme.dart            # Themes Material 3
+│   ├── errors/app_errors.dart          # Classes d'erreurs
+│   └── utils/
+│       ├── app_logger.dart             # Logger
+│       └── connectivity_checker.dart   # Verif connexion
+├── data/
+│   └── datasources/
+│       ├── database.dart               # Base Drift
+│       ├── gemma_service.dart          # Service LLM
+│       ├── rag_service.dart            # Service RAG
+│       ├── tts_service.dart            # Text-to-Speech
+│       ├── settings_service.dart       # Parametres
+│       └── prompt_template_service.dart
+├── domain/
+│   └── entities/
+│       ├── chat_message.dart           # Message
+│       ├── conversation_info.dart      # Conversation
+│       ├── document_info.dart          # Document RAG
+│       └── gemma_model_info.dart       # Info modele
+└── presentation/
+    ├── blocs/
+    │   └── chat/
+    │       ├── chat_bloc.dart          # BLoC principal
+    │       ├── chat_event.dart         # Events
+    │       └── chat_state.dart         # States
+    ├── pages/
+    │   ├── home_page.dart              # Accueil
+    │   ├── model_selection_page.dart   # Selection modele
+    │   ├── chat_page.dart              # Chat
+    │   ├── conversations_page.dart     # Historique
+    │   ├── settings_page.dart          # Parametres
+    │   └── prompt_templates_page.dart  # Templates
+    └── widgets/
+        ├── chat_bubble.dart            # Bulle message
+        └── model_status_card.dart      # Status modele
+
+test/
+├── blocs/
+│   └── chat_bloc_test.dart             # Tests BLoC
+├── entities/
+│   ├── chat_message_test.dart          # Tests ChatMessage
+│   └── document_info_test.dart         # Tests DocumentInfo
+├── services/
+│   └── rag_service_test.dart           # Tests logique RAG
+├── performance/
+│   └── chunking_performance_test.dart  # Tests performance
+└── mocks/
+    ├── mock_gemma_service.dart         # Mock LLM
+    └── mock_rag_service.dart           # Mock RAG
+
+integration_test/
+├── app_test.dart                       # Tests E2E
+├── utils/
+│   └── test_app.dart                   # Config tests
+└── mocks/
+    ├── mock_gemma_service.dart         # Mock complet
+    ├── mock_rag_service.dart
+    ├── mock_tts_service.dart
+    └── mock_settings_service.dart
 ```
 
 ---
@@ -161,11 +332,16 @@ flutter build windows
 
 ### flutter_gemma
 - Version : 0.11.13
-- Modele : Gemma 3 1B IT (int4, f16, GPU optimized)
-- Taille : ~900 Mo
-- Supporte : Gemma, TinyLlama, Llama, Phi, DeepSeek, Qwen
+- Modeles supportes : Gemma2, Gemma3, TinyLlama, Llama, Phi, DeepSeek, Qwen
+- Taille modeles : 800 Mo - 2.5 Go selon version
 - Inference on-device (pas de serveur)
-- Compatible Android nativement, Windows/Web limite
+- Support vision pour modeles multimodaux
+
+### RAG (Retrieval-Augmented Generation)
+- Embedder : EmbeddingGemma 300M (~75 Mo)
+- Vector store : SQLite local
+- Chunking : 500 caracteres, overlap 50
+- Recherche : top-K similarity (threshold 0.5)
 
 ### Architecture BLoC
 - Separation claire UI / Logique metier
@@ -176,34 +352,3 @@ flutter build windows
 - Type-safe queries
 - Generation de code automatique
 - Migrations de schema supportees
-
----
-
-## Structure des fichiers cles
-
-```
-lib/
-├── main.dart                           # Point d'entree, init FlutterGemma
-├── core/
-│   ├── di/injection.dart              # Configuration get_it
-│   └── theme/app_theme.dart           # Themes Material 3
-├── data/
-│   └── datasources/
-│       ├── database.dart              # Base Drift
-│       └── gemma_service.dart         # Service LLM
-├── domain/
-│   └── entities/
-│       └── chat_message.dart          # Entite message
-└── presentation/
-    ├── blocs/
-    │   └── chat/
-    │       ├── chat_bloc.dart         # BLoC principal
-    │       ├── chat_event.dart        # Events
-    │       └── chat_state.dart        # States
-    ├── pages/
-    │   ├── home_page.dart             # Accueil
-    │   └── chat_page.dart             # Chat
-    └── widgets/
-        ├── chat_bubble.dart           # Bulle message
-        └── model_status_card.dart     # Status modele
-```
