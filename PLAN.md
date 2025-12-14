@@ -213,9 +213,15 @@ Application Flutter de chat IA avec LLM local (Gemma) et RAG (Retrieval-Augmente
 - [x] Token estimation performance
 - [x] Chunk size/overlap impact
 
-### 7.4 Optimisations (A FAIRE)
-- [ ] Gestion memoire du modele (unload)
-- [ ] Cache des embeddings
+### 7.4 Optimisations
+- [x] Gestion memoire du modele (unload)
+  - Bouton dans AppBar pour liberer manuellement la memoire
+  - Decharge automatique au retour arriere (PopScope)
+  - Event `ChatUnloadModel` dans le BLoC
+  - Libere ~500 Mo+ de RAM
+- [x] Estimation tokens images (~512 tokens/image)
+- [x] Fix cache images (ValueKey unique par message)
+- [x] Barre de progression telechargement visible sur ModelSelectionPage
 
 ---
 

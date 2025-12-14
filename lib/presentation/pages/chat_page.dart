@@ -208,6 +208,39 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     );
   }
 
+  void _showUnloadConfirmDialog(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.memory, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            const Text('Liberer la memoire ?'),
+          ],
+        ),
+        content: const Text(
+          'Le modele sera decharge de la memoire.\nVous devrez le recharger pour continuer a discuter.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () {
+              context.read<ChatBloc>().add(const ChatUnloadModel());
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Liberer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickPdf(BuildContext context) async {
     final bloc = context.read<ChatBloc>();
     final state = bloc.state;
@@ -583,8 +616,15 @@ class _ChatPageContentState extends State<_ChatPageContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          context.read<ChatBloc>().add(const ChatUnloadModel());
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
         title: BlocBuilder<ChatBloc, ChatState>(
           builder: (context, state) {
             final title = state.currentConversation != null
@@ -630,6 +670,11 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                     icon: const Icon(Icons.settings_suggest),
                     onPressed: _showSystemPromptDialog,
                     tooltip: 'Instructions systeme',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.memory),
+                    onPressed: () => _showUnloadConfirmDialog(context),
+                    tooltip: 'Liberer la memoire',
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
@@ -686,6 +731,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             ],
           );
         },
+      ),
       ),
     );
   }

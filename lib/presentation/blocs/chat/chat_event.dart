@@ -34,6 +34,10 @@ class ChatLoadModel extends ChatEvent {
   const ChatLoadModel();
 }
 
+class ChatUnloadModel extends ChatEvent {
+  const ChatUnloadModel();
+}
+
 class ChatSendMessage extends ChatEvent {
   final String message;
   final Uint8List? imageBytes;

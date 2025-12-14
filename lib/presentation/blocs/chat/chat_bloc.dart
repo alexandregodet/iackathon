@@ -29,6 +29,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatInitialize>(_onInitialize);
     on<ChatDownloadModel>(_onDownloadModel);
     on<ChatLoadModel>(_onLoadModel);
+    on<ChatUnloadModel>(_onUnloadModel);
     on<ChatSendMessage>(_onSendMessage);
     on<ChatStreamChunk>(_onStreamChunk);
     on<ChatStreamComplete>(_onStreamComplete);
@@ -132,6 +133,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         error: ModelError.loadingFailed(original: e, stack: stack),
       ));
     }
+  }
+
+  Future<void> _onUnloadModel(
+    ChatUnloadModel event,
+    Emitter<ChatState> emit,
+  ) async {
+    AppLogger.info('Dechargement du modele', 'ChatBloc');
+    await _gemmaService.unloadModel();
+    emit(state.copyWith(modelState: GemmaModelState.installed));
   }
 
   Future<void> _onSendMessage(
