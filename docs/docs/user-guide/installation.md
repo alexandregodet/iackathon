@@ -63,7 +63,7 @@ Pour les utilisateurs avances qui souhaitent compiler l'application :
 
 ### Prerequis
 
-- Flutter SDK 3.22 ou superieur
+- Flutter SDK 3.10 ou superieur
 - Android SDK
 - Git
 

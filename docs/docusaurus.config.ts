@@ -42,7 +42,6 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/iackathon-social-card.png',
     colorMode: {
       defaultMode: 'dark',
       respectPrefersColorScheme: true,

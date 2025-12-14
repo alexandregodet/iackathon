@@ -100,6 +100,28 @@ dart run build_runner build --delete-conflicting-outputs
 flutter test integration_test/
 ```
 
+## Documentation
+
+La documentation est construite avec [Docusaurus](https://docusaurus.io/).
+
+```bash
+cd docs
+
+# Installer les dependances
+npm install
+
+# Lancer en mode developpement (hot reload)
+npm start
+
+# Build pour production
+npm run build
+
+# Previsualiser le build de production
+npm run serve
+```
+
+La documentation sera accessible sur `http://localhost:3000` en mode developpement.
+
 ## Plateformes supportees
 
 | Plateforme | Support |

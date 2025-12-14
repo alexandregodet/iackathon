@@ -43,8 +43,8 @@ IAckathon est une application Flutter Android qui execute des modeles d'IA (Gemm
 
 | Technologie | Version | Usage |
 |-------------|---------|-------|
-| Flutter | 3.22+ | Framework UI multiplateforme |
-| Dart | 3.4+ | Langage de programmation |
+| Flutter | 3.10+ | Framework UI multiplateforme |
+| Dart | 3.10+ | Langage de programmation |
 
 ### Dependances principales
 
@@ -54,7 +54,7 @@ IAckathon est une application Flutter Android qui execute des modeles d'IA (Gemm
 | `flutter_bloc` | Gestion d'etat avec le pattern BLoC |
 | `get_it` + `injectable` | Injection de dependances |
 | `drift` | Base de donnees SQLite locale |
-| `pdf_text` | Extraction de texte PDF |
+| `read_pdf_text` | Extraction de texte PDF |
 
 ## Composants principaux
 

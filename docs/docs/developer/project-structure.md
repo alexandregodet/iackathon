@@ -17,6 +17,11 @@ iackathon/
 │   │   ├── di/                   # Injection de dependances
 │   │   │   ├── injection.dart
 │   │   │   └── injection.config.dart
+│   │   ├── errors/               # Gestion des erreurs
+│   │   │   └── app_errors.dart
+│   │   ├── utils/                # Utilitaires
+│   │   │   ├── app_logger.dart
+│   │   │   └── connectivity_checker.dart
 │   │   └── theme/                # Theme de l'application
 │   │       └── app_theme.dart
 │   │
@@ -33,6 +38,7 @@ iackathon/
 │   ├── domain/                   # Couche domaine
 │   │   └── entities/             # Entites metier
 │   │       ├── chat_message.dart
+│   │       ├── conversation_info.dart
 │   │       ├── document_info.dart
 │   │       └── gemma_model_info.dart
 │   │
@@ -53,8 +59,7 @@ iackathon/
 │   │   │
 │   │   └── widgets/              # Widgets reutilisables
 │   │       ├── chat_bubble.dart
-│   │       ├── model_card.dart
-│   │       └── document_picker.dart
+│   │       └── model_status_card.dart
 │   │
 │   └── main.dart                 # Point d'entree
 │
@@ -117,6 +122,26 @@ Future<void> resetGetIt() async {
   await getIt.reset();
 }
 ```
+
+#### `/lib/core/errors/`
+
+Gestion centralisee des erreurs :
+
+```dart
+// app_errors.dart
+class AppError implements Exception {
+  final String message;
+  final String? code;
+  // ...
+}
+```
+
+#### `/lib/core/utils/`
+
+Utilitaires de l'application :
+
+- `app_logger.dart` : Logger centralise pour le debug
+- `connectivity_checker.dart` : Verification de la connectivite reseau
 
 #### `/lib/core/theme/`
 
