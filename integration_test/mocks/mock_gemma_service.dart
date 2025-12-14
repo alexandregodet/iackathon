@@ -77,8 +77,8 @@ class MockGemmaService extends Mock implements GemmaService {
   @override
   Future<void> checkModelStatus(GemmaModelInfo modelInfo) async {
     _currentModel = modelInfo;
-    // If already ready, stay ready. Otherwise simulate model is installed.
-    if (_state != GemmaModelState.ready) {
+    // If already ready or notInstalled, preserve state. Otherwise simulate installed.
+    if (_state != GemmaModelState.ready && _state != GemmaModelState.notInstalled) {
       _state = GemmaModelState.installed;
       _stateController.add(_state);
     }
