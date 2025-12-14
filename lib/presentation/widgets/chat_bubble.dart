@@ -123,8 +123,10 @@ class _ChatBubbleState extends State<ChatBubble> {
               borderRadius: BorderRadius.circular(4),
               child: Image.memory(
                 widget.message.imageBytes!,
+                key: ValueKey('img_${widget.message.id}'),
                 width: 200,
                 fit: BoxFit.cover,
+                gaplessPlayback: false,
               ),
             ),
             if (widget.message.content.isNotEmpty) const SizedBox(height: 10),

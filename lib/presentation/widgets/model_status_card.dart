@@ -121,20 +121,33 @@ class ModelStatusCard extends StatelessWidget {
       case GemmaModelState.loading:
         subtitle = 'Preparation du modele...';
       case GemmaModelState.error:
-        subtitle = state.error ?? 'Une erreur est survenue';
+        subtitle = state.errorMessage ?? 'Une erreur est survenue';
       default:
         subtitle = '';
     }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final isError = state.modelState == GemmaModelState.error;
 
     return Column(
       children: [
         Text(
           subtitle,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: isError ? colorScheme.error : colorScheme.onSurfaceVariant,
               ),
           textAlign: TextAlign.center,
         ),
+        if (isError && state.isErrorRecoverable) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Appuyez sur Reessayer pour continuer',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
         if (model != null && state.modelState == GemmaModelState.notInstalled) ...[
           const SizedBox(height: 12),
           Wrap(

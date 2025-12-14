@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'model_selection_page.dart';
@@ -12,19 +14,23 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool _showCursor = true;
+  Timer? _cursorTimer;
 
   @override
   void initState() {
     super.initState();
-    // Blinking cursor effect
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(milliseconds: 530));
+    // Blinking cursor effect with cancelable timer
+    _cursorTimer = Timer.periodic(const Duration(milliseconds: 530), (_) {
       if (mounted) {
         setState(() => _showCursor = !_showCursor);
-        return true;
       }
-      return false;
     });
+  }
+
+  @override
+  void dispose() {
+    _cursorTimer?.cancel();
+    super.dispose();
   }
 
   @override

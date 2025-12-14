@@ -1,10 +1,72 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../core/di/injection.dart';
+import '../../data/datasources/gemma_service.dart';
 import '../../domain/entities/gemma_model_info.dart';
 import 'chat_page.dart';
 
-class ModelSelectionPage extends StatelessWidget {
+class ModelSelectionPage extends StatefulWidget {
   const ModelSelectionPage({super.key});
+
+  @override
+  State<ModelSelectionPage> createState() => _ModelSelectionPageState();
+}
+
+class _ModelSelectionPageState extends State<ModelSelectionPage> {
+  late final GemmaService _gemmaService;
+  late final StreamSubscription<GemmaModelState> _stateSubscription;
+  late final StreamSubscription<double> _progressSubscription;
+
+  GemmaModelState _modelState = GemmaModelState.notInstalled;
+  double _downloadProgress = 0.0;
+  GemmaModelInfo? _currentModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _gemmaService = getIt<GemmaService>();
+
+    // Initialize with current values (no setState needed in initState)
+    _modelState = _gemmaService.state;
+    _downloadProgress = _gemmaService.downloadProgress;
+    _currentModel = _gemmaService.currentModel;
+
+    _stateSubscription = _gemmaService.stateStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          _modelState = state;
+          _currentModel = _gemmaService.currentModel;
+        });
+      }
+    });
+
+    _progressSubscription = _gemmaService.progressStream.listen((progress) {
+      if (mounted) {
+        setState(() {
+          _downloadProgress = progress;
+        });
+      }
+    });
+  }
+
+  void _refreshState() {
+    if (mounted) {
+      setState(() {
+        _modelState = _gemmaService.state;
+        _downloadProgress = _gemmaService.downloadProgress;
+        _currentModel = _gemmaService.currentModel;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _stateSubscription.cancel();
+    _progressSubscription.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +105,27 @@ class ModelSelectionPage extends StatelessWidget {
           _buildSectionHeader(context, colorScheme, '# MULTIMODAL'),
           const SizedBox(height: 12),
           ...AvailableModels.multimodal.map(
-            (model) => _ModelCard(model: model, isMultimodal: true),
+            (model) => _ModelCard(
+              model: model,
+              isMultimodal: true,
+              isDownloading: _modelState == GemmaModelState.downloading &&
+                  _currentModel?.filename == model.filename,
+              downloadProgress: _downloadProgress,
+              onNavigationReturn: _refreshState,
+            ),
           ),
           const SizedBox(height: 24),
           _buildSectionHeader(context, colorScheme, '# TEXT_ONLY'),
           const SizedBox(height: 12),
           ...AvailableModels.textOnly.map(
-            (model) => _ModelCard(model: model, isMultimodal: false),
+            (model) => _ModelCard(
+              model: model,
+              isMultimodal: false,
+              isDownloading: _modelState == GemmaModelState.downloading &&
+                  _currentModel?.filename == model.filename,
+              downloadProgress: _downloadProgress,
+              onNavigationReturn: _refreshState,
+            ),
           ),
           const SizedBox(height: 40),
         ],
@@ -108,10 +184,16 @@ class ModelSelectionPage extends StatelessWidget {
 class _ModelCard extends StatelessWidget {
   final GemmaModelInfo model;
   final bool isMultimodal;
+  final bool isDownloading;
+  final double downloadProgress;
+  final VoidCallback? onNavigationReturn;
 
   const _ModelCard({
     required this.model,
     required this.isMultimodal,
+    this.isDownloading = false,
+    this.downloadProgress = 0.0,
+    this.onNavigationReturn,
   });
 
   @override
@@ -127,15 +209,18 @@ class _ModelCard extends StatelessWidget {
             : colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: isDark
-              ? colorScheme.primary.withValues(alpha: 0.3)
-              : colorScheme.outlineVariant,
+          color: isDownloading
+              ? colorScheme.tertiary
+              : isDark
+                  ? colorScheme.primary.withValues(alpha: 0.3)
+                  : colorScheme.outlineVariant,
+          width: isDownloading ? 2 : 1,
         ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _onSelectModel(context),
+          onTap: isDownloading ? null : () => _onSelectModel(context),
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -232,11 +317,56 @@ class _ModelCard extends StatelessWidget {
                       ),
                   ],
                 ),
+                // Download progress
+                if (isDownloading) ...[
+                  const SizedBox(height: 14),
+                  _buildDownloadProgress(context, colorScheme),
+                ],
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDownloadProgress(BuildContext context, ColorScheme colorScheme) {
+    final percentage = (downloadProgress * 100).toStringAsFixed(1);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.tertiary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'downloading: $percentage%',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.tertiary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: LinearProgressIndicator(
+            value: downloadProgress,
+            minHeight: 4,
+            backgroundColor: colorScheme.tertiary.withValues(alpha: 0.2),
+            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.tertiary),
+          ),
+        ),
+      ],
     );
   }
 
@@ -338,6 +468,9 @@ class _ModelCard extends StatelessWidget {
           huggingFaceToken: token,
         ),
       ),
-    );
+    ).then((_) {
+      // Refresh state when returning from ChatPage
+      onNavigationReturn?.call();
+    });
   }
 }

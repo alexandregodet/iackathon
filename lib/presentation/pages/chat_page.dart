@@ -294,10 +294,10 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                           'Modele telecharge. Appuyez sur Charger pour continuer.',
                         ),
                       ],
-                      if (state.ragError != null) ...[
+                      if (state.hasRagError) ...[
                         const SizedBox(height: 8),
                         Text(
-                          state.ragError!,
+                          state.ragErrorMessage!,
                           style: TextStyle(color: colorScheme.error),
                         ),
                       ],
@@ -517,6 +517,58 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     });
   }
 
+  void _showErrorSnackBar(BuildContext context, ChatState state) {
+    if (state.error == null) return;
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final error = state.error!;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              error.isRecoverable ? Icons.warning_amber_rounded : Icons.error_rounded,
+              color: colorScheme.onError,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                error.userMessage,
+                style: TextStyle(color: colorScheme.onError),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: colorScheme.error,
+        duration: Duration(seconds: error.isRecoverable ? 5 : 8),
+        behavior: SnackBarBehavior.floating,
+        action: error.isRecoverable
+            ? SnackBarAction(
+                label: 'Reessayer',
+                textColor: colorScheme.onError,
+                onPressed: () => _handleRetry(context, error),
+              )
+            : null,
+      ),
+    );
+  }
+
+  void _handleRetry(BuildContext context, dynamic error) {
+    final bloc = context.read<ChatBloc>();
+    final errorCode = error.code as String;
+
+    if (errorCode.startsWith('NETWORK_') || errorCode == 'MODEL_LOADING_FAILED') {
+      if (bloc.state.modelState == GemmaModelState.error) {
+        bloc.add(ChatDownloadModel(huggingFaceToken: widget.huggingFaceToken));
+      }
+    } else if (errorCode == 'MODEL_NOT_LOADED') {
+      bloc.add(const ChatLoadModel());
+    }
+  }
+
   void _sendMessage(BuildContext context) {
     final text = _controller.text.trim();
     if (text.isEmpty && _selectedImageBytes == null) return;
@@ -593,14 +645,14 @@ class _ChatPageContentState extends State<_ChatPageContent> {
         ],
       ),
       body: BlocConsumer<ChatBloc, ChatState>(
+        listenWhen: (previous, current) {
+          // Seulement ecouter les nouvelles erreurs
+          return (current.hasError && previous.error != current.error) ||
+              (current.isGenerating && !previous.isGenerating);
+        },
         listener: (context, state) {
-          if (state.error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.error!),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
+          if (state.hasError) {
+            _showErrorSnackBar(context, state);
           }
           if (state.isGenerating) {
             _scrollToBottom();
@@ -1229,9 +1281,11 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                   borderRadius: BorderRadius.circular(3),
                   child: Image.memory(
                     _selectedImageBytes!,
+                    key: ValueKey(_selectedImageBytes.hashCode),
                     height: 80,
                     width: 80,
                     fit: BoxFit.cover,
+                    gaplessPlayback: false,
                   ),
                 ),
               ),
