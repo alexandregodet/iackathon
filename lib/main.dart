@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'core/di/injection.dart';
 import 'core/theme/app_theme.dart';
@@ -9,6 +10,10 @@ import 'presentation/pages/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Disable runtime font fetching - use system fallback fonts when offline
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   await FlutterGemma.initialize();
   await configureDependencies();
   await getIt<SettingsService>().init();

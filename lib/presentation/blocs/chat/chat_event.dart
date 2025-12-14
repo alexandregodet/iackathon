@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
 
+import '../../../core/errors/app_errors.dart';
 import '../../../domain/entities/gemma_model_info.dart';
 
 abstract class ChatEvent extends Equatable {
@@ -208,7 +209,7 @@ class ChatStopGeneration extends ChatEvent {
 }
 
 class ChatStreamError extends ChatEvent {
-  final String error;
+  final AppError error;
 
   const ChatStreamError(this.error);
 

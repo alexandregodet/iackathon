@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../core/errors/app_errors.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
 import '../../../domain/entities/chat_message.dart';
@@ -13,7 +14,7 @@ class ChatState extends Equatable {
   final double downloadProgress;
   final List<ChatMessage> messages;
   final bool isGenerating;
-  final String? error;
+  final AppError? error;
 
   // Conversation State
   final List<ConversationInfo> conversations;
@@ -27,11 +28,19 @@ class ChatState extends Equatable {
   final bool isProcessingDocument;
   final int documentProcessingCurrent;
   final int documentProcessingTotal;
-  final String? ragError;
+  final AppError? ragError;
 
   // Thinking State
   final bool isThinking;
   final String currentThinkingContent;
+
+  // Error helpers
+  bool get hasError => error != null;
+  bool get hasRagError => ragError != null;
+  String? get errorMessage => error?.userMessage;
+  String? get ragErrorMessage => ragError?.userMessage;
+  bool get isErrorRecoverable => error?.isRecoverable ?? true;
+  bool get isRagErrorRecoverable => ragError?.isRecoverable ?? true;
 
   const ChatState({
     this.modelState = GemmaModelState.notInstalled,
@@ -87,16 +96,23 @@ class ChatState extends Equatable {
 
   // Context usage getters
   static const int maxContextTokens = 8192;
+  // Estimation des tokens par image (basé sur résolution 1024x1024)
+  static const int tokensPerImage = 512;
 
   int get estimatedTokensUsed {
     int totalChars = 0;
+    int imageCount = 0;
     for (final msg in messages) {
       totalChars += msg.content.length;
       if (msg.thinkingContent != null) {
         totalChars += msg.thinkingContent!.length;
       }
+      if (msg.hasImage) {
+        imageCount++;
+      }
     }
-    return (totalChars / 4).ceil();
+    // ~4 caractères par token + tokens pour les images
+    return (totalChars / 4).ceil() + (imageCount * tokensPerImage);
   }
 
   double get contextUsagePercent =>
@@ -110,7 +126,8 @@ class ChatState extends Equatable {
     double? downloadProgress,
     List<ChatMessage>? messages,
     bool? isGenerating,
-    String? error,
+    AppError? error,
+    bool clearError = false,
     // Conversation
     List<ConversationInfo>? conversations,
     int? currentConversationId,
@@ -123,7 +140,8 @@ class ChatState extends Equatable {
     bool? isProcessingDocument,
     int? documentProcessingCurrent,
     int? documentProcessingTotal,
-    String? ragError,
+    AppError? ragError,
+    bool clearRagError = false,
     // Thinking
     bool? isThinking,
     String? currentThinkingContent,
@@ -134,7 +152,7 @@ class ChatState extends Equatable {
       downloadProgress: downloadProgress ?? this.downloadProgress,
       messages: messages ?? this.messages,
       isGenerating: isGenerating ?? this.isGenerating,
-      error: error,
+      error: clearError ? null : (error ?? this.error),
       // Conversation
       conversations: conversations ?? this.conversations,
       currentConversationId: clearCurrentConversation
@@ -152,7 +170,7 @@ class ChatState extends Equatable {
           documentProcessingCurrent ?? this.documentProcessingCurrent,
       documentProcessingTotal:
           documentProcessingTotal ?? this.documentProcessingTotal,
-      ragError: ragError,
+      ragError: clearRagError ? null : (ragError ?? this.ragError),
       // Thinking
       isThinking: isThinking ?? this.isThinking,
       currentThinkingContent:

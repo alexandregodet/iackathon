@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../core/errors/app_errors.dart';
+import '../../core/utils/app_logger.dart';
+import '../../core/utils/connectivity_checker.dart';
 import '../../domain/entities/gemma_model_info.dart';
 
 enum GemmaModelState {
@@ -74,6 +78,19 @@ class GemmaService {
     void Function(double)? onProgress,
     String? token,
   }) async {
+    AppLogger.info('Demarrage du telechargement de ${modelInfo.name}', 'GemmaService');
+
+    // Verifier la connectivite avant de telecharger
+    final hasConnection = await ConnectivityChecker.hasConnection();
+    if (!hasConnection) {
+      final error = NetworkError.noConnection();
+      AppLogger.logAppError(error, 'GemmaService');
+      _state = GemmaModelState.error;
+      _errorMessage = error.userMessage;
+      _stateController.add(_state);
+      throw error;
+    }
+
     try {
       _currentModel = modelInfo;
       _state = GemmaModelState.downloading;
@@ -97,24 +114,38 @@ class GemmaService {
 
       await builder.install();
 
+      AppLogger.info('Telechargement termine pour ${modelInfo.name}', 'GemmaService');
       _state = GemmaModelState.installed;
       _stateController.add(_state);
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('Echec du telechargement', tag: 'GemmaService', error: e, stackTrace: stack);
       _state = GemmaModelState.error;
-      _errorMessage = e.toString();
-      _stateController.add(_state);
-      rethrow;
+
+      if (e is AppError) {
+        _errorMessage = e.userMessage;
+        rethrow;
+      }
+
+      final error = NetworkError.downloadFailed(
+        modelName: modelInfo.name,
+        original: e,
+        stack: stack,
+      );
+      _errorMessage = error.userMessage;
+      throw error;
     }
   }
 
   Future<void> loadModel([GemmaModelInfo? modelInfo]) async {
+    AppLogger.info('Chargement du modele en memoire', 'GemmaService');
+
     try {
       if (modelInfo != null) {
         _currentModel = modelInfo;
       }
 
       if (_currentModel == null) {
-        throw Exception('No model selected');
+        throw ModelError.notSelected();
       }
 
       _state = GemmaModelState.loading;
@@ -132,20 +163,35 @@ class GemmaService {
         isThinking: _currentModel!.supportsThinking,
       );
 
+      AppLogger.info('Modele charge avec succes', 'GemmaService');
       _state = GemmaModelState.ready;
       _stateController.add(_state);
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('Echec du chargement du modele', tag: 'GemmaService', error: e, stackTrace: stack);
       _state = GemmaModelState.error;
-      _errorMessage = e.toString();
-      _stateController.add(_state);
-      rethrow;
+
+      if (e is AppError) {
+        _errorMessage = e.userMessage;
+        rethrow;
+      }
+
+      final error = ModelError.loadingFailed(original: e, stack: stack);
+      _errorMessage = error.userMessage;
+      throw error;
     }
   }
 
   Stream<String> generateResponse(String userMessage, {Uint8List? imageBytes}) async* {
     if (_chat == null || !isReady) {
-      throw Exception('Model not ready');
+      final error = ModelError.notLoaded();
+      AppLogger.logAppError(error, 'GemmaService');
+      throw error;
     }
+
+    AppLogger.debug(
+      'Generation de reponse pour: ${userMessage.substring(0, min(50, userMessage.length))}...',
+      'GemmaService',
+    );
 
     String finalMessage = userMessage;
     if (_systemPrompt != null && !_systemPromptSent) {
@@ -153,20 +199,27 @@ class GemmaService {
       _systemPromptSent = true;
     }
 
-    if (imageBytes != null && isMultimodal) {
-      await _chat!.addQuery(Message.withImage(
-        text: finalMessage,
-        imageBytes: imageBytes,
-        isUser: true,
-      ));
-    } else {
-      await _chat!.addQuery(Message.text(text: finalMessage, isUser: true));
-    }
-
-    await for (final response in _chat!.generateChatResponseAsync()) {
-      if (response is TextResponse) {
-        yield response.token;
+    try {
+      if (imageBytes != null && isMultimodal) {
+        await _chat!.addQuery(Message.withImage(
+          text: finalMessage,
+          imageBytes: imageBytes,
+          isUser: true,
+        ));
+      } else {
+        await _chat!.addQuery(Message.text(text: finalMessage, isUser: true));
       }
+
+      await for (final response in _chat!.generateChatResponseAsync()) {
+        if (response is TextResponse) {
+          yield response.token;
+        }
+      }
+      AppLogger.debug('Generation terminee', 'GemmaService');
+    } catch (e, stack) {
+      AppLogger.error('Erreur pendant la generation', tag: 'GemmaService', error: e, stackTrace: stack);
+      if (e is AppError) rethrow;
+      throw ModelError.inferenceError(original: e, stack: stack);
     }
   }
 
@@ -175,8 +228,15 @@ class GemmaService {
     Uint8List? imageBytes,
   }) async* {
     if (_chat == null || !isReady) {
-      throw Exception('Model not ready');
+      final error = ModelError.notLoaded();
+      AppLogger.logAppError(error, 'GemmaService');
+      throw error;
     }
+
+    AppLogger.debug(
+      'Generation avec reflexion pour: ${userMessage.substring(0, min(50, userMessage.length))}...',
+      'GemmaService',
+    );
 
     String finalMessage = userMessage;
     if (_systemPrompt != null && !_systemPromptSent) {
@@ -184,42 +244,57 @@ class GemmaService {
       _systemPromptSent = true;
     }
 
-    if (imageBytes != null && isMultimodal) {
-      await _chat!.addQuery(Message.withImage(
-        text: finalMessage,
-        imageBytes: imageBytes,
-        isUser: true,
-      ));
-    } else {
-      await _chat!.addQuery(Message.text(text: finalMessage, isUser: true));
-    }
-
-    await for (final response in _chat!.generateChatResponseAsync()) {
-      if (response is ThinkingResponse) {
-        yield GemmaStreamResponse(
-          thinkingChunk: response.content,
-          isThinkingPhase: true,
-        );
-      } else if (response is TextResponse) {
-        yield GemmaStreamResponse(
-          textChunk: response.token,
-          isThinkingPhase: false,
-        );
+    try {
+      if (imageBytes != null && isMultimodal) {
+        await _chat!.addQuery(Message.withImage(
+          text: finalMessage,
+          imageBytes: imageBytes,
+          isUser: true,
+        ));
+      } else {
+        await _chat!.addQuery(Message.text(text: finalMessage, isUser: true));
       }
+
+      await for (final response in _chat!.generateChatResponseAsync()) {
+        if (response is ThinkingResponse) {
+          yield GemmaStreamResponse(
+            thinkingChunk: response.content,
+            isThinkingPhase: true,
+          );
+        } else if (response is TextResponse) {
+          yield GemmaStreamResponse(
+            textChunk: response.token,
+            isThinkingPhase: false,
+          );
+        }
+      }
+      AppLogger.debug('Generation avec reflexion terminee', 'GemmaService');
+    } catch (e, stack) {
+      AppLogger.error('Erreur pendant la generation', tag: 'GemmaService', error: e, stackTrace: stack);
+      if (e is AppError) rethrow;
+      throw ModelError.inferenceError(original: e, stack: stack);
     }
   }
 
   Future<String> generateResponseSync(String userMessage) async {
     if (_chat == null || !isReady) {
-      throw Exception('Model not ready');
+      final error = ModelError.notLoaded();
+      AppLogger.logAppError(error, 'GemmaService');
+      throw error;
     }
 
-    await _chat!.addQuery(Message.text(text: userMessage, isUser: true));
-    final response = await _chat!.generateChatResponse();
-    if (response is TextResponse) {
-      return response.token;
+    try {
+      await _chat!.addQuery(Message.text(text: userMessage, isUser: true));
+      final response = await _chat!.generateChatResponse();
+      if (response is TextResponse) {
+        return response.token;
+      }
+      return '';
+    } catch (e, stack) {
+      AppLogger.error('Erreur pendant la generation sync', tag: 'GemmaService', error: e, stackTrace: stack);
+      if (e is AppError) rethrow;
+      throw ModelError.inferenceError(original: e, stack: stack);
     }
-    return '';
   }
 
   Future<void> clearChat() async {

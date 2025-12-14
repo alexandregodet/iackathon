@@ -1,11 +1,14 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:read_pdf_text/read_pdf_text.dart';
+
+import '../../core/errors/app_errors.dart';
+import '../../core/utils/app_logger.dart';
+import '../../core/utils/connectivity_checker.dart';
 
 enum EmbedderState {
   notInstalled,
@@ -72,6 +75,19 @@ class RagService {
   Future<void> downloadEmbedder({
     void Function(double)? onProgress,
   }) async {
+    AppLogger.info('Demarrage du telechargement de l\'embedder', 'RagService');
+
+    // Verifier la connectivite avant de telecharger
+    final hasConnection = await ConnectivityChecker.hasConnection();
+    if (!hasConnection) {
+      final error = NetworkError.noConnection();
+      AppLogger.logAppError(error, 'RagService');
+      _state = EmbedderState.error;
+      _errorMessage = error.userMessage;
+      _stateController.add(_state);
+      throw error;
+    }
+
     try {
       _state = EmbedderState.downloading;
       _downloadProgress = 0.0;
@@ -92,17 +108,31 @@ class RagService {
           })
           .install();
 
+      AppLogger.info('Telechargement de l\'embedder termine', 'RagService');
       _state = EmbedderState.installed;
       _stateController.add(_state);
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('Echec du telechargement de l\'embedder', tag: 'RagService', error: e, stackTrace: stack);
       _state = EmbedderState.error;
-      _errorMessage = e.toString();
-      _stateController.add(_state);
-      rethrow;
+
+      if (e is AppError) {
+        _errorMessage = e.userMessage;
+        rethrow;
+      }
+
+      final error = NetworkError.downloadFailed(
+        modelName: 'embedder',
+        original: e,
+        stack: stack,
+      );
+      _errorMessage = error.userMessage;
+      throw error;
     }
   }
 
   Future<void> loadEmbedder() async {
+    AppLogger.info('Chargement de l\'embedder en memoire', 'RagService');
+
     try {
       _state = EmbedderState.loading;
       _stateController.add(_state);
@@ -110,13 +140,21 @@ class RagService {
       _embedder = await FlutterGemma.getActiveEmbedder();
       await _initializeVectorStore();
 
+      AppLogger.info('Embedder charge avec succes', 'RagService');
       _state = EmbedderState.ready;
       _stateController.add(_state);
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('Echec du chargement de l\'embedder', tag: 'RagService', error: e, stackTrace: stack);
       _state = EmbedderState.error;
-      _errorMessage = e.toString();
-      _stateController.add(_state);
-      rethrow;
+
+      if (e is AppError) {
+        _errorMessage = e.userMessage;
+        rethrow;
+      }
+
+      final error = RagError.embedderNotLoaded(stack: stack);
+      _errorMessage = error.userMessage;
+      throw error;
     }
   }
 
@@ -146,12 +184,16 @@ class RagService {
   // ============== PDF PROCESSING ==============
 
   Future<String> extractTextFromPdf(String filePath) async {
+    AppLogger.debug('Extraction du texte PDF: $filePath', 'RagService');
+
     try {
       final text = await ReadPdfText.getPDFtext(filePath);
+      AppLogger.debug('Extraction terminee: ${text.length} caracteres', 'RagService');
       return text;
-    } catch (e) {
-      debugPrint('Error extracting PDF text: $e');
-      rethrow;
+    } catch (e, stack) {
+      AppLogger.error('Erreur extraction PDF', tag: 'RagService', error: e, stackTrace: stack);
+      final fileName = filePath.split('/').last.split('\\').last;
+      throw RagError.pdfExtractionFailed(fileName: fileName, original: e, stack: stack);
     }
   }
 
@@ -209,18 +251,28 @@ class RagService {
 
   Future<List<double>> generateEmbedding(String text) async {
     if (_embedder == null) {
-      throw Exception('Embedder not loaded');
+      final error = RagError.embedderNotLoaded();
+      AppLogger.logAppError(error, 'RagService');
+      throw error;
     }
 
-    final embedding = await _embedder!.generateEmbedding(text);
-    return embedding;
+    try {
+      final embedding = await _embedder!.generateEmbedding(text);
+      return embedding;
+    } catch (e, stack) {
+      AppLogger.error('Erreur generation embedding', tag: 'RagService', error: e, stackTrace: stack);
+      if (e is AppError) rethrow;
+      throw RagError.embeddingFailed(original: e, stack: stack);
+    }
   }
 
   // ============== VECTOR STORE OPERATIONS ==============
 
   Future<void> addChunkToVectorStore(DocumentChunk chunk) async {
     if (!isReady) {
-      throw Exception('RAG service not ready');
+      final error = RagError.serviceNotReady();
+      AppLogger.logAppError(error, 'RagService');
+      throw error;
     }
 
     final embedding = await generateEmbedding(chunk.content);
@@ -249,7 +301,9 @@ class RagService {
     double threshold = 0.5,
   }) async {
     if (!isReady) {
-      throw Exception('RAG service not ready');
+      final error = RagError.serviceNotReady();
+      AppLogger.logAppError(error, 'RagService');
+      throw error;
     }
 
     final results = await FlutterGemmaPlugin.instance.searchSimilar(
@@ -258,6 +312,7 @@ class RagService {
       threshold: threshold,
     );
 
+    AppLogger.debug('Recherche similaire: ${results.length} resultats', 'RagService');
     return results.map((r) => r.content).toList();
   }
 

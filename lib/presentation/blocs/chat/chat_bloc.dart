@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../../core/errors/app_errors.dart';
+import '../../../core/utils/app_logger.dart';
 import '../../../data/datasources/database.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
@@ -74,10 +76,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     if (state.selectedModel == null) return;
 
+    AppLogger.info('Demarrage du telechargement du modele', 'ChatBloc');
+
     try {
       emit(state.copyWith(
         modelState: GemmaModelState.downloading,
         downloadProgress: 0.0,
+        clearError: true,
       ));
 
       await _gemmaService.downloadModel(
@@ -89,10 +94,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       );
 
       emit(state.copyWith(modelState: GemmaModelState.installed));
-    } catch (e) {
+    } on AppError catch (e) {
+      AppLogger.logAppError(e, 'ChatBloc');
       emit(state.copyWith(
         modelState: GemmaModelState.error,
-        error: e.toString(),
+        error: e,
+      ));
+    } catch (e, stack) {
+      AppLogger.error('Erreur inattendue telechargement', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(
+        modelState: GemmaModelState.error,
+        error: NetworkError.downloadFailed(original: e, stack: stack),
       ));
     }
   }
@@ -101,14 +113,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ChatLoadModel event,
     Emitter<ChatState> emit,
   ) async {
+    AppLogger.info('Chargement du modele', 'ChatBloc');
+
     try {
-      emit(state.copyWith(modelState: GemmaModelState.loading));
+      emit(state.copyWith(modelState: GemmaModelState.loading, clearError: true));
       await _gemmaService.loadModel();
       emit(state.copyWith(modelState: GemmaModelState.ready));
-    } catch (e) {
+    } on AppError catch (e) {
+      AppLogger.logAppError(e, 'ChatBloc');
       emit(state.copyWith(
         modelState: GemmaModelState.error,
-        error: e.toString(),
+        error: e,
+      ));
+    } catch (e, stack) {
+      AppLogger.error('Erreur inattendue chargement', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(
+        modelState: GemmaModelState.error,
+        error: ModelError.loadingFailed(original: e, stack: stack),
       ));
     }
   }
@@ -117,7 +138,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ChatSendMessage event,
     Emitter<ChatState> emit,
   ) async {
-    if (!_gemmaService.isReady || state.isGenerating) return;
+    // Verifier que le modele est pret
+    if (!_gemmaService.isReady) {
+      AppLogger.warning('Tentative d\'envoi sans modele charge', 'ChatBloc');
+      emit(state.copyWith(error: ModelError.notLoaded()));
+      return;
+    }
+
+    if (state.isGenerating) return;
+
+    AppLogger.debug('Envoi du message', 'ChatBloc');
 
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -138,6 +168,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(state.copyWith(
       messages: [...state.messages, userMessage, assistantMessage],
       isGenerating: true,
+      clearError: true,
     ));
 
     // Save user message to database if we have a conversation
@@ -177,7 +208,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             add(const ChatThinkingComplete());
             add(const ChatStreamComplete());
           },
-          onError: (e) => add(ChatStreamError(e.toString())),
+          onError: (e) => add(ChatStreamError(e is AppError ? e : ModelError.inferenceError(original: e))),
         );
       } else {
         _responseSubscription = _gemmaService
@@ -185,13 +216,20 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             .listen(
           (chunk) => add(ChatStreamChunk(chunk)),
           onDone: () => add(const ChatStreamComplete()),
-          onError: (e) => add(ChatStreamError(e.toString())),
+          onError: (e) => add(ChatStreamError(e is AppError ? e : ModelError.inferenceError(original: e))),
         );
       }
-    } catch (e) {
+    } on AppError catch (e) {
+      AppLogger.logAppError(e, 'ChatBloc');
       emit(state.copyWith(
         isGenerating: false,
-        error: e.toString(),
+        error: e,
+      ));
+    } catch (e, stack) {
+      AppLogger.error('Erreur envoi message', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(
+        isGenerating: false,
+        error: ModelError.inferenceError(original: e, stack: stack),
       ));
     }
   }
@@ -304,10 +342,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ChatDownloadEmbedder event,
     Emitter<ChatState> emit,
   ) async {
+    AppLogger.info('Telechargement de l\'embedder', 'ChatBloc');
+
     try {
       emit(state.copyWith(
         embedderState: EmbedderState.downloading,
         embedderDownloadProgress: 0.0,
+        clearRagError: true,
       ));
 
       await _ragService.downloadEmbedder(
@@ -317,10 +358,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       );
 
       emit(state.copyWith(embedderState: EmbedderState.installed));
-    } catch (e) {
+    } on AppError catch (e) {
+      AppLogger.logAppError(e, 'ChatBloc');
       emit(state.copyWith(
         embedderState: EmbedderState.error,
-        ragError: e.toString(),
+        ragError: e,
+      ));
+    } catch (e, stack) {
+      AppLogger.error('Erreur telechargement embedder', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(
+        embedderState: EmbedderState.error,
+        ragError: NetworkError.downloadFailed(modelName: 'embedder', original: e, stack: stack),
       ));
     }
   }
@@ -329,14 +377,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ChatLoadEmbedder event,
     Emitter<ChatState> emit,
   ) async {
+    AppLogger.info('Chargement de l\'embedder', 'ChatBloc');
+
     try {
-      emit(state.copyWith(embedderState: EmbedderState.loading));
+      emit(state.copyWith(embedderState: EmbedderState.loading, clearRagError: true));
       await _ragService.loadEmbedder();
       emit(state.copyWith(embedderState: EmbedderState.ready));
-    } catch (e) {
+    } on AppError catch (e) {
+      AppLogger.logAppError(e, 'ChatBloc');
       emit(state.copyWith(
         embedderState: EmbedderState.error,
-        ragError: e.toString(),
+        ragError: e,
+      ));
+    } catch (e, stack) {
+      AppLogger.error('Erreur chargement embedder', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(
+        embedderState: EmbedderState.error,
+        ragError: RagError.embedderNotLoaded(stack: stack),
       ));
     }
   }
@@ -359,8 +416,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
               ))
           .toList();
       emit(state.copyWith(documents: documentInfos));
-    } catch (e) {
-      emit(state.copyWith(ragError: e.toString()));
+    } catch (e, stack) {
+      AppLogger.error('Erreur chargement documents', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(ragError: StorageError.databaseError(original: e, stack: stack)));
     }
   }
 
@@ -368,11 +426,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ChatDocumentSelected event,
     Emitter<ChatState> emit,
   ) async {
+    AppLogger.info('Traitement du document: ${event.fileName}', 'ChatBloc');
+
     try {
       emit(state.copyWith(
         isProcessingDocument: true,
         documentProcessingCurrent: 0,
         documentProcessingTotal: 0,
+        clearRagError: true,
       ));
 
       // Extract text from PDF
@@ -409,11 +470,19 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       // Reload documents list
       add(const ChatLoadDocuments());
 
+      AppLogger.info('Document traite: ${chunks.length} chunks', 'ChatBloc');
       emit(state.copyWith(isProcessingDocument: false));
-    } catch (e) {
+    } on AppError catch (e) {
+      AppLogger.logAppError(e, 'ChatBloc');
       emit(state.copyWith(
         isProcessingDocument: false,
-        ragError: e.toString(),
+        ragError: e,
+      ));
+    } catch (e, stack) {
+      AppLogger.error('Erreur traitement document', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(
+        isProcessingDocument: false,
+        ragError: RagError.pdfExtractionFailed(fileName: event.fileName, original: e, stack: stack),
       ));
     }
   }
@@ -445,8 +514,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
 
       add(const ChatLoadDocuments());
-    } catch (e) {
-      emit(state.copyWith(ragError: e.toString()));
+    } catch (e, stack) {
+      AppLogger.error('Erreur toggle document', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(ragError: StorageError.databaseError(original: e, stack: stack)));
     }
   }
 
@@ -460,8 +530,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           .go();
 
       add(const ChatLoadDocuments());
-    } catch (e) {
-      emit(state.copyWith(ragError: e.toString()));
+    } catch (e, stack) {
+      AppLogger.error('Erreur suppression document', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(ragError: StorageError.databaseError(original: e, stack: stack)));
     }
   }
 
@@ -508,10 +579,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         conversations: conversationInfos,
         isLoadingConversations: false,
       ));
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('Erreur chargement conversations', tag: 'ChatBloc', error: e, stackTrace: stack);
       emit(state.copyWith(
         isLoadingConversations: false,
-        error: e.toString(),
+        error: StorageError.databaseError(original: e, stack: stack),
       ));
     }
   }
@@ -536,11 +608,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       emit(state.copyWith(
         currentConversationId: id,
         messages: [],
+        clearError: true,
       ));
 
       add(const ChatLoadConversations());
-    } catch (e) {
-      emit(state.copyWith(error: e.toString()));
+    } catch (e, stack) {
+      AppLogger.error('Erreur creation conversation', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(error: StorageError.databaseError(original: e, stack: stack)));
     }
   }
 
@@ -572,10 +646,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         messages: messages,
         isLoadingConversations: false,
       ));
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('Erreur chargement conversation', tag: 'ChatBloc', error: e, stackTrace: stack);
       emit(state.copyWith(
         isLoadingConversations: false,
-        error: e.toString(),
+        error: StorageError.databaseError(original: e, stack: stack),
       ));
     }
   }
@@ -598,8 +673,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
 
       add(const ChatLoadConversations());
-    } catch (e) {
-      emit(state.copyWith(error: e.toString()));
+    } catch (e, stack) {
+      AppLogger.error('Erreur suppression conversation', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(error: StorageError.databaseError(original: e, stack: stack)));
     }
   }
 
@@ -616,8 +692,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           ));
 
       add(const ChatLoadConversations());
-    } catch (e) {
-      emit(state.copyWith(error: e.toString()));
+    } catch (e, stack) {
+      AppLogger.error('Erreur renommage conversation', tag: 'ChatBloc', error: e, stackTrace: stack);
+      emit(state.copyWith(error: StorageError.databaseError(original: e, stack: stack)));
     }
   }
 
@@ -719,6 +796,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ChatStreamError event,
     Emitter<ChatState> emit,
   ) {
+    AppLogger.logAppError(event.error, 'ChatBloc');
     emit(state.copyWith(
       isGenerating: false,
       isThinking: false,
