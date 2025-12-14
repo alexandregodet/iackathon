@@ -1,0 +1,120 @@
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  FLUTTER_VERSION: '3.32.2'
+
+jobs:
+  # ============================================
+  # Quick PR Validation
+  # ============================================
+  pr-check:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Check formatting
+        run: |
+          dart format --set-exit-if-changed .
+          if [ $? -ne 0 ]; then
+            echo "::error::Code is not formatted. Run 'dart format .' to fix."
+            exit 1
+          fi
+
+      - name: Analyze code
+        run: flutter analyze --fatal-infos
+
+      - name: Run tests
+        run: flutter test --coverage
+
+      - name: Check coverage threshold
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | grep -oP '\d+\.\d+' | head -1)
+            echo "Coverage: $COVERAGE%"
+
+            # Minimum coverage threshold (adjust as needed)
+            THRESHOLD=50
+            if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+              echo "::warning::Coverage ($COVERAGE%) is below threshold ($THRESHOLD%)"
+            fi
+          fi
+
+  # ============================================
+  # PR Size Check
+  # ============================================
+  pr-size:
+    name: PR Size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR size
+        run: |
+          # Get changed lines
+          ADDITIONS=$(git diff --numstat origin/${{ github.base_ref }}...HEAD | awk '{ add += $1 } END { print add }')
+          DELETIONS=$(git diff --numstat origin/${{ github.base_ref }}...HEAD | awk '{ del += $2 } END { print del }')
+          TOTAL=$((ADDITIONS + DELETIONS))
+
+          echo "Additions: $ADDITIONS"
+          echo "Deletions: $DELETIONS"
+          echo "Total changes: $TOTAL"
+
+          # Warn if PR is too large
+          if [ "$TOTAL" -gt 1000 ]; then
+            echo "::warning::This PR has $TOTAL changed lines. Consider breaking it into smaller PRs."
+          fi
+
+  # ============================================
+  # Commit Message Check
+  # ============================================
+  commit-check:
+    name: Commit Messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit messages
+        run: |
+          # Get commits in PR
+          COMMITS=$(git log --format="%s" origin/${{ github.base_ref }}..HEAD)
+
+          # Check for conventional commit format
+          PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .+"
+
+          INVALID=0
+          while IFS= read -r commit; do
+            if [[ ! "$commit" =~ $PATTERN ]]; then
+              echo "::warning::Invalid commit message format: '$commit'"
+              echo "Expected format: type(scope): description"
+              echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+              INVALID=1
+            fi
+          done <<< "$COMMITS"
+
+          if [ $INVALID -eq 1 ]; then
+            echo "::notice::Some commits don't follow conventional commit format. Consider updating them."
+          fi

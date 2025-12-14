@@ -1,0 +1,20 @@
+# Default code owners for the entire repository
+* @owner
+
+# CI/CD configuration
+/.github/ @owner
+
+# Flutter/Dart code
+/lib/ @owner
+/test/ @owner
+/integration_test/ @owner
+
+# Android specific
+/android/ @owner
+
+# iOS specific
+/ios/ @owner
+
+# Documentation
+*.md @owner
+/docs/ @owner

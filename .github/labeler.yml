@@ -1,0 +1,69 @@
+# Pull Request Labeler Configuration
+# https://github.com/actions/labeler
+
+# Flutter/Dart source code
+flutter:
+  - changed-files:
+      - any-glob-to-any-file: 'lib/**/*.dart'
+
+# Tests
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'test/**/*'
+          - 'integration_test/**/*'
+
+# CI/CD
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**/*'
+
+# Android
+android:
+  - changed-files:
+      - any-glob-to-any-file: 'android/**/*'
+
+# iOS
+ios:
+  - changed-files:
+      - any-glob-to-any-file: 'ios/**/*'
+
+# Documentation
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**/*'
+
+# Dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pubspec.yaml'
+          - 'pubspec.lock'
+
+# UI/Presentation
+ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'lib/presentation/**/*'
+
+# Data layer
+data:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'lib/data/**/*'
+
+# Domain layer
+domain:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'lib/domain/**/*'
+
+# Configuration
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.yaml'
+          - '*.yml'
+          - '*.json'
