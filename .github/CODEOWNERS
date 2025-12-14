@@ -12,9 +12,6 @@
 # Android specific
 /android/ @owner
 
-# iOS specific
-/ios/ @owner
-
 # Documentation
 *.md @owner
 /docs/ @owner

@@ -23,11 +23,6 @@ android:
   - changed-files:
       - any-glob-to-any-file: 'android/**/*'
 
-# iOS
-ios:
-  - changed-files:
-      - any-glob-to-any-file: 'ios/**/*'
-
 # Documentation
 documentation:
   - changed-files:
