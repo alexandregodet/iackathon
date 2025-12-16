@@ -1,0 +1,135 @@
+{
+  "id": "a1c4d434-0d4e-461a-96f1-0a0e6d5f8987",
+  "checklistId": "2ee6d9b4-1deb-4720-bb30-af1a5d856f92",
+  "userId": "4a34e554-e12a-4eef-ab93-3e4db97ac703",
+  "createdAt": "2025-12-16T13:23:04.773Z",
+  "answers": {
+    "_id": "2ee6d9b4-1deb-4720-bb30-af1a5d856f92",
+    "title": "Maintenance annuelle du véhicule blindé GRIFFON",
+    "description": "Cette fiche de controle sert à vérifier les filtres, faire le tour du véhicule pour faire un bilan de santé et effectuer divers points de controles.",
+    "createdAt": "2024-02-22T10:19:26.250Z",
+    "updatedAt": "2025-11-19T19:35:01.101Z",
+    "knowledgeBaseId": "0fdd9fbc-c4b6-4b94-953e-279b662b6480",
+    "header": "",
+    "cover": "",
+    "footer": "",
+    "pdfOptions": {
+      "newPageOnSection": false,
+      "pageMargins": [50, 75, 50, 75]
+    },
+    "template": {
+      "carboneio": null
+    },
+    "isFinish": false,
+    "sections": [
+      {
+        "uuid": "9b8fd5a3fe",
+        "title": "Perception et état des lieux",
+        "description": "Cette premiere section a pour but de faire le tour du véhicule GRIFFON pour vérifier visuellement son état intérieur et extérieur.",
+        "questions": [
+          {
+            "uuid": "1f117b499f",
+            "id": 1,
+            "type": "text",
+            "title": "Y a t'il des defauts visuels constatés sur l'exterieur du véhicule sur le flanc gauche ?",
+            "mandatory": false,
+            "attachment": true,
+            "comment": true,
+            "hideInReport": false,
+            "hint": "Pensez à vérifier les roues, vitres, phares, bas de caisse etc.",
+            "responseBelow": false,
+            "commentContent": null,
+            "metadata": {},
+            "format": "short",
+            "defaultValue": "",
+            "response": ""
+          },
+          {
+            "uuid": "23f117b499f",
+            "id": 2,
+            "type": "text",
+            "title": "Y a t'il des defauts visuels constatés sur l'exterieur du véhicule sur le flanc droit ?",
+            "mandatory": false,
+            "attachment": true,
+            "comment": true,
+            "hideInReport": false,
+            "hint": "Pensez à vérifier les roues, vitres, phares, bas de caisse etc.",
+            "responseBelow": false,
+            "commentContent": null,
+            "metadata": {},
+            "format": "short",
+            "defaultValue": "",
+            "response": ""
+          },
+          {
+            "uuid": "3f117b498d",
+            "id": 3,
+            "type": "text",
+            "title": "Y a t'il des defauts visuels constatés sur l'exterieur du véhicule sur l'avant ?",
+            "mandatory": false,
+            "attachment": true,
+            "comment": true,
+            "hideInReport": false,
+            "hint": "Pensez à vérifier les optiques, pare-brise, pare-choc, essuie glaces etc.",
+            "responseBelow": false,
+            "commentContent": null,
+            "metadata": {},
+            "format": "short",
+            "defaultValue": "",
+            "response": ""
+          },
+          {
+            "uuid": "4f117b498d",
+            "id": 4,
+            "type": "text",
+            "title": "Y a t'il des defauts visuels constatés sur l'exterieur du véhicule sur l'arrière ?",
+            "mandatory": false,
+            "attachment": true,
+            "comment": true,
+            "hideInReport": false,
+            "hint": "Pensez à vérifier l'antenne, optiques etc.",
+            "responseBelow": false,
+            "commentContent": null,
+            "metadata": {},
+            "format": "short",
+            "defaultValue": "",
+            "response": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "partNumbers": ["GRIFFON-FELIN"],
+      "codes": [],
+      "additional": {}
+    }
+  },
+  "context": {
+    "startedAt": "2025-12-16T13:18:00.511925Z",
+    "pn": "GRIFFON-FELIN",
+    "sn": "62030010",
+    "lang": "fr",
+    "assetNumber": "GRIFFON-FELIN.62030010",
+    "sourceWorkOrderId": null
+  },
+  "contractId": "553221c8-54a6-4482-abfb-ebaca1aea058",
+  "user": {
+    "id": "4a34e554-e12a-4eef-ab93-3e4db97ac703",
+    "email": "hacker5@maintenance-coach.com"
+  },
+  "contract": {
+    "id": "553221c8-54a6-4482-abfb-ebaca1aea058",
+    "reference": "IACKATHON",
+    "startDate": "2023-12-31T23:00:00.000Z",
+    "endDate": "2026-12-30T23:00:00.000Z",
+    "funding": null,
+    "comment": "",
+    "languages": ["NA", "fr"],
+    "siteId": "IACKATHON",
+    "erpRefId": "",
+    "learningCohort": "",
+    "environment": "TEST",
+    "scopeId": "ca3ecb03-ef1e-4acd-a0df-418cfe089ac6",
+    "clientId": "5435db8b-d38d-4489-bc5e-108def19afdf"
+  }
+}

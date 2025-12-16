@@ -1527,6 +1527,525 @@ class PromptTemplatesCompanion extends UpdateCompanion<PromptTemplate> {
   }
 }
 
+class $ChecklistResponsesTable extends ChecklistResponses
+    with TableInfo<$ChecklistResponsesTable, ChecklistResponse> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChecklistResponsesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _checklistIdMeta = const VerificationMeta(
+    'checklistId',
+  );
+  @override
+  late final GeneratedColumn<String> checklistId = GeneratedColumn<String>(
+    'checklist_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _questionUuidMeta = const VerificationMeta(
+    'questionUuid',
+  );
+  @override
+  late final GeneratedColumn<String> questionUuid = GeneratedColumn<String>(
+    'question_uuid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _responseMeta = const VerificationMeta(
+    'response',
+  );
+  @override
+  late final GeneratedColumn<String> response = GeneratedColumn<String>(
+    'response',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attachmentPathsMeta = const VerificationMeta(
+    'attachmentPaths',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentPaths = GeneratedColumn<String>(
+    'attachment_paths',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _commentMeta = const VerificationMeta(
+    'comment',
+  );
+  @override
+  late final GeneratedColumn<String> comment = GeneratedColumn<String>(
+    'comment',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    checklistId,
+    questionUuid,
+    response,
+    attachmentPaths,
+    comment,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'checklist_responses';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChecklistResponse> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('checklist_id')) {
+      context.handle(
+        _checklistIdMeta,
+        checklistId.isAcceptableOrUnknown(
+          data['checklist_id']!,
+          _checklistIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_checklistIdMeta);
+    }
+    if (data.containsKey('question_uuid')) {
+      context.handle(
+        _questionUuidMeta,
+        questionUuid.isAcceptableOrUnknown(
+          data['question_uuid']!,
+          _questionUuidMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_questionUuidMeta);
+    }
+    if (data.containsKey('response')) {
+      context.handle(
+        _responseMeta,
+        response.isAcceptableOrUnknown(data['response']!, _responseMeta),
+      );
+    }
+    if (data.containsKey('attachment_paths')) {
+      context.handle(
+        _attachmentPathsMeta,
+        attachmentPaths.isAcceptableOrUnknown(
+          data['attachment_paths']!,
+          _attachmentPathsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('comment')) {
+      context.handle(
+        _commentMeta,
+        comment.isAcceptableOrUnknown(data['comment']!, _commentMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ChecklistResponse map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChecklistResponse(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      checklistId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}checklist_id'],
+      )!,
+      questionUuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}question_uuid'],
+      )!,
+      response: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}response'],
+      ),
+      attachmentPaths: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attachment_paths'],
+      ),
+      comment: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}comment'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ChecklistResponsesTable createAlias(String alias) {
+    return $ChecklistResponsesTable(attachedDatabase, alias);
+  }
+}
+
+class ChecklistResponse extends DataClass
+    implements Insertable<ChecklistResponse> {
+  final int id;
+  final String checklistId;
+  final String questionUuid;
+  final String? response;
+  final String? attachmentPaths;
+  final String? comment;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const ChecklistResponse({
+    required this.id,
+    required this.checklistId,
+    required this.questionUuid,
+    this.response,
+    this.attachmentPaths,
+    this.comment,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['checklist_id'] = Variable<String>(checklistId);
+    map['question_uuid'] = Variable<String>(questionUuid);
+    if (!nullToAbsent || response != null) {
+      map['response'] = Variable<String>(response);
+    }
+    if (!nullToAbsent || attachmentPaths != null) {
+      map['attachment_paths'] = Variable<String>(attachmentPaths);
+    }
+    if (!nullToAbsent || comment != null) {
+      map['comment'] = Variable<String>(comment);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ChecklistResponsesCompanion toCompanion(bool nullToAbsent) {
+    return ChecklistResponsesCompanion(
+      id: Value(id),
+      checklistId: Value(checklistId),
+      questionUuid: Value(questionUuid),
+      response: response == null && nullToAbsent
+          ? const Value.absent()
+          : Value(response),
+      attachmentPaths: attachmentPaths == null && nullToAbsent
+          ? const Value.absent()
+          : Value(attachmentPaths),
+      comment: comment == null && nullToAbsent
+          ? const Value.absent()
+          : Value(comment),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ChecklistResponse.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChecklistResponse(
+      id: serializer.fromJson<int>(json['id']),
+      checklistId: serializer.fromJson<String>(json['checklistId']),
+      questionUuid: serializer.fromJson<String>(json['questionUuid']),
+      response: serializer.fromJson<String?>(json['response']),
+      attachmentPaths: serializer.fromJson<String?>(json['attachmentPaths']),
+      comment: serializer.fromJson<String?>(json['comment']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'checklistId': serializer.toJson<String>(checklistId),
+      'questionUuid': serializer.toJson<String>(questionUuid),
+      'response': serializer.toJson<String?>(response),
+      'attachmentPaths': serializer.toJson<String?>(attachmentPaths),
+      'comment': serializer.toJson<String?>(comment),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ChecklistResponse copyWith({
+    int? id,
+    String? checklistId,
+    String? questionUuid,
+    Value<String?> response = const Value.absent(),
+    Value<String?> attachmentPaths = const Value.absent(),
+    Value<String?> comment = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => ChecklistResponse(
+    id: id ?? this.id,
+    checklistId: checklistId ?? this.checklistId,
+    questionUuid: questionUuid ?? this.questionUuid,
+    response: response.present ? response.value : this.response,
+    attachmentPaths: attachmentPaths.present
+        ? attachmentPaths.value
+        : this.attachmentPaths,
+    comment: comment.present ? comment.value : this.comment,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ChecklistResponse copyWithCompanion(ChecklistResponsesCompanion data) {
+    return ChecklistResponse(
+      id: data.id.present ? data.id.value : this.id,
+      checklistId: data.checklistId.present
+          ? data.checklistId.value
+          : this.checklistId,
+      questionUuid: data.questionUuid.present
+          ? data.questionUuid.value
+          : this.questionUuid,
+      response: data.response.present ? data.response.value : this.response,
+      attachmentPaths: data.attachmentPaths.present
+          ? data.attachmentPaths.value
+          : this.attachmentPaths,
+      comment: data.comment.present ? data.comment.value : this.comment,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChecklistResponse(')
+          ..write('id: $id, ')
+          ..write('checklistId: $checklistId, ')
+          ..write('questionUuid: $questionUuid, ')
+          ..write('response: $response, ')
+          ..write('attachmentPaths: $attachmentPaths, ')
+          ..write('comment: $comment, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    checklistId,
+    questionUuid,
+    response,
+    attachmentPaths,
+    comment,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChecklistResponse &&
+          other.id == this.id &&
+          other.checklistId == this.checklistId &&
+          other.questionUuid == this.questionUuid &&
+          other.response == this.response &&
+          other.attachmentPaths == this.attachmentPaths &&
+          other.comment == this.comment &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
+  final Value<int> id;
+  final Value<String> checklistId;
+  final Value<String> questionUuid;
+  final Value<String?> response;
+  final Value<String?> attachmentPaths;
+  final Value<String?> comment;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const ChecklistResponsesCompanion({
+    this.id = const Value.absent(),
+    this.checklistId = const Value.absent(),
+    this.questionUuid = const Value.absent(),
+    this.response = const Value.absent(),
+    this.attachmentPaths = const Value.absent(),
+    this.comment = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  ChecklistResponsesCompanion.insert({
+    this.id = const Value.absent(),
+    required String checklistId,
+    required String questionUuid,
+    this.response = const Value.absent(),
+    this.attachmentPaths = const Value.absent(),
+    this.comment = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : checklistId = Value(checklistId),
+       questionUuid = Value(questionUuid);
+  static Insertable<ChecklistResponse> custom({
+    Expression<int>? id,
+    Expression<String>? checklistId,
+    Expression<String>? questionUuid,
+    Expression<String>? response,
+    Expression<String>? attachmentPaths,
+    Expression<String>? comment,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (checklistId != null) 'checklist_id': checklistId,
+      if (questionUuid != null) 'question_uuid': questionUuid,
+      if (response != null) 'response': response,
+      if (attachmentPaths != null) 'attachment_paths': attachmentPaths,
+      if (comment != null) 'comment': comment,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  ChecklistResponsesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? checklistId,
+    Value<String>? questionUuid,
+    Value<String?>? response,
+    Value<String?>? attachmentPaths,
+    Value<String?>? comment,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return ChecklistResponsesCompanion(
+      id: id ?? this.id,
+      checklistId: checklistId ?? this.checklistId,
+      questionUuid: questionUuid ?? this.questionUuid,
+      response: response ?? this.response,
+      attachmentPaths: attachmentPaths ?? this.attachmentPaths,
+      comment: comment ?? this.comment,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (checklistId.present) {
+      map['checklist_id'] = Variable<String>(checklistId.value);
+    }
+    if (questionUuid.present) {
+      map['question_uuid'] = Variable<String>(questionUuid.value);
+    }
+    if (response.present) {
+      map['response'] = Variable<String>(response.value);
+    }
+    if (attachmentPaths.present) {
+      map['attachment_paths'] = Variable<String>(attachmentPaths.value);
+    }
+    if (comment.present) {
+      map['comment'] = Variable<String>(comment.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChecklistResponsesCompanion(')
+          ..write('id: $id, ')
+          ..write('checklistId: $checklistId, ')
+          ..write('questionUuid: $questionUuid, ')
+          ..write('response: $response, ')
+          ..write('attachmentPaths: $attachmentPaths, ')
+          ..write('comment: $comment, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1536,6 +2055,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PromptTemplatesTable promptTemplates = $PromptTemplatesTable(
     this,
   );
+  late final $ChecklistResponsesTable checklistResponses =
+      $ChecklistResponsesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1545,6 +2066,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     messages,
     documents,
     promptTemplates,
+    checklistResponses,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2606,6 +3128,276 @@ typedef $$PromptTemplatesTableProcessedTableManager =
       PromptTemplate,
       PrefetchHooks Function()
     >;
+typedef $$ChecklistResponsesTableCreateCompanionBuilder =
+    ChecklistResponsesCompanion Function({
+      Value<int> id,
+      required String checklistId,
+      required String questionUuid,
+      Value<String?> response,
+      Value<String?> attachmentPaths,
+      Value<String?> comment,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$ChecklistResponsesTableUpdateCompanionBuilder =
+    ChecklistResponsesCompanion Function({
+      Value<int> id,
+      Value<String> checklistId,
+      Value<String> questionUuid,
+      Value<String?> response,
+      Value<String?> attachmentPaths,
+      Value<String?> comment,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+class $$ChecklistResponsesTableFilterComposer
+    extends Composer<_$AppDatabase, $ChecklistResponsesTable> {
+  $$ChecklistResponsesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get checklistId => $composableBuilder(
+    column: $table.checklistId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get questionUuid => $composableBuilder(
+    column: $table.questionUuid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get response => $composableBuilder(
+    column: $table.response,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get attachmentPaths => $composableBuilder(
+    column: $table.attachmentPaths,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get comment => $composableBuilder(
+    column: $table.comment,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ChecklistResponsesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChecklistResponsesTable> {
+  $$ChecklistResponsesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get checklistId => $composableBuilder(
+    column: $table.checklistId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get questionUuid => $composableBuilder(
+    column: $table.questionUuid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get response => $composableBuilder(
+    column: $table.response,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get attachmentPaths => $composableBuilder(
+    column: $table.attachmentPaths,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get comment => $composableBuilder(
+    column: $table.comment,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ChecklistResponsesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChecklistResponsesTable> {
+  $$ChecklistResponsesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get checklistId => $composableBuilder(
+    column: $table.checklistId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get questionUuid => $composableBuilder(
+    column: $table.questionUuid,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get response =>
+      $composableBuilder(column: $table.response, builder: (column) => column);
+
+  GeneratedColumn<String> get attachmentPaths => $composableBuilder(
+    column: $table.attachmentPaths,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get comment =>
+      $composableBuilder(column: $table.comment, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ChecklistResponsesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChecklistResponsesTable,
+          ChecklistResponse,
+          $$ChecklistResponsesTableFilterComposer,
+          $$ChecklistResponsesTableOrderingComposer,
+          $$ChecklistResponsesTableAnnotationComposer,
+          $$ChecklistResponsesTableCreateCompanionBuilder,
+          $$ChecklistResponsesTableUpdateCompanionBuilder,
+          (
+            ChecklistResponse,
+            BaseReferences<
+              _$AppDatabase,
+              $ChecklistResponsesTable,
+              ChecklistResponse
+            >,
+          ),
+          ChecklistResponse,
+          PrefetchHooks Function()
+        > {
+  $$ChecklistResponsesTableTableManager(
+    _$AppDatabase db,
+    $ChecklistResponsesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChecklistResponsesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChecklistResponsesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChecklistResponsesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> checklistId = const Value.absent(),
+                Value<String> questionUuid = const Value.absent(),
+                Value<String?> response = const Value.absent(),
+                Value<String?> attachmentPaths = const Value.absent(),
+                Value<String?> comment = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => ChecklistResponsesCompanion(
+                id: id,
+                checklistId: checklistId,
+                questionUuid: questionUuid,
+                response: response,
+                attachmentPaths: attachmentPaths,
+                comment: comment,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String checklistId,
+                required String questionUuid,
+                Value<String?> response = const Value.absent(),
+                Value<String?> attachmentPaths = const Value.absent(),
+                Value<String?> comment = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => ChecklistResponsesCompanion.insert(
+                id: id,
+                checklistId: checklistId,
+                questionUuid: questionUuid,
+                response: response,
+                attachmentPaths: attachmentPaths,
+                comment: comment,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ChecklistResponsesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChecklistResponsesTable,
+      ChecklistResponse,
+      $$ChecklistResponsesTableFilterComposer,
+      $$ChecklistResponsesTableOrderingComposer,
+      $$ChecklistResponsesTableAnnotationComposer,
+      $$ChecklistResponsesTableCreateCompanionBuilder,
+      $$ChecklistResponsesTableUpdateCompanionBuilder,
+      (
+        ChecklistResponse,
+        BaseReferences<
+          _$AppDatabase,
+          $ChecklistResponsesTable,
+          ChecklistResponse
+        >,
+      ),
+      ChecklistResponse,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2618,4 +3410,6 @@ class $AppDatabaseManager {
       $$DocumentsTableTableManager(_db, _db.documents);
   $$PromptTemplatesTableTableManager get promptTemplates =>
       $$PromptTemplatesTableTableManager(_db, _db.promptTemplates);
+  $$ChecklistResponsesTableTableManager get checklistResponses =>
+      $$ChecklistResponsesTableTableManager(_db, _db.checklistResponses);
 }

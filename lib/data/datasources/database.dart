@@ -43,8 +43,19 @@ class PromptTemplates extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+class ChecklistResponses extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get checklistId => text()();
+  TextColumn get questionUuid => text()();
+  TextColumn get response => text().nullable()();
+  TextColumn get attachmentPaths => text().nullable()();
+  TextColumn get comment => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @singleton
-@DriftDatabase(tables: [Conversations, Messages, Documents, PromptTemplates])
+@DriftDatabase(tables: [Conversations, Messages, Documents, PromptTemplates, ChecklistResponses])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -52,7 +63,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -66,6 +77,9 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 3) {
           await m.createTable(promptTemplates);
+        }
+        if (from < 4) {
+          await m.createTable(checklistResponses);
         }
       },
     );

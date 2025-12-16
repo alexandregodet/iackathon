@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'checklist_page.dart';
 import 'model_selection_page.dart';
 import 'settings_page.dart';
 
@@ -173,6 +174,28 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Text('> ', style: TextStyle(color: colorScheme.onPrimary)),
                     const Text('SELECT_MODEL'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Checklist button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ChecklistPage(
+                      assetPath: 'assets/checklists/griffon.json',
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('> ', style: TextStyle(color: colorScheme.primary)),
+                    const Text('CHECKLIST_GRIFFON'),
                   ],
                 ),
               ),
