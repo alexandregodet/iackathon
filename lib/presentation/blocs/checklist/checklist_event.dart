@@ -94,3 +94,37 @@ class ChecklistUpdateSerialNumber extends ChecklistEvent {
   @override
   List<Object?> get props => [serialNumber];
 }
+
+class ChecklistAnalyzeWithAI extends ChecklistEvent {
+  final String questionUuid;
+  final String sectionTitle;
+  final String sectionDescription;
+  final String questionTitle;
+  final String? questionHint;
+  final String answer;
+  final String comment;
+  final String imagePath;
+
+  const ChecklistAnalyzeWithAI({
+    required this.questionUuid,
+    required this.sectionTitle,
+    required this.sectionDescription,
+    required this.questionTitle,
+    this.questionHint,
+    required this.answer,
+    required this.comment,
+    required this.imagePath,
+  });
+
+  @override
+  List<Object?> get props => [
+        questionUuid,
+        sectionTitle,
+        sectionDescription,
+        questionTitle,
+        questionHint,
+        answer,
+        comment,
+        imagePath,
+      ];
+}

@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/di/injection.dart';
 import '../../domain/entities/checklist.dart';
-import '../../domain/entities/checklist_response.dart';
 import '../blocs/checklist/checklist_bloc.dart';
 import '../blocs/checklist/checklist_event.dart';
 import '../blocs/checklist/checklist_state.dart';
@@ -191,7 +190,7 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
               }
               final sectionIndex = index - 1;
               final section = state.checklist!.answers.sections[sectionIndex];
-              return _buildSectionPage(context, section, state.responses, sectionIndex, state.totalSections);
+              return _buildSectionPage(context, section, state, sectionIndex, state.totalSections);
             },
           ),
         ),
@@ -429,10 +428,12 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
   Widget _buildSectionPage(
     BuildContext context,
     ChecklistSection section,
-    Map<String, QuestionResponse> responses,
+    ChecklistState state,
     int sectionIndex,
     int totalSections,
   ) {
+    final responses = state.responses;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -446,11 +447,17 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
           const SizedBox(height: 16),
           ...section.questions.map((question) {
             final response = responses[question.uuid];
+            final isAnalyzing =
+                state.analyzingQuestions.contains(question.uuid);
+            final aiResult = state.aiAnalysisResults[question.uuid];
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: QuestionCard(
                 question: question,
                 response: response,
+                sectionTitle: section.title,
+                sectionDescription: section.description,
                 onResponseChanged: (value) {
                   context.read<ChecklistBloc>().add(ChecklistUpdateResponse(
                         questionUuid: question.uuid,
@@ -469,6 +476,23 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                         questionUuid: question.uuid,
                         filePath: filePath,
                       ));
+                },
+                isAnalyzing: isAnalyzing,
+                aiAnalysisResult: aiResult,
+                onAnalyzeWithAI: () {
+                  if (response != null &&
+                      response.attachmentPaths.isNotEmpty) {
+                    context.read<ChecklistBloc>().add(ChecklistAnalyzeWithAI(
+                          questionUuid: question.uuid,
+                          sectionTitle: section.title,
+                          sectionDescription: section.description,
+                          questionTitle: question.title,
+                          questionHint: question.hint,
+                          answer: response.response ?? '',
+                          comment: response.comment ?? '',
+                          imagePath: response.attachmentPaths.first,
+                        ));
+                  }
                 },
               ),
             );

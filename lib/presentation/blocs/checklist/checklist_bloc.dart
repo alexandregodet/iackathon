@@ -1,16 +1,23 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../data/datasources/checklist_service.dart';
+import '../../../data/datasources/gemma_service.dart';
 import '../../../domain/entities/checklist_response.dart';
+import '../../../domain/entities/gemma_model_info.dart';
 import 'checklist_event.dart';
 import 'checklist_state.dart';
 
 @injectable
 class ChecklistBloc extends Bloc<ChecklistEvent, ChecklistState> {
   final ChecklistService _checklistService;
+  final GemmaService _gemmaService;
 
-  ChecklistBloc(this._checklistService) : super(const ChecklistState()) {
+  ChecklistBloc(this._checklistService, this._gemmaService)
+      : super(const ChecklistState()) {
     on<ChecklistLoadFromAsset>(_onLoadFromAsset);
     on<ChecklistGoToSection>(_onGoToSection);
     on<ChecklistUpdateResponse>(_onUpdateResponse);
@@ -20,6 +27,7 @@ class ChecklistBloc extends Bloc<ChecklistEvent, ChecklistState> {
     on<ChecklistSaveProgress>(_onSaveProgress);
     on<ChecklistSubmit>(_onSubmit);
     on<ChecklistUpdateSerialNumber>(_onUpdateSerialNumber);
+    on<ChecklistAnalyzeWithAI>(_onAnalyzeWithAI);
   }
 
   Future<void> _onLoadFromAsset(
@@ -247,5 +255,92 @@ class ChecklistBloc extends Bloc<ChecklistEvent, ChecklistState> {
     Emitter<ChecklistState> emit,
   ) {
     emit(state.copyWith(serialNumber: event.serialNumber));
+  }
+
+  Future<void> _onAnalyzeWithAI(
+    ChecklistAnalyzeWithAI event,
+    Emitter<ChecklistState> emit,
+  ) async {
+    // Mark question as being analyzed
+    final analyzing = Set<String>.from(state.analyzingQuestions)
+      ..add(event.questionUuid);
+    emit(state.copyWith(analyzingQuestions: analyzing));
+
+    try {
+      // Check if model is ready, if not try to load it
+      if (!_gemmaService.isReady) {
+        final currentModel = _gemmaService.currentModel;
+        if (currentModel == null ||
+            currentModel.id != AvailableModels.gemma3NanoE4b.id) {
+          await _gemmaService.checkModelStatus(AvailableModels.gemma3NanoE4b);
+        }
+
+        if (_gemmaService.state == GemmaModelState.notInstalled) {
+          throw Exception(
+              'Le modele Gemma 3 Nano E4B doit etre telecharge pour utiliser l\'analyse IA');
+        }
+
+        if (_gemmaService.state == GemmaModelState.installed) {
+          await _gemmaService.loadModel(AvailableModels.gemma3NanoE4b);
+        }
+      }
+
+      // Read image bytes
+      final imageFile = File(event.imagePath);
+      final imageBytes = await imageFile.readAsBytes();
+
+      // Build the prompt
+      final prompt = '''Tu es un assistant de maintenance industrielle qui analyse une photo d'intervention et son contexte. Objectif: identifier le défaut principal visible et générer 3 à 5 tags en français pour le décrire. Priorité visuelle: si la photo contient un encadré/surlignage/cadre indiquant la zone du défaut, analyse uniquement cette zone et ignore le reste; sinon analyse l'ensemble et concentre-toi sur le défaut le plus saillant. Contraintes tags: total 3 à 5; au moins 2 tags courts (1 à 2 mots) et au moins 2 tags sous forme de phrase (5 à 12 mots); tags concrets orientés défaut/symptôme; éviter doublons, variations de casse, et termes vagues (ex "problème", "anomalie"). Entrées: section_title=${event.sectionTitle}; section_description=${event.sectionDescription}; question=${event.questionTitle}; suggestion=${event.questionHint ?? ''}; answer=${event.answer}; comment=${event.comment}; image=<image attachée>. Sortie: retourner uniquement un JSON valide sans autre texte, format: {"tags":[{"tag":"string","type":"mot_cle|phrase","bbox":{"x":0,"y":0,"w":0,"h":0} }], "defect_bbox":{"x":0,"y":0,"w":0,"h":0}, "description":"Paragraphe en français décrivant l'image et le défaut dans son contexte."} Règles bbox: coordonnées en pixels dans l'image d'origine, (x,y) coin haut-gauche, w largeur, h hauteur; defect_bbox = meilleure estimation de la zone du défaut; chaque tag peut reprendre defect_bbox ou une sous-zone; si indéterminable avec confiance, mettre defect_bbox=null et bbox=null.''';
+
+      // Generate response with image
+      final responseBuffer = StringBuffer();
+      await for (final chunk
+          in _gemmaService.generateResponse(prompt, imageBytes: imageBytes)) {
+        responseBuffer.write(chunk);
+      }
+
+      final responseText = responseBuffer.toString().trim();
+
+      // Try to parse JSON from response
+      AiAnalysisResult? result;
+      try {
+        // Find JSON in response (might have extra text)
+        final jsonStart = responseText.indexOf('{');
+        final jsonEnd = responseText.lastIndexOf('}');
+        if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+          final jsonStr = responseText.substring(jsonStart, jsonEnd + 1);
+          final jsonData = json.decode(jsonStr) as Map<String, dynamic>;
+          result = AiAnalysisResult.fromJson(jsonData);
+        }
+      } catch (e) {
+        // If JSON parsing fails, create a simple result with the response as description
+        result = AiAnalysisResult(
+          tags: [],
+          description: responseText,
+        );
+      }
+
+      if (result != null) {
+        final newResults =
+            Map<String, AiAnalysisResult>.from(state.aiAnalysisResults);
+        newResults[event.questionUuid] = result;
+
+        final newAnalyzing = Set<String>.from(state.analyzingQuestions)
+          ..remove(event.questionUuid);
+
+        emit(state.copyWith(
+          analyzingQuestions: newAnalyzing,
+          aiAnalysisResults: newResults,
+        ));
+      }
+    } catch (e) {
+      final newAnalyzing = Set<String>.from(state.analyzingQuestions)
+        ..remove(event.questionUuid);
+
+      emit(state.copyWith(
+        analyzingQuestions: newAnalyzing,
+        error: 'Erreur lors de l\'analyse IA: $e',
+      ));
+    }
   }
 }

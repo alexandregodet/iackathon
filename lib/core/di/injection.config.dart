@@ -48,7 +48,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i307.ChecklistService(gh<_i104.AppDatabase>()),
     );
     gh.factory<_i407.ChecklistBloc>(
-      () => _i407.ChecklistBloc(gh<_i307.ChecklistService>()),
+      () => _i407.ChecklistBloc(
+        gh<_i307.ChecklistService>(),
+        gh<_i363.GemmaService>(),
+      ),
     );
     return this;
   }
