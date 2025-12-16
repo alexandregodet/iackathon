@@ -1141,11 +1141,12 @@ class _ChatPageContentState extends State<_ChatPageContent> {
   void _showAttachmentMenu(BuildContext context, ChatState state) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final parentContext = context;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isDark ? colorScheme.surfaceContainerLow : colorScheme.surface,
@@ -1184,7 +1185,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             ),
             // PDF option
             _buildAttachmentOption(
-              context: context,
+              context: sheetContext,
               icon: Icons.description,
               label: 'pdf',
               subtitle: state.hasActiveDocuments
@@ -1192,19 +1193,19 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                   : 'add document',
               isActive: state.hasActiveDocuments,
               onTap: () {
-                Navigator.pop(context);
-                _pickPdf(context);
+                Navigator.pop(sheetContext);
+                _pickPdf(parentContext);
               },
               onLongPress: () {
-                Navigator.pop(context);
-                _showDocumentsDialog(context);
+                Navigator.pop(sheetContext);
+                _showDocumentsDialog(parentContext);
               },
               colorScheme: colorScheme,
             ),
             // Image option (multimodal only)
             if (state.isMultimodal)
               _buildAttachmentOption(
-                context: context,
+                context: sheetContext,
                 icon: Icons.image,
                 label: 'image',
                 subtitle: _selectedImageBytes != null
@@ -1212,20 +1213,20 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                     : 'add photo',
                 isActive: _selectedImageBytes != null,
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   _showImageSourceDialog();
                 },
                 colorScheme: colorScheme,
               ),
             // Templates option
             _buildAttachmentOption(
-              context: context,
+              context: sheetContext,
               icon: Icons.code,
               label: 'template',
               subtitle: 'prompt library',
               onTap: () {
-                Navigator.pop(context);
-                _showTemplatePicker(context);
+                Navigator.pop(sheetContext);
+                _showTemplatePicker(parentContext);
               },
               colorScheme: colorScheme,
               useSecondary: true,

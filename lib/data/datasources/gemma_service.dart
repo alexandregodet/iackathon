@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:injectable/injectable.dart';
 
@@ -69,9 +69,8 @@ class GemmaService {
   Future<void> checkModelStatus(GemmaModelInfo modelInfo) async {
     _currentModel = modelInfo;
     final isInstalled = await FlutterGemma.isModelInstalled(modelInfo.filename);
-    _state = isInstalled
-        ? GemmaModelState.installed
-        : GemmaModelState.notInstalled;
+    _state =
+        isInstalled ? GemmaModelState.installed : GemmaModelState.notInstalled;
     _stateController.add(_state);
   }
 
@@ -80,6 +79,8 @@ class GemmaService {
     void Function(double)? onProgress,
     String? token,
   }) async {
+    _currentModel = modelInfo;
+
     AppLogger.info(
       'Demarrage du telechargement de ${modelInfo.name}',
       'GemmaService',
@@ -97,20 +98,18 @@ class GemmaService {
     }
 
     try {
-      _currentModel = modelInfo;
       _state = GemmaModelState.downloading;
       _stateController.add(_state);
 
       final authToken = token ?? _huggingFaceToken;
 
-      var builder =
-          FlutterGemma.installModel(
-            modelType: modelInfo.modelType,
-            fileType: modelInfo.fileType,
-          ).fromNetwork(
-            modelInfo.url,
-            token: modelInfo.requiresAuth ? authToken : null,
-          );
+      var builder = FlutterGemma.installModel(
+        modelType: modelInfo.modelType,
+        fileType: modelInfo.fileType,
+      ).fromNetwork(
+        modelInfo.url,
+        token: modelInfo.requiresAuth ? authToken : null,
+      );
 
       builder = builder.withProgress((progress) {
         _downloadProgress = progress.toDouble() / 100.0;
