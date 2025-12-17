@@ -14,6 +14,8 @@ import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
 import '../../../data/datasources/settings_service.dart';
 import '../../../domain/entities/chat_message.dart';
+import '../../../domain/entities/checklist_question.dart';
+import '../../../domain/entities/checklist_response.dart';
 import '../../../domain/entities/checklist_session.dart';
 import '../../../domain/entities/conversation_info.dart';
 import '../../../domain/entities/document_info.dart';
@@ -1226,54 +1228,67 @@ Commencons: ${firstQuestion.questionPrompt}''';
       timestamp: DateTime.now(),
     );
 
+    // Ajouter un message "en cours de traitement"
+    final processingMessage = ChatMessage(
+      id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+      role: MessageRole.assistant,
+      content: 'Analyse de votre reponse...',
+      timestamp: DateTime.now(),
+      isStreaming: true,
+    );
+
     emit(state.copyWith(
-      messages: [...state.messages, userMessage],
+      messages: [...state.messages, userMessage, processingMessage],
+      isGenerating: true,
     ));
 
-    // D'abord essayer de parser plusieurs reponses
-    final multiAnswers = _checklistService.parseMultipleAnswers(userInput);
-
     String responseMessage;
+    final confirmations = <String>[];
 
-    if (multiAnswers.isNotEmpty) {
-      // Enregistrer toutes les reponses parsees
-      for (final parsed in multiAnswers) {
-        _checklistService.recordResponse(parsed.response);
+    try {
+      // Detecter si plusieurs questions sont mentionnees
+      final mentionedQuestions = _checklistService.detectMentionedQuestions(userInput);
+
+      if (mentionedQuestions.isNotEmpty) {
+        // Classifier chaque question mentionnee avec Gemma
+        for (final question in mentionedQuestions) {
+          final classified = await _classifyAnswerWithGemma(userInput, question);
+          if (classified != null) {
+            _checklistService.recordResponse(classified);
+            confirmations.add('${question.title} = ${classified.displayValue}');
+          }
+        }
+      } else if (state.checklistSession?.currentQuestion != null) {
+        // Classifier la reponse pour la question courante
+        final question = state.checklistSession!.currentQuestion!;
+        final classified = await _classifyAnswerWithGemma(userInput, question);
+
+        if (classified != null) {
+          _checklistService.recordResponse(classified);
+          confirmations.add('${question.title} = ${classified.displayValue}');
+        }
       }
-
-      final confirmations = multiAnswers.map((a) {
-        return '${a.question.title} = ${a.response.displayValue}';
-      }).join(', ');
 
       final session = _checklistService.currentSession!;
       final nextMessage = _buildNextQuestionMessage(session);
 
-      responseMessage = 'J\'ai bien note: $confirmations.\n\n$nextMessage';
-    } else if (state.checklistSession?.currentQuestion != null) {
-      // Essayer de parser une seule reponse
-      final response = _checklistService.parseAnswer(
-        userInput,
-        state.checklistSession!.currentQuestion!,
-      );
-
-      if (response != null) {
-        _checklistService.recordResponse(response);
-        final session = _checklistService.currentSession!;
-        responseMessage = _buildNextQuestionMessage(session);
+      if (confirmations.isNotEmpty) {
+        responseMessage = 'J\'ai bien note: ${confirmations.join(", ")}.\n\n$nextMessage';
       } else {
-        responseMessage =
-            'Je n\'ai pas compris la reponse. ${state.checklistSession!.currentQuestion!.questionPrompt}';
+        responseMessage = 'Je n\'ai pas pu interpreter votre reponse. ${state.checklistSession?.currentQuestion?.questionPrompt ?? nextMessage}';
       }
-    } else {
-      responseMessage = 'Session checklist terminee ou question non trouvee.';
+    } catch (e, stack) {
+      AppLogger.error('Erreur classification reponse', tag: 'ChatBloc', error: e, stackTrace: stack);
+      responseMessage = 'Erreur lors de l\'analyse. Pouvez-vous reformuler votre reponse?';
     }
 
     // Mettre a jour le prompt systeme
     final prompt = _checklistService.buildSystemPrompt();
     _gemmaService.setSystemPrompt(prompt);
 
-    // Ajouter la reponse assistant
-    final assistantMessage = ChatMessage(
+    // Remplacer le message "en cours" par la reponse finale
+    final messages = List<ChatMessage>.from(state.messages);
+    messages[messages.length - 1] = ChatMessage(
       id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
       role: MessageRole.assistant,
       content: responseMessage,
@@ -1281,10 +1296,73 @@ Commencons: ${firstQuestion.questionPrompt}''';
     );
 
     emit(state.copyWith(
-      messages: [...state.messages, assistantMessage],
+      messages: messages,
+      isGenerating: false,
       checklistSession: _checklistService.currentSession,
       checklistResponse: responseMessage,
     ));
+  }
+
+  /// Utilise Gemma pour classifier la reponse de l'utilisateur
+  Future<ChecklistResponse?> _classifyAnswerWithGemma(
+    String userInput,
+    ChecklistQuestion question,
+  ) async {
+    try {
+      if (question.type == QuestionType.text) {
+        // Pour les questions texte, pas besoin de classification
+        return _checklistService.createTextResponse(userInput, question);
+      }
+
+      if (question.type == QuestionType.checkbox) {
+        // Pour les checkbox, classifier oui/non
+        final classificationPrompt = _checklistService.buildCheckboxClassificationPrompt(
+          userInput,
+          question,
+        );
+
+        final gemmaResponse = await _getGemmaResponse(classificationPrompt);
+        final checkboxValue = _checklistService.parseGemmaCheckbox(gemmaResponse);
+
+        if (checkboxValue != null) {
+          return _checklistService.createCheckboxResponse(userInput, question, checkboxValue);
+        }
+        return null;
+      }
+
+      // Pour les questions a choix multiples
+      final classificationPrompt = _checklistService.buildClassificationPrompt(
+        userInput,
+        question,
+      );
+
+      AppLogger.debug('Classification prompt: $classificationPrompt', 'ChatBloc');
+
+      final gemmaResponse = await _getGemmaResponse(classificationPrompt);
+      AppLogger.debug('Gemma classification response: $gemmaResponse', 'ChatBloc');
+
+      final choice = _checklistService.parseGemmaChoice(gemmaResponse, question);
+
+      if (choice != null) {
+        return _checklistService.createResponseFromChoice(userInput, question, choice);
+      }
+
+      return null;
+    } catch (e, stack) {
+      AppLogger.error('Erreur classification Gemma', tag: 'ChatBloc', error: e, stackTrace: stack);
+      return null;
+    }
+  }
+
+  /// Obtient une reponse de Gemma de maniere synchrone (en collectant le stream)
+  Future<String> _getGemmaResponse(String prompt) async {
+    final buffer = StringBuffer();
+
+    await for (final chunk in _gemmaService.generateResponse(prompt)) {
+      buffer.write(chunk);
+    }
+
+    return buffer.toString();
   }
 
   String _buildNextQuestionMessage(ChecklistSession session) {

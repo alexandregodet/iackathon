@@ -9,14 +9,6 @@ import '../../domain/entities/checklist_response.dart';
 import '../../domain/entities/checklist_section.dart';
 import '../../domain/entities/checklist_session.dart';
 
-/// Resultat du parsing de plusieurs reponses
-class ParsedMultiAnswer {
-  final ChecklistQuestion question;
-  final ChecklistResponse response;
-
-  ParsedMultiAnswer({required this.question, required this.response});
-}
-
 @singleton
 class ChecklistService {
   List<ChecklistSection> _sections = [];
@@ -31,82 +23,6 @@ class ChecklistService {
   String? get checklistDescription => _checklistDescription;
   bool get isLoaded => _sections.isNotEmpty;
 
-  /// Mapping langage naturel -> choix officiels
-  static const Map<String, String> choiceMapping = {
-
-    // Satisfactory variants
-    'satisfaisant': 'Satisfactory',
-    'satisfactory': 'Satisfactory',
-    'ok': 'Satisfactory',
-    'bon': 'Satisfactory',
-    'bien': 'Satisfactory',
-    'correct': 'Satisfactory',
-    'ras': 'Satisfactory',
-    'r.a.s': 'Satisfactory',
-    'rien a signaler': 'Satisfactory',
-    'nickel': 'Satisfactory',
-    'parfait': 'Satisfactory',
-    'impeccable': 'Satisfactory',
-
-    // Monitor variants
-    'surveiller': 'Monitor',
-    'monitor': 'Monitor',
-    'a surveiller': 'Monitor',
-    'attention': 'Monitor',
-    'vigilance': 'Monitor',
-
-    // Minor variants
-    'mineur': 'Minor',
-    'minor': 'Minor',
-    'petit probleme': 'Minor',
-    'leger': 'Minor',
-    'legere': 'Minor',
-    'petit souci': 'Minor',
-
-    // Major variants
-    'majeur': 'Major',
-    'major': 'Major',
-    'gros probleme': 'Major',
-    'important': 'Major',
-    'defectueux': 'Major',
-    'defectueuse': 'Major',
-    'defaillant': 'Major',
-    'casse': 'Major',
-    'cassee': 'Major',
-    'endommage': 'Major',
-    'endommagee': 'Major',
-    'abime': 'Major',
-    'abimee': 'Major',
-    'deteriore': 'Major',
-    'hors service': 'Major',
-    'hs': 'Major',
-
-    // Immediate variants
-    'immediat': 'Immediate',
-    'immediate': 'Immediate',
-    'urgent': 'Immediate',
-    'critique': 'Immediate',
-    'danger': 'Immediate',
-    'dangereux': 'Immediate',
-    'grave': 'Immediate',
-    'tres grave': 'Immediate',
-
-    // Not Fitted variants
-    'non installe': 'Not Fitted / Surveyed',
-    'pas installe': 'Not Fitted / Surveyed',
-    'absent': 'Not Fitted / Surveyed',
-    'na': 'Not Fitted / Surveyed',
-    'n/a': 'Not Fitted / Surveyed',
-    'non applicable': 'Not Fitted / Surveyed',
-    'pas present': 'Not Fitted / Surveyed',
-    'manquant': 'Not Fitted / Surveyed',
-
-    // Repeat variants
-    'repeat': 'Repeat',
-    'repeter': 'Repeat',
-    'a refaire': 'Repeat',
-    'deja signale': 'Repeat',
-  };
 
   /// Mapping mots-cles questions (generique, extrait dynamiquement)
   final Map<String, List<String>> _questionKeywordsCache = {};
@@ -309,128 +225,150 @@ class ChecklistService {
     _currentSession = null;
   }
 
-  // ============== PARSING DES REPONSES ==============
+  // ============== CLASSIFICATION PAR LLM ==============
 
-  /// Parse une reponse naturelle pour une question donnee
-  ChecklistResponse? parseAnswer(String userInput, ChecklistQuestion question) {
-    final input = userInput.toLowerCase().trim();
-
-    switch (question.type) {
-      case QuestionType.multipleChoice:
-        return _parseMultipleChoiceAnswer(input, question);
-      case QuestionType.checkbox:
-        return _parseCheckboxAnswer(input, question);
-      case QuestionType.text:
-        return _parseTextAnswer(input, question);
-    }
-  }
-
-  ChecklistResponse? _parseMultipleChoiceAnswer(
-    String input,
+  /// Construit le prompt pour que Gemma classifie la reponse utilisateur
+  String buildClassificationPrompt(
+    String userInput,
     ChecklistQuestion question,
   ) {
-    final selectedChoices = <String>[];
+    final choicesStr = question.choices.join(', ');
 
-    // D'abord chercher dans le mapping
-    for (final entry in choiceMapping.entries) {
-      if (input.contains(entry.key)) {
-        if (question.choices.contains(entry.value) &&
-            !selectedChoices.contains(entry.value)) {
-          selectedChoices.add(entry.value);
-        }
-      }
-    }
+    return '''Tu es un assistant d'inspection. Analyse la reponse de l'utilisateur et determine le choix le plus approprie.
 
-    // Ensuite chercher les choix directs
+QUESTION: "${question.title}"
+CHOIX POSSIBLES: [$choicesStr]
+
+REPONSE UTILISATEUR: "$userInput"
+
+INSTRUCTIONS:
+- Analyse le sens de la reponse utilisateur
+- Choisis UN SEUL choix parmi la liste qui correspond le mieux
+- Reponds UNIQUEMENT avec le nom exact du choix (ex: "Satisfactory" ou "Major")
+- Si la reponse indique que tout va bien/ok/ras -> "Satisfactory"
+- Si la reponse indique un probleme mineur/leger -> "Minor"
+- Si la reponse indique un probleme important/defectueux/casse -> "Major"
+- Si la reponse indique une urgence/danger/critique -> "Immediate"
+- Si la reponse indique a surveiller/attention -> "Monitor"
+
+CHOIX:''';
+  }
+
+  /// Construit le prompt pour classifier une reponse checkbox (oui/non)
+  String buildCheckboxClassificationPrompt(
+    String userInput,
+    ChecklistQuestion question,
+  ) {
+    return '''Tu es un assistant d'inspection. Determine si la reponse indique un probleme de securite.
+
+QUESTION: "${question.title}"
+REPONSE UTILISATEUR: "$userInput"
+
+INSTRUCTIONS:
+- Analyse si la reponse indique un probleme de securite ou non
+- Reponds UNIQUEMENT par "OUI" ou "NON"
+- Si l'utilisateur mentionne un danger, probleme de securite, risque -> "OUI"
+- Si l'utilisateur dit que c'est ok, pas de probleme, ras -> "NON"
+
+REPONSE:''';
+  }
+
+  /// Parse la reponse de Gemma pour extraire le choix
+  String? parseGemmaChoice(String gemmaResponse, ChecklistQuestion question) {
+    final response = gemmaResponse.trim();
+
+    // Chercher le choix exact dans la reponse
     for (final choice in question.choices) {
-      if (input.contains(choice.toLowerCase())) {
-        if (!selectedChoices.contains(choice)) {
-          selectedChoices.add(choice);
+      if (response.toLowerCase().contains(choice.toLowerCase())) {
+        return choice;
+      }
+    }
+
+    // Si pas trouve, prendre la premiere ligne non vide
+    final lines = response.split('\n').where((l) => l.trim().isNotEmpty);
+    if (lines.isNotEmpty) {
+      final firstLine = lines.first.trim();
+      // Verifier si c'est un choix valide
+      for (final choice in question.choices) {
+        if (firstLine.toLowerCase() == choice.toLowerCase()) {
+          return choice;
         }
       }
     }
 
-    if (selectedChoices.isEmpty) return null;
+    return null;
+  }
+
+  /// Parse la reponse de Gemma pour une checkbox
+  bool? parseGemmaCheckbox(String gemmaResponse) {
+    final response = gemmaResponse.toLowerCase().trim();
+
+    if (response.contains('oui') || response.contains('yes')) {
+      return true;
+    }
+    if (response.contains('non') || response.contains('no')) {
+      return false;
+    }
+
+    return null;
+  }
+
+  /// Cree une ChecklistResponse a partir du choix classifie
+  ChecklistResponse? createResponseFromChoice(
+    String userInput,
+    ChecklistQuestion question,
+    String choice,
+  ) {
+    if (_currentSession?.currentSection == null) return null;
 
     return ChecklistResponse(
       questionUuid: question.uuid,
       sectionUuid: _currentSession!.currentSection!.uuid,
-      selectedChoices: question.multipleAnswer
-          ? selectedChoices
-          : [selectedChoices.first],
+      selectedChoices: [choice],
       answeredAt: DateTime.now(),
-      rawUserInput: input,
+      rawUserInput: userInput,
     );
   }
 
-  ChecklistResponse? _parseCheckboxAnswer(
-    String input,
+  /// Cree une ChecklistResponse pour une checkbox
+  ChecklistResponse? createCheckboxResponse(
+    String userInput,
     ChecklistQuestion question,
+    bool value,
   ) {
-    final affirmative = [
-      'oui',
-      'yes',
-      'true',
-      'probleme',
-      'securite',
-      'danger',
-      'issue',
-      'vrai',
-    ];
-    final negative = [
-      'non',
-      'no',
-      'false',
-      'pas de',
-      'aucun',
-      'rien',
-      'faux',
-      'ok',
-      'ras',
-    ];
-
-    bool? value;
-
-    for (final word in affirmative) {
-      if (input.contains(word)) {
-        value = true;
-        break;
-      }
-    }
-
-    if (value == null) {
-      for (final word in negative) {
-        if (input.contains(word)) {
-          value = false;
-          break;
-        }
-      }
-    }
-
-    if (value == null) return null;
+    if (_currentSession?.currentSection == null) return null;
 
     return ChecklistResponse(
       questionUuid: question.uuid,
       sectionUuid: _currentSession!.currentSection!.uuid,
       checkboxValue: value,
       answeredAt: DateTime.now(),
-      rawUserInput: input,
+      rawUserInput: userInput,
     );
   }
 
-  ChecklistResponse _parseTextAnswer(String input, ChecklistQuestion question) {
+  /// Cree une ChecklistResponse pour du texte libre
+  ChecklistResponse? createTextResponse(
+    String userInput,
+    ChecklistQuestion question,
+  ) {
+    if (_currentSession?.currentSection == null) return null;
+
     return ChecklistResponse(
       questionUuid: question.uuid,
       sectionUuid: _currentSession!.currentSection!.uuid,
-      textValue: input,
+      textValue: userInput,
       answeredAt: DateTime.now(),
-      rawUserInput: input,
+      rawUserInput: userInput,
     );
   }
 
-  /// Parse plusieurs reponses d'un meme input
-  List<ParsedMultiAnswer> parseMultipleAnswers(String userInput) {
-    final results = <ParsedMultiAnswer>[];
+  // ============== DETECTION DE QUESTIONS ==============
+
+  /// Detecte les questions mentionnees dans l'input utilisateur
+  /// Retourne la liste des questions qui semblent etre referencees
+  List<ChecklistQuestion> detectMentionedQuestions(String userInput) {
+    final results = <ChecklistQuestion>[];
     if (_currentSession?.currentSection == null) return results;
 
     final input = userInput.toLowerCase();
@@ -439,21 +377,11 @@ class ChecklistService {
     // Pour chaque question, verifier si elle est mentionnee
     for (final question in questions) {
       final keywords = _questionKeywordsCache[question.uuid] ?? [];
-      bool isQuestionMentioned = false;
 
       for (final keyword in keywords) {
         if (keyword.length > 3 && input.contains(keyword)) {
-          isQuestionMentioned = true;
+          results.add(question);
           break;
-        }
-      }
-
-      if (isQuestionMentioned) {
-        final response = parseAnswer(input, question);
-        if (response != null) {
-          results.add(
-            ParsedMultiAnswer(question: question, response: response),
-          );
         }
       }
     }

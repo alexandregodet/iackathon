@@ -6,6 +6,8 @@ import 'package:injectable/injectable.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/datasources/checklist_service.dart';
 import '../../../data/datasources/gemma_service.dart';
+import '../../../domain/entities/checklist_question.dart';
+import '../../../domain/entities/checklist_response.dart';
 import '../../../domain/entities/checklist_section.dart';
 import '../../../domain/entities/checklist_session.dart';
 import 'checklist_event.dart';
@@ -115,76 +117,147 @@ Commencons: ${firstQuestion.questionPrompt}''';
 
     emit(state.copyWith(isProcessing: true));
 
-    // D'abord essayer de parser plusieurs reponses
-    final multiAnswers = _checklistService.parseMultipleAnswers(
-      event.userInput,
-    );
+    final confirmations = <String>[];
 
-    if (multiAnswers.isNotEmpty) {
-      // Enregistrer toutes les reponses parsees
-      for (final parsed in multiAnswers) {
-        _checklistService.recordResponse(parsed.response);
+    try {
+      // Detecter si plusieurs questions sont mentionnees
+      final mentionedQuestions = _checklistService.detectMentionedQuestions(
+        event.userInput,
+      );
+
+      if (mentionedQuestions.isNotEmpty) {
+        // Classifier chaque question mentionnee avec Gemma
+        for (final question in mentionedQuestions) {
+          final classified = await _classifyAnswerWithGemma(
+            event.userInput,
+            question,
+          );
+          if (classified != null) {
+            _checklistService.recordResponse(classified);
+            confirmations.add('${question.title} = ${classified.displayValue}');
+          }
+        }
+      } else if (state.currentQuestion != null) {
+        // Classifier la reponse pour la question courante
+        final classified = await _classifyAnswerWithGemma(
+          event.userInput,
+          state.currentQuestion!,
+        );
+
+        if (classified != null) {
+          _checklistService.recordResponse(classified);
+          confirmations.add(
+            '${state.currentQuestion!.title} = ${classified.displayValue}',
+          );
+        }
       }
 
       _updateSystemPrompt();
 
       final session = _checklistService.currentSession!;
-      final confirmation = _buildMultiAnswerConfirmation(multiAnswers);
+      final nextMessage = _buildNextQuestionMessage(session);
+
+      String responseMessage;
+      if (confirmations.isNotEmpty) {
+        responseMessage =
+            'J\'ai bien note: ${confirmations.join(", ")}.\n\n$nextMessage';
+      } else {
+        responseMessage =
+            'Je n\'ai pas pu interpreter votre reponse. ${state.currentQuestion?.questionPrompt ?? nextMessage}';
+      }
 
       emit(
         state.copyWith(
           session: session,
           isProcessing: false,
-          lastLlmResponse: confirmation,
+          lastLlmResponse: responseMessage,
         ),
       );
-    } else if (state.currentQuestion != null) {
-      // Essayer de parser une seule reponse
-      final response = _checklistService.parseAnswer(
-        event.userInput,
-        state.currentQuestion!,
+    } catch (e, stack) {
+      AppLogger.error(
+        'Erreur classification reponse',
+        tag: 'ChecklistBloc',
+        error: e,
+        stackTrace: stack,
       );
-
-      if (response != null) {
-        _checklistService.recordResponse(response);
-        _updateSystemPrompt();
-
-        final session = _checklistService.currentSession!;
-        final nextMessage = _buildNextQuestionMessage(session);
-
-        emit(
-          state.copyWith(
-            session: session,
-            isProcessing: false,
-            lastLlmResponse: nextMessage,
-          ),
-        );
-      } else {
-        // Pas compris la reponse
-        emit(
-          state.copyWith(
-            isProcessing: false,
-            lastLlmResponse:
-                'Je n\'ai pas compris la reponse. ${state.currentQuestion!.questionPrompt}',
-          ),
-        );
-      }
-    } else {
-      emit(state.copyWith(isProcessing: false));
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastLlmResponse:
+              'Erreur lors de l\'analyse. Pouvez-vous reformuler votre reponse?',
+        ),
+      );
     }
   }
 
-  String _buildMultiAnswerConfirmation(List<ParsedMultiAnswer> answers) {
-    final confirmations = answers
-        .map((a) {
-          return '${a.question.title} = ${a.response.displayValue}';
-        })
-        .join(', ');
+  /// Utilise Gemma pour classifier la reponse de l'utilisateur
+  Future<ChecklistResponse?> _classifyAnswerWithGemma(
+    String userInput,
+    ChecklistQuestion question,
+  ) async {
+    try {
+      if (question.type == QuestionType.text) {
+        return _checklistService.createTextResponse(userInput, question);
+      }
 
-    final session = _checklistService.currentSession!;
-    final nextMessage = _buildNextQuestionMessage(session);
+      if (question.type == QuestionType.checkbox) {
+        final classificationPrompt =
+            _checklistService.buildCheckboxClassificationPrompt(
+          userInput,
+          question,
+        );
 
-    return 'J\'ai bien note: $confirmations.\n\n$nextMessage';
+        final gemmaResponse = await _getGemmaResponse(classificationPrompt);
+        final checkboxValue = _checklistService.parseGemmaCheckbox(gemmaResponse);
+
+        if (checkboxValue != null) {
+          return _checklistService.createCheckboxResponse(
+            userInput,
+            question,
+            checkboxValue,
+          );
+        }
+        return null;
+      }
+
+      // Pour les questions a choix multiples
+      final classificationPrompt = _checklistService.buildClassificationPrompt(
+        userInput,
+        question,
+      );
+
+      final gemmaResponse = await _getGemmaResponse(classificationPrompt);
+      final choice = _checklistService.parseGemmaChoice(gemmaResponse, question);
+
+      if (choice != null) {
+        return _checklistService.createResponseFromChoice(
+          userInput,
+          question,
+          choice,
+        );
+      }
+
+      return null;
+    } catch (e, stack) {
+      AppLogger.error(
+        'Erreur classification Gemma',
+        tag: 'ChecklistBloc',
+        error: e,
+        stackTrace: stack,
+      );
+      return null;
+    }
+  }
+
+  /// Obtient une reponse de Gemma de maniere synchrone
+  Future<String> _getGemmaResponse(String prompt) async {
+    final buffer = StringBuffer();
+
+    await for (final chunk in _gemmaService.generateResponse(prompt)) {
+      buffer.write(chunk);
+    }
+
+    return buffer.toString();
   }
 
   String _buildNextQuestionMessage(ChecklistSession session) {
