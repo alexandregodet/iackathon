@@ -230,13 +230,28 @@ class ChatInitializeChecklistService extends ChatEvent {
 }
 
 class ChatChecklistShowRemaining extends ChatEvent {
-  const ChatChecklistShowRemaining();
+  final String userMessage;
+
+  const ChatChecklistShowRemaining(this.userMessage);
+
+  @override
+  List<Object?> get props => [userMessage];
 }
 
 class ChatChecklistGenerateReport extends ChatEvent {
-  const ChatChecklistGenerateReport();
+  final String userMessage;
+
+  const ChatChecklistGenerateReport(this.userMessage);
+
+  @override
+  List<Object?> get props => [userMessage];
 }
 
 class ChatChecklistEndSession extends ChatEvent {
-  const ChatChecklistEndSession();
+  final String userMessage;
+
+  const ChatChecklistEndSession(this.userMessage);
+
+  @override
+  List<Object?> get props => [userMessage];
 }

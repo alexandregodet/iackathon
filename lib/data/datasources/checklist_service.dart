@@ -283,6 +283,7 @@ COMMENTAIRE: [details supplementaires donnes par l'utilisateur, ou AUCUN]''';
     ChecklistQuestion question,
   ) {
     return '''Tu es un assistant d'inspection. Determine si la reponse indique un probleme de securite.
+    
 
 QUESTION: "${question.title}"
 REPONSE UTILISATEUR: "$userInput"
@@ -404,21 +405,33 @@ REPONSE: [OUI ou NON]''';
     return buffer.toString();
   }
 
-  /// Detecte si l'utilisateur demande tous les choix
-  bool isAskingForAllChoices(String userInput) {
-    final triggers = [
-      'tous les choix',
-      'toutes les options',
-      'autres choix',
-      'autre choix',
-      'voir tout',
-      'all choices',
-      'more options',
-      'plus de choix',
-      'liste complete',
-    ];
-    final input = userInput.toLowerCase();
-    return triggers.any((t) => input.contains(t));
+  /// Construit le prompt pour detecter l'intention de l'utilisateur
+  String buildIntentDetectionPrompt(String userInput) {
+    return '''Determine l'intention de cette phrase dans le contexte d'une inspection.
+
+PHRASE: "$userInput"
+
+INTENTIONS (par ordre de priorite):
+1. REPONSE = decrit un etat ou donne une evaluation (exemples: ok, bon, RAS, defectueux, ca va, abime, etc.)
+2. RAPPORT = demande EXPLICITEMENT de generer/exporter/creer le rapport final ou JSON
+3. RESTE = demande EXPLICITEMENT ce qu'il reste a verifier/faire
+4. TERMINER = dit EXPLICITEMENT vouloir arreter/terminer/quitter la session
+5. CHOIX = demande EXPLICITEMENT de voir les choix/options disponibles
+
+REGLE: En cas de doute, reponds REPONSE. Les autres intentions doivent etre explicites.
+
+Reponds avec UN SEUL mot: REPONSE, RAPPORT, RESTE, TERMINER ou CHOIX''';
+  }
+
+  /// Parse la reponse de detection d'intention
+  String parseIntentDetection(String gemmaResponse) {
+    final response = gemmaResponse.toUpperCase().trim();
+
+    if (response.contains('RAPPORT')) return 'RAPPORT';
+    if (response.contains('RESTE')) return 'RESTE';
+    if (response.contains('TERMINER')) return 'TERMINER';
+    if (response.contains('CHOIX')) return 'CHOIX';
+    return 'REPONSE';
   }
 
   /// Tente de parser une selection directe de l'utilisateur (numero ou nom)

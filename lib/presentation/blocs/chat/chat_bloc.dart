@@ -215,7 +215,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     AppLogger.debug('Envoi du message', 'ChatBloc');
 
     // ============== CHECKLIST TRIGGERS ==============
-    final lowerMessage = event.message.toLowerCase();
 
     // S'assurer que le ChecklistService est charge (fallback)
     if (!_checklistService.isLoaded) {
@@ -230,26 +229,33 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
     }
 
-    // Detecter trigger de rapport JSON
-    if (_isReportTrigger(lowerMessage)) {
-      add(const ChatChecklistGenerateReport());
-      return;
-    }
+    // Si session checklist active, detecter l'intention avec Gemma
+    if (state.hasActiveChecklistSession) {
+      final intent = await _detectUserIntent(event.message);
+      AppLogger.debug('Intent detecte: $intent', 'ChatBloc');
 
-    // Detecter demande "qu'est-ce qu'il me reste?"
-    if (_isRemainingTrigger(lowerMessage)) {
-      add(const ChatChecklistShowRemaining());
-      return;
-    }
-
-    // Detecter fin de session
-    if (_isEndSessionTrigger(lowerMessage)) {
-      add(const ChatChecklistEndSession());
-      return;
+      switch (intent) {
+        case 'RAPPORT':
+          add(ChatChecklistGenerateReport(event.message));
+          return;
+        case 'RESTE':
+          add(ChatChecklistShowRemaining(event.message));
+          return;
+        case 'TERMINER':
+          add(ChatChecklistEndSession(event.message));
+          return;
+        case 'CHOIX':
+          await _handleShowAllChoices(event.message, emit);
+          return;
+        default:
+          // REPONSE - traiter comme reponse a la checklist
+          await _handleChecklistAnswer(event.message, emit);
+          return;
+      }
     }
 
     // Detecter section si pas de session active
-    if (_checklistService.isLoaded && !state.hasActiveChecklistSession) {
+    if (_checklistService.isLoaded) {
       AppLogger.debug(
         'Tentative detection section: "${event.message}"',
         'ChatBloc',
@@ -265,12 +271,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       } else {
         AppLogger.debug('Aucune section detectee', 'ChatBloc');
       }
-    }
-
-    // Si session checklist active, traiter comme reponse
-    if (state.hasActiveChecklistSession) {
-      await _handleChecklistAnswer(event.message, emit);
-      return;
     }
     // ============== FIN CHECKLIST TRIGGERS ==============
 
@@ -1138,41 +1138,50 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   // ============== CHECKLIST SESSION HANDLERS ==============
 
-  bool _isReportTrigger(String message) {
-    final triggers = [
-      'genere le rapport',
-      'génère le rapport',
-      'export json',
-      'rapport json',
-      'generate report',
-      'json report',
-    ];
-    return triggers.any((t) => message.contains(t));
+  /// Detecte l'intention de l'utilisateur via Gemma
+  Future<String> _detectUserIntent(String userInput) async {
+    final prompt = _checklistService.buildIntentDetectionPrompt(userInput);
+    final response = await _getGemmaResponse(prompt);
+    return _checklistService.parseIntentDetection(response);
   }
 
-  bool _isRemainingTrigger(String message) {
-    final triggers = [
-      'reste',
-      'manque',
-      'oublie',
-      'remaining',
-      'what\'s left',
-      'il me reste',
-      'qu\'est-ce qu\'il',
-    ];
-    return triggers.any((t) => message.contains(t));
-  }
+  /// Affiche tous les choix possibles pour la question courante
+  Future<void> _handleShowAllChoices(
+    String userInput,
+    Emitter<ChatState> emit,
+  ) async {
+    final question = state.checklistSession?.currentQuestion;
+    if (question == null) {
+      final assistantMessage = ChatMessage(
+        id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+        role: MessageRole.assistant,
+        content: 'Aucune question en cours.',
+        timestamp: DateTime.now(),
+      );
+      emit(state.copyWith(messages: [...state.messages, assistantMessage]));
+      return;
+    }
 
-  bool _isEndSessionTrigger(String message) {
-    final triggers = [
-      'terminer',
-      'fin de session',
-      'arreter',
-      'stop checklist',
-      'end session',
-      'quitter inspection',
-    ];
-    return triggers.any((t) => message.contains(t));
+    final userMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      role: MessageRole.user,
+      content: userInput,
+      timestamp: DateTime.now(),
+    );
+
+    final responseMessage = _checklistService.formatChoicesForUser(question);
+
+    final assistantMessage = ChatMessage(
+      id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+      role: MessageRole.assistant,
+      content: responseMessage,
+      timestamp: DateTime.now(),
+    );
+
+    emit(state.copyWith(
+      messages: [...state.messages, userMessage, assistantMessage],
+      pendingQuestionForSelection: question,
+    ));
   }
 
   Future<void> _handleChecklistStartSession(
@@ -1337,7 +1346,7 @@ Commencons: ${firstQuestion.questionPrompt}''';
   }
 
   /// Gere la selection de l'utilisateur quand on lui propose des choix
-  /// L'utilisateur peut: repondre librement (Gemma re-analyse), donner un numero, ou demander tous les choix
+  /// L'utilisateur peut: repondre librement (Gemma re-analyse) ou donner un numero
   Future<void> _handleDirectSelection(
     String userInput,
     Emitter<ChatState> emit,
@@ -1347,25 +1356,7 @@ Commencons: ${firstQuestion.questionPrompt}''';
     String responseMessage;
     bool clearPending = false;
 
-    // 1. Verifier si l'utilisateur demande tous les choix
-    if (_checklistService.isAskingForAllChoices(userInput)) {
-      responseMessage = _checklistService.formatChoicesForUser(question);
-
-      final assistantMessage = ChatMessage(
-        id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
-        role: MessageRole.assistant,
-        content: responseMessage,
-        timestamp: DateTime.now(),
-      );
-
-      emit(state.copyWith(
-        messages: [...state.messages, assistantMessage],
-        checklistResponse: responseMessage,
-      ));
-      return;
-    }
-
-    // 2. Essayer de parser une selection directe (numero ou nom exact)
+    // 1. Essayer de parser une selection directe (numero ou nom exact)
     final directChoice = _checklistService.parseDirectChoice(userInput, question);
 
     if (directChoice != null) {
@@ -1597,7 +1588,7 @@ Commencons: ${firstQuestion.questionPrompt}''';
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       role: MessageRole.user,
-      content: 'Qu\'est-ce qu\'il me reste?',
+      content: event.userMessage,
       timestamp: DateTime.now(),
     );
 
@@ -1640,7 +1631,7 @@ Commencons: ${firstQuestion.questionPrompt}''';
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       role: MessageRole.user,
-      content: 'Genere le rapport',
+      content: event.userMessage,
       timestamp: DateTime.now(),
     );
 
@@ -1669,7 +1660,7 @@ Commencons: ${firstQuestion.questionPrompt}''';
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       role: MessageRole.user,
-      content: 'Terminer la session',
+      content: event.userMessage,
       timestamp: DateTime.now(),
     );
 
