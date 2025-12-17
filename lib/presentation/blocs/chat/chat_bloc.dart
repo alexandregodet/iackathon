@@ -428,8 +428,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       // In voice mode, start TTS as soon as we have complete sentences
       if (state.isVoiceMode) {
+        AppLogger.debug('Voice mode active, accumulating for TTS: ${event.chunk.length} chars', 'ChatBloc');
         _accumulatedTextForTts += event.chunk;
         _processTtsStreaming(lastMessage.id);
+      } else {
+        AppLogger.debug('Voice mode NOT active, skipping TTS', 'ChatBloc');
       }
     }
   }
@@ -1253,9 +1256,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     );
   }
 
-<<<<<<< HEAD
-  // ============== CHECKLIST SESSION HANDLERS ==============
-
   /// Detecte l'intention de l'utilisateur via Gemma
   Future<String> _detectUserIntent(String userInput) async {
     final prompt = _checklistService.buildIntentDetectionPrompt(userInput);
@@ -1808,12 +1808,21 @@ Commencons: ${firstQuestion.questionPrompt}''';
     AppLogger.info('Toggling voice mode: $newVoiceMode', 'ChatBloc');
 
     if (newVoiceMode) {
-      // Enabling voice mode - initialize STT service and start listening
+      // Enabling voice mode - initialize TTS first (always works)
+      await _ttsService.init();
+
+      // Try to initialize STT (may fail on some devices)
       await _sttService.init();
 
-      if (!_sttService.isAvailable) {
-        AppLogger.warning('STT not available', 'ChatBloc');
-        add(const ChatVoiceError('Speech recognition not available'));
+      // Enable voice mode even if STT fails (TTS will still work)
+      final sttAvailable = _sttService.isAvailable;
+      if (!sttAvailable) {
+        AppLogger.warning('STT not available, TTS-only mode', 'ChatBloc');
+        // Enable voice mode for TTS only
+        emit(state.copyWith(
+          isVoiceMode: true,
+          isListening: false,
+        ));
         return;
       }
 
@@ -1822,8 +1831,12 @@ Commencons: ${firstQuestion.questionPrompt}''';
       if (!hasPermission) {
         final granted = await _sttService.requestPermission();
         if (!granted) {
-          AppLogger.warning('Microphone permission denied', 'ChatBloc');
-          add(const ChatVoiceError('Microphone permission denied'));
+          AppLogger.warning('Microphone permission denied, TTS-only mode', 'ChatBloc');
+          // Enable voice mode for TTS only
+          emit(state.copyWith(
+            isVoiceMode: true,
+            isListening: false,
+          ));
           return;
         }
       }

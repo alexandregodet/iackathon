@@ -20,10 +20,25 @@ class TtsService {
   String? get currentMessageId => _currentMessageId;
 
   Future<void> init() async {
-    await _flutterTts.setLanguage('fr-FR');
-    await _flutterTts.setSpeechRate(0.8);
-    await _flutterTts.setVolume(1.0);
-    await _flutterTts.setPitch(1.0);
+    AppLogger.info('Initializing TTS service...', 'TtsService');
+
+    try {
+      await _flutterTts.setLanguage('fr-FR');
+      await _flutterTts.setSpeechRate(0.8);
+      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setPitch(1.0);
+
+      // Check available engines/voices
+      final engines = await _flutterTts.getEngines;
+      AppLogger.info('Available TTS engines: $engines', 'TtsService');
+
+      final languages = await _flutterTts.getLanguages;
+      AppLogger.info('Available TTS languages: $languages', 'TtsService');
+
+      AppLogger.info('TTS service initialized successfully', 'TtsService');
+    } catch (e) {
+      AppLogger.error('Failed to initialize TTS: $e', tag: 'TtsService');
+    }
 
     _flutterTts.setCompletionHandler(() {
       AppLogger.info('TTS chunk completed', 'TtsService');
