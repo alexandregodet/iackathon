@@ -11,8 +11,8 @@ import 'presentation/pages/home_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Disable runtime font fetching - use system fallback fonts when offline
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // Enable runtime font fetching for custom medieval fonts (Cinzel, Crimson Text)
+  GoogleFonts.config.allowRuntimeFetching = true;
 
   await FlutterGemma.initialize();
   await configureDependencies();
