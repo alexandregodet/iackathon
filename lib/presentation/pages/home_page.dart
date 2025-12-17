@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'checklist_history_page.dart';
 import 'checklist_page.dart';
 import 'model_selection_page.dart';
 import 'settings_page.dart';
@@ -196,6 +197,26 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Text('> ', style: TextStyle(color: colorScheme.primary)),
                     const Text('CHECKLIST_GRIFFON'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Checklist history button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ChecklistHistoryPage(),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('> ', style: TextStyle(color: colorScheme.primary)),
+                    const Text('HISTORIQUE'),
                   ],
                 ),
               ),
