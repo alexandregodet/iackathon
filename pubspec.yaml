@@ -63,6 +63,7 @@ dependencies:
   # RAG - File picker and PDF text extraction
   file_picker: ^8.1.7
   read_pdf_text: ^0.3.1
+  pdfx: ^2.6.0
   intl: ^0.20.2
   shared_preferences: ^2.5.4
   flutter_tts: ^4.2.3
