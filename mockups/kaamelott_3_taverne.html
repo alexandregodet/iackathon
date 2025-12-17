@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaamelott Theme - La Taverne</title>
+  <link href="https://fonts.googleapis.com/css2?family=Almendra:ital,wght@0,400;0,700;1,400&family=Fondamento&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --wood-dark: #2a1f1a;
+      --wood-mid: #4a3528;
+      --wood-light: #6b4d38;
+      --wood-grain: #8b6b4a;
+      --cream: #f5e6d3;
+      --cream-dark: #e8d5bc;
+      --candle-yellow: #ffd93d;
+      --candle-orange: #ff9f43;
+      --ale-amber: #c68e17;
+      --ale-dark: #8b6914;
+      --leather: #8b4513;
+      --leather-dark: #5c2e0a;
+      --ink: #1a1410;
+      --red-wine: #722f37;
+      --moss: #4a5a3a;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'IM Fell English', Georgia, serif;
+      background: var(--wood-dark);
+      min-height: 100vh;
+      color: var(--cream);
+    }
+
+    .app-container {
+      max-width: 420px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background:
+        /* Wood grain texture */
+        repeating-linear-gradient(
+          90deg,
+          rgba(107, 77, 56, 0.1) 0px,
+          transparent 2px,
+          transparent 10px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          rgba(0,0,0,0.05) 0px,
+          transparent 1px,
+          transparent 4px
+        ),
+        linear-gradient(180deg, var(--wood-mid) 0%, var(--wood-dark) 100%);
+      position: relative;
+    }
+
+    /* Warm candle glow overlay */
+    .app-container::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255, 217, 61, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 20% 30%, rgba(255, 159, 67, 0.05) 0%, transparent 40%),
+        radial-gradient(ellipse at 80% 60%, rgba(255, 159, 67, 0.05) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+      animation: candleGlow 5s ease-in-out infinite;
+    }
+
+    @keyframes candleGlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+
+    /* Header - Wooden Plank Style */
+    .header {
+      background:
+        linear-gradient(180deg, var(--wood-light) 0%, var(--wood-mid) 100%);
+      padding: 1rem;
+      position: relative;
+      z-index: 1;
+      border-bottom: 4px solid var(--wood-dark);
+      box-shadow:
+        inset 0 2px 4px rgba(255,255,255,0.1),
+        0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .header::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg,
+        var(--leather) 0%,
+        var(--ale-amber) 50%,
+        var(--leather) 100%
+      );
+    }
+
+    /* Decorative rope border */
+    .rope-border {
+      height: 12px;
+      background:
+        repeating-linear-gradient(
+          -45deg,
+          var(--ale-dark) 0px,
+          var(--ale-dark) 4px,
+          var(--ale-amber) 4px,
+          var(--ale-amber) 8px
+        );
+      border-radius: 6px;
+      margin: 0 -1rem;
+      margin-top: 0.5rem;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      background: var(--leather);
+      border: 3px solid var(--leather-dark);
+      color: var(--cream);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.4rem;
+      transition: all 0.3s;
+      box-shadow:
+        inset 0 2px 4px rgba(255,255,255,0.2),
+        0 3px 6px rgba(0,0,0,0.3);
+    }
+
+    .back-btn:hover {
+      background: var(--ale-amber);
+      transform: translateY(-2px);
+      box-shadow:
+        inset 0 2px 4px rgba(255,255,255,0.3),
+        0 5px 10px rgba(0,0,0,0.4);
+    }
+
+    .header-title {
+      font-family: 'Almendra', serif;
+      color: var(--cream);
+      font-size: 1.6rem;
+      font-weight: 700;
+      text-shadow:
+        2px 2px 0 var(--wood-dark),
+        0 0 10px rgba(255, 217, 61, 0.3);
+    }
+
+    .header-badge {
+      margin-left: auto;
+      padding: 0.4rem 0.8rem;
+      background: var(--red-wine);
+      border: 2px solid var(--ale-amber);
+      border-radius: 20px;
+      font-family: 'Fondamento', cursive;
+      font-size: 0.75rem;
+      color: var(--cream);
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 1.5rem;
+      padding-bottom: 120px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Tavern Notice Board Style Card */
+    .notice-board {
+      background:
+        url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%23f5e6d3'/%3E%3Cpath d='M0 0 L100 100 M100 0 L0 100' stroke='%23e8d5bc' stroke-width='0.5'/%3E%3C/svg%3E"),
+        var(--cream);
+      border: 4px solid var(--wood-light);
+      border-radius: 4px;
+      padding: 1.2rem;
+      margin-bottom: 1.5rem;
+      box-shadow:
+        inset 0 0 20px rgba(0,0,0,0.1),
+        4px 4px 0 var(--wood-dark);
+      position: relative;
+      transform: rotate(-0.5deg);
+    }
+
+    .notice-board::before {
+      content: "📌";
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.2rem;
+    }
+
+    .notice-title {
+      font-family: 'Almendra', serif;
+      font-size: 1.1rem;
+      color: var(--ink);
+      text-align: center;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+
+    .notice-text {
+      font-family: 'IM Fell English', serif;
+      font-size: 0.95rem;
+      color: var(--wood-mid);
+      text-align: center;
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    /* Progress - Ale Mug Style */
+    .progress-mug {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--wood-light) 0%, var(--wood-mid) 100%);
+      border: 3px solid var(--wood-grain);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      box-shadow:
+        inset 0 2px 4px rgba(255,255,255,0.1),
+        0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .mug-icon {
+      font-size: 2.5rem;
+      filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+    }
+
+    .progress-details {
+      flex: 1;
+    }
+
+    .progress-label {
+      font-family: 'Fondamento', cursive;
+      font-size: 0.85rem;
+      color: var(--cream-dark);
+      margin-bottom: 0.3rem;
+    }
+
+    .progress-bar-container {
+      height: 16px;
+      background: var(--wood-dark);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--wood-grain);
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 45%;
+      background: linear-gradient(180deg,
+        var(--candle-yellow) 0%,
+        var(--ale-amber) 50%,
+        var(--ale-dark) 100%
+      );
+      border-radius: 6px;
+      position: relative;
+      transition: width 0.5s ease;
+    }
+
+    .progress-fill::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      right: 4px;
+      height: 4px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 2px;
+    }
+
+    .progress-count {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'Almendra', serif;
+      font-size: 0.7rem;
+      color: var(--cream);
+      font-weight: 700;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    /* Question Cards - Parchment Notes */
+    .question-card {
+      background:
+        linear-gradient(135deg, var(--cream) 0%, var(--cream-dark) 100%);
+      border: 2px solid var(--wood-grain);
+      border-radius: 4px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      position: relative;
+      color: var(--ink);
+      box-shadow:
+        3px 3px 0 var(--wood-dark),
+        inset 0 0 30px rgba(139, 75, 19, 0.05);
+      transform: rotate(0.3deg);
+      transition: all 0.3s;
+    }
+
+    .question-card:nth-child(even) {
+      transform: rotate(-0.3deg);
+    }
+
+    .question-card:hover {
+      transform: rotate(0deg) translateY(-2px);
+      box-shadow:
+        5px 5px 0 var(--wood-dark),
+        inset 0 0 30px rgba(139, 75, 19, 0.08);
+    }
+
+    .question-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.8rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .question-number {
+      min-width: 32px;
+      height: 32px;
+      background: var(--red-wine);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Almendra', serif;
+      font-size: 1rem;
+      color: var(--cream);
+      font-weight: 700;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .question-title {
+      font-family: 'Almendra', serif;
+      font-size: 1rem;
+      color: var(--ink);
+      line-height: 1.4;
+    }
+
+    /* Response Options - Wax Seal Style */
+    .response-options {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .response-btn {
+      flex: 1;
+      padding: 0.7rem 0.5rem;
+      background: var(--cream-dark);
+      border: 2px solid var(--wood-grain);
+      color: var(--wood-mid);
+      font-family: 'IM Fell English', serif;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .response-btn:hover {
+      background: var(--cream);
+      border-color: var(--ale-amber);
+    }
+
+    .response-btn.selected-ok {
+      background: var(--moss);
+      border-color: #6a7a5a;
+      color: var(--cream);
+    }
+
+    .response-btn.selected-nok {
+      background: var(--red-wine);
+      border-color: #923747;
+      color: var(--cream);
+    }
+
+    .response-btn.selected-na {
+      background: var(--ale-amber);
+      border-color: var(--ale-dark);
+      color: var(--ink);
+    }
+
+    /* Oracle Button - Magic Candle */
+    .oracle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      width: 100%;
+      padding: 0.7rem;
+      background: linear-gradient(135deg, #2a2050 0%, #1a1030 100%);
+      border: 2px solid #5a4a8a;
+      color: #c8b8ff;
+      font-family: 'Fondamento', cursive;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .oracle-btn::before {
+      content: "✦";
+      position: absolute;
+      font-size: 2rem;
+      color: rgba(200, 184, 255, 0.1);
+      animation: twinkle 2s ease-in-out infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.1; }
+      50% { transform: scale(1.5) rotate(180deg); opacity: 0.3; }
+    }
+
+    .oracle-btn:hover {
+      background: linear-gradient(135deg, #3a3070 0%, #2a2050 100%);
+      border-color: #8a7aba;
+      box-shadow: 0 0 20px rgba(138, 122, 186, 0.4);
+    }
+
+    .candle-icon {
+      font-size: 1.2rem;
+      animation: candleFlicker 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes candleFlicker {
+      0% { transform: scaleY(1); }
+      100% { transform: scaleY(1.1); }
+    }
+
+    /* Comment - Quill Note */
+    .comment-area {
+      width: 100%;
+      padding: 0.8rem;
+      background: rgba(255,255,255,0.5);
+      border: 1px solid var(--wood-grain);
+      border-left: 3px solid var(--red-wine);
+      color: var(--ink);
+      font-family: 'IM Fell English', serif;
+      font-size: 0.95rem;
+      font-style: italic;
+      border-radius: 0 4px 4px 0;
+      resize: vertical;
+      min-height: 60px;
+      margin-top: 0.6rem;
+    }
+
+    .comment-area::placeholder {
+      color: var(--wood-grain);
+    }
+
+    /* Tags - Wooden Labels */
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.8rem;
+      padding-top: 0.8rem;
+      border-top: 1px dashed var(--wood-grain);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.3rem 0.6rem;
+      background: var(--wood-light);
+      border: 1px solid var(--wood-grain);
+      border-radius: 3px;
+      font-size: 0.75rem;
+      color: var(--cream);
+      font-family: 'Fondamento', cursive;
+      box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .tag.ai-tag {
+      background: linear-gradient(135deg, #3a3070 0%, #2a2050 100%);
+      border-color: #5a4a8a;
+    }
+
+    .tag.ai-tag::before {
+      content: "✦";
+      color: #c8b8ff;
+      font-size: 0.6rem;
+    }
+
+    .tag.manual-tag {
+      background: var(--moss);
+      border-color: #5a6a4a;
+    }
+
+    .tag .close {
+      cursor: pointer;
+      opacity: 0.7;
+      margin-left: 0.2rem;
+    }
+
+    .tag .close:hover {
+      opacity: 1;
+    }
+
+    /* Photo attachment */
+    .photo-attachment {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: rgba(198, 142, 23, 0.1);
+      border: 1px dashed var(--ale-amber);
+      border-radius: 4px;
+      margin-top: 0.6rem;
+      font-size: 0.8rem;
+      color: var(--wood-mid);
+    }
+
+    /* Bottom Navigation - Tavern Bar */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 420px;
+      background:
+        linear-gradient(0deg, var(--wood-dark) 0%, var(--wood-mid) 100%);
+      padding: 1rem;
+      display: flex;
+      gap: 1rem;
+      z-index: 10;
+      border-top: 4px solid var(--wood-grain);
+    }
+
+    .bottom-nav::before {
+      content: "";
+      position: absolute;
+      top: -8px;
+      left: 1rem;
+      right: 1rem;
+      height: 4px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--ale-amber) 0px,
+        var(--ale-amber) 10px,
+        transparent 10px,
+        transparent 15px
+      );
+    }
+
+    .nav-btn {
+      flex: 1;
+      padding: 0.9rem;
+      font-family: 'Almendra', serif;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .nav-btn.secondary {
+      background: var(--wood-light);
+      border: 2px solid var(--wood-grain);
+      color: var(--cream-dark);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .nav-btn.secondary:hover {
+      background: var(--wood-grain);
+      color: var(--cream);
+    }
+
+    .nav-btn.primary {
+      background: linear-gradient(180deg, var(--ale-amber) 0%, var(--ale-dark) 100%);
+      border: 2px solid var(--candle-yellow);
+      color: var(--ink);
+      font-weight: 700;
+      box-shadow:
+        inset 0 2px 4px rgba(255,255,255,0.3),
+        0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .nav-btn.primary:hover {
+      background: linear-gradient(180deg, var(--candle-yellow) 0%, var(--ale-amber) 100%);
+      box-shadow:
+        inset 0 2px 4px rgba(255,255,255,0.4),
+        0 0 20px rgba(255, 217, 61, 0.4);
+    }
+
+    /* Section indicator */
+    .section-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-dot {
+      width: 12px;
+      height: 12px;
+      background: var(--wood-grain);
+      border: 2px solid var(--wood-light);
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+
+    .section-dot.active {
+      background: var(--ale-amber);
+      border-color: var(--candle-yellow);
+      box-shadow: 0 0 8px rgba(255, 217, 61, 0.5);
+    }
+
+    .section-dot.completed {
+      background: var(--moss);
+      border-color: #6a7a5a;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <button class="back-btn">←</button>
+        <h1 class="header-title">Checklist GRIFFON</h1>
+        <span class="header-badge">SN: 62030010</span>
+      </div>
+      <div class="rope-border"></div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Progress Mug -->
+      <div class="progress-mug">
+        <span class="mug-icon">🍺</span>
+        <div class="progress-details">
+          <div class="progress-label">Progression de la tournee</div>
+          <div class="progress-bar-container">
+            <div class="progress-fill"></div>
+            <span class="progress-count">5/11</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Dots -->
+      <div class="section-indicator">
+        <div class="section-dot completed"></div>
+        <div class="section-dot active"></div>
+        <div class="section-dot"></div>
+        <div class="section-dot"></div>
+      </div>
+
+      <!-- Notice Board -->
+      <div class="notice-board">
+        <h2 class="notice-title">~ Inspection Visuelle ~</h2>
+        <p class="notice-text">"C'est pas l'homme qui prend la mer, c'est la mer qui prend l'homme..." Mais la, c'est un char.</p>
+      </div>
+
+      <!-- Question Cards -->
+      <div class="question-card">
+        <div class="question-header">
+          <span class="question-number">1</span>
+          <h3 class="question-title">Etat general de la carrosserie</h3>
+        </div>
+        <div class="response-options">
+          <button class="response-btn selected-ok">✓ Bon</button>
+          <button class="response-btn">✗ Mauvais</button>
+          <button class="response-btn">N/A</button>
+        </div>
+        <button class="oracle-btn">
+          <span class="candle-icon">🕯️</span>
+          <span>Demander aux esprits</span>
+        </button>
+        <div class="photo-attachment">
+          <span>📷</span>
+          <span>1 photo jointe</span>
+        </div>
+        <div class="tags-container">
+          <span class="tag ai-tag">carrosserie OK <span class="close">×</span></span>
+          <span class="tag ai-tag">pas de rouille <span class="close">×</span></span>
+          <span class="tag manual-tag">RAS <span class="close">×</span></span>
+        </div>
+      </div>
+
+      <div class="question-card">
+        <div class="question-header">
+          <span class="question-number">2</span>
+          <h3 class="question-title">Usure des chenilles</h3>
+        </div>
+        <div class="response-options">
+          <button class="response-btn">✓ Bon</button>
+          <button class="response-btn selected-nok">✗ Mauvais</button>
+          <button class="response-btn">N/A</button>
+        </div>
+        <textarea class="comment-area" placeholder="Vos observations, maitre...">Usure importante du patin droit. Comme dirait Perceval : "C'est cuit !"</textarea>
+      </div>
+
+      <div class="question-card">
+        <div class="question-header">
+          <span class="question-number">3</span>
+          <h3 class="question-title">Niveau des fluides</h3>
+        </div>
+        <div class="response-options">
+          <button class="response-btn">✓ Bon</button>
+          <button class="response-btn">✗ Mauvais</button>
+          <button class="response-btn selected-na">N/A</button>
+        </div>
+        <button class="oracle-btn">
+          <span class="candle-icon">🕯️</span>
+          <span>Demander aux esprits</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn secondary">← Retour</button>
+      <button class="nav-btn primary">Continuer →</button>
+    </nav>
+  </div>
+</body>
+</html>

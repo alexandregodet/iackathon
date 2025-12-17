@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaamelott Theme - La Salle du Trone</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --stone-dark: #1a1a1a;
+      --stone-mid: #2d2d2d;
+      --stone-light: #3d3d3d;
+      --stone-highlight: #4a4a4a;
+      --gold: #d4af37;
+      --gold-dim: #a08030;
+      --gold-bright: #ffd700;
+      --torch-orange: #ff6b35;
+      --torch-yellow: #ffb347;
+      --blood-red: #8b0000;
+      --parchment: #d4c4a8;
+      --parchment-dark: #b8a888;
+      --celtic-green: #2e5a3a;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      background: var(--stone-dark);
+      min-height: 100vh;
+      color: var(--parchment);
+    }
+
+    .app-container {
+      max-width: 420px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background:
+        /* Stone texture pattern */
+        repeating-linear-gradient(
+          90deg,
+          transparent 0px,
+          transparent 50px,
+          rgba(0,0,0,0.1) 50px,
+          rgba(0,0,0,0.1) 51px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          transparent 0px,
+          transparent 30px,
+          rgba(0,0,0,0.1) 30px,
+          rgba(0,0,0,0.1) 31px
+        ),
+        linear-gradient(180deg, var(--stone-mid) 0%, var(--stone-dark) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Torch glow effects */
+    .app-container::before,
+    .app-container::after {
+      content: "";
+      position: fixed;
+      width: 200px;
+      height: 400px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-container::before {
+      top: 0;
+      left: -50px;
+      background: radial-gradient(ellipse at center, rgba(255, 107, 53, 0.15) 0%, transparent 70%);
+      animation: flicker 3s ease-in-out infinite;
+    }
+
+    .app-container::after {
+      top: 0;
+      right: -50px;
+      background: radial-gradient(ellipse at center, rgba(255, 179, 71, 0.12) 0%, transparent 70%);
+      animation: flicker 2.5s ease-in-out infinite reverse;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      25% { opacity: 0.8; transform: scale(1.02); }
+      50% { opacity: 0.9; transform: scale(0.98); }
+      75% { opacity: 0.85; transform: scale(1.01); }
+    }
+
+    /* Header - Castle Banner */
+    .header {
+      background:
+        linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%),
+        var(--stone-dark);
+      padding: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          var(--gold) 0px,
+          var(--gold) 20px,
+          transparent 20px,
+          transparent 25px
+        );
+    }
+
+    /* Celtic knot border pattern */
+    .celtic-border {
+      height: 20px;
+      background:
+        url("data:image/svg+xml,%3Csvg width='40' height='20' viewBox='0 0 40 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q10 0 20 10 Q30 20 40 10' stroke='%23d4af37' fill='none' stroke-width='2'/%3E%3Cpath d='M0 10 Q10 20 20 10 Q30 0 40 10' stroke='%23a08030' fill='none' stroke-width='2'/%3E%3C/svg%3E");
+      background-size: 40px 20px;
+      opacity: 0.7;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      background: var(--stone-light);
+      border: 2px solid var(--gold-dim);
+      color: var(--gold);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1.3rem;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .back-btn::before {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border: 1px solid var(--gold-dim);
+      border-radius: 2px;
+      opacity: 0.5;
+    }
+
+    .back-btn:hover {
+      background: var(--gold-dim);
+      color: var(--stone-dark);
+      box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+    }
+
+    .header-title {
+      font-family: 'Cinzel Decorative', serif;
+      color: var(--gold);
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-shadow:
+        0 0 10px rgba(212, 175, 55, 0.5),
+        2px 2px 4px rgba(0,0,0,0.8);
+      letter-spacing: 0.15em;
+    }
+
+    .header-subtitle {
+      font-family: 'Cormorant Garamond', serif;
+      color: var(--parchment-dark);
+      font-size: 0.85rem;
+      font-style: italic;
+      margin-top: 0.3rem;
+      letter-spacing: 0.1em;
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 1.5rem;
+      padding-bottom: 120px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Progress - Shield Style */
+    .progress-shield {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--stone-light) 0%, var(--stone-mid) 100%);
+      border: 2px solid var(--gold-dim);
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .shield-icon {
+      width: 50px;
+      height: 60px;
+      background: linear-gradient(180deg, var(--blood-red) 0%, #5a0000 100%);
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold);
+      font-family: 'Cinzel', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .progress-info {
+      flex: 1;
+    }
+
+    .progress-text {
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      color: var(--parchment);
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-bar {
+      height: 10px;
+      background: var(--stone-dark);
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid var(--gold-dim);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 40%;
+      background: linear-gradient(90deg, var(--blood-red) 0%, var(--gold) 100%);
+      border-radius: 5px;
+      position: relative;
+      transition: width 0.5s ease;
+    }
+
+    .progress-fill::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+    }
+
+    /* Section Navigation - Stone Tablets */
+    .section-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+
+    .section-tab {
+      flex-shrink: 0;
+      padding: 0.6rem 1rem;
+      background: var(--stone-light);
+      border: 2px solid var(--stone-highlight);
+      color: var(--parchment-dark);
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .section-tab::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 30%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+      border-radius: 2px;
+    }
+
+    .section-tab:hover {
+      border-color: var(--gold-dim);
+      color: var(--parchment);
+    }
+
+    .section-tab.active {
+      background: linear-gradient(180deg, var(--gold-dim) 0%, var(--gold) 100%);
+      border-color: var(--gold);
+      color: var(--stone-dark);
+      font-weight: 600;
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    }
+
+    /* Context Banner */
+    .context-banner {
+      background:
+        linear-gradient(135deg, rgba(46, 90, 58, 0.3) 0%, rgba(0,0,0,0.3) 100%),
+        var(--stone-mid);
+      border: 2px solid var(--celtic-green);
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .context-banner::before {
+      content: "⚔";
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.5rem;
+      color: var(--gold);
+      background: var(--stone-mid);
+      padding: 0 0.5rem;
+    }
+
+    .context-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .context-description {
+      font-size: 0.95rem;
+      color: var(--parchment-dark);
+      text-align: center;
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    /* Question Cards - Stone Slabs */
+    .question-card {
+      background: linear-gradient(135deg, var(--stone-light) 0%, var(--stone-mid) 100%);
+      border: 2px solid var(--stone-highlight);
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin-bottom: 1rem;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .question-card:hover {
+      border-color: var(--gold-dim);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .question-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    }
+
+    .question-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .question-number {
+      min-width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--blood-red) 0%, #5a0000 100%);
+      border: 2px solid var(--gold);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 1rem;
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .question-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      color: var(--parchment);
+      line-height: 1.4;
+    }
+
+    /* Response Buttons - Carved Stone */
+    .response-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .response-btn {
+      padding: 0.7rem 0.5rem;
+      background: var(--stone-dark);
+      border: 2px solid var(--stone-highlight);
+      color: var(--parchment-dark);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .response-btn::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 2px;
+    }
+
+    .response-btn:hover {
+      border-color: var(--gold-dim);
+      color: var(--parchment);
+      background: var(--stone-light);
+    }
+
+    .response-btn.selected-ok {
+      background: linear-gradient(135deg, var(--celtic-green) 0%, #1e3a2a 100%);
+      border-color: #4a8a5a;
+      color: #a8e8b8;
+    }
+
+    .response-btn.selected-nok {
+      background: linear-gradient(135deg, var(--blood-red) 0%, #5a0000 100%);
+      border-color: #c83030;
+      color: #ffb8b8;
+    }
+
+    .response-btn.selected-na {
+      background: linear-gradient(135deg, var(--gold-dim) 0%, #706020 100%);
+      border-color: var(--gold);
+      color: var(--gold-bright);
+    }
+
+    /* AI Oracle Button */
+    .oracle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      width: 100%;
+      padding: 0.8rem;
+      background: linear-gradient(135deg, #1a1a3a 0%, #0a0a1a 100%);
+      border: 2px solid #4a4a8a;
+      color: #a8a8ff;
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .oracle-btn::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(168, 168, 255, 0.1) 0%, transparent 50%);
+      animation: mystical 4s linear infinite;
+    }
+
+    @keyframes mystical {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .oracle-btn:hover {
+      border-color: #8a8aff;
+      color: #d8d8ff;
+      box-shadow: 0 0 30px rgba(138, 138, 255, 0.3);
+    }
+
+    .oracle-icon {
+      font-size: 1.2rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    /* Comment Scroll */
+    .comment-scroll {
+      width: 100%;
+      padding: 0.8rem;
+      background: rgba(212, 196, 168, 0.1);
+      border: 1px solid var(--parchment-dark);
+      border-radius: 4px;
+      color: var(--parchment);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      resize: vertical;
+      min-height: 70px;
+      margin-top: 0.8rem;
+    }
+
+    .comment-scroll::placeholder {
+      color: var(--parchment-dark);
+      font-style: italic;
+    }
+
+    /* Tags */
+    .tags-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--stone-highlight);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.8rem;
+      background: var(--stone-dark);
+      border: 1px solid var(--stone-highlight);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--parchment-dark);
+      transition: all 0.3s;
+    }
+
+    .tag:hover {
+      border-color: var(--gold-dim);
+    }
+
+    .tag.ai {
+      border-color: #4a4a8a;
+      color: #a8a8ff;
+    }
+
+    .tag.ai::before {
+      content: "✧";
+      color: #8a8aff;
+    }
+
+    .tag.manual {
+      border-color: var(--celtic-green);
+      color: #88c898;
+    }
+
+    .tag .remove {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .tag .remove:hover {
+      opacity: 1;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 420px;
+      background:
+        linear-gradient(0deg, var(--stone-dark) 0%, var(--stone-mid) 100%);
+      padding: 1rem;
+      display: flex;
+      gap: 1rem;
+      z-index: 10;
+    }
+
+    .bottom-nav::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blood-red), var(--gold), var(--blood-red));
+    }
+
+    .nav-btn {
+      flex: 1;
+      padding: 1rem;
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    .nav-btn.secondary {
+      background: var(--stone-light);
+      border: 2px solid var(--stone-highlight);
+      color: var(--parchment-dark);
+    }
+
+    .nav-btn.secondary:hover {
+      border-color: var(--gold-dim);
+      color: var(--parchment);
+    }
+
+    .nav-btn.primary {
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+      border: 2px solid var(--gold-bright);
+      color: var(--stone-dark);
+      font-weight: 600;
+    }
+
+    .nav-btn.primary:hover {
+      box-shadow: 0 0 25px rgba(212, 175, 55, 0.5);
+    }
+
+    /* Attachment indicator */
+    .attachment-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.8rem;
+      background: rgba(212, 175, 55, 0.1);
+      border: 1px dashed var(--gold-dim);
+      border-radius: 4px;
+      margin-top: 0.8rem;
+      font-size: 0.85rem;
+      color: var(--gold);
+    }
+
+    .attachment-indicator img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--gold-dim);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <button class="back-btn">←</button>
+        <div>
+          <h1 class="header-title">GRIFFON</h1>
+          <p class="header-subtitle">Registre de Maintenance</p>
+        </div>
+      </div>
+      <div class="celtic-border"></div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Progress Shield -->
+      <div class="progress-shield">
+        <div class="shield-icon">II</div>
+        <div class="progress-info">
+          <div class="progress-text">Chapitre 2 sur 4 — 4 questions sur 10</div>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Tabs -->
+      <div class="section-tabs">
+        <button class="section-tab">Contexte</button>
+        <button class="section-tab active">Inspection</button>
+        <button class="section-tab">Moteur</button>
+        <button class="section-tab">Armement</button>
+      </div>
+
+      <!-- Context Banner -->
+      <div class="context-banner">
+        <h2 class="context-title">Inspection Visuelle</h2>
+        <p class="context-description">"On en a gros !" — Procedez a l'examen minutieux de votre destrier de fer.</p>
+      </div>
+
+      <!-- Question Cards -->
+      <div class="question-card">
+        <div class="question-header">
+          <div class="question-number">1</div>
+          <h3 class="question-title">Etat general de la carrosserie blindee</h3>
+        </div>
+        <div class="response-group">
+          <button class="response-btn selected-ok">✓ Conforme</button>
+          <button class="response-btn">✗ Non conforme</button>
+          <button class="response-btn">— N/A</button>
+        </div>
+        <button class="oracle-btn">
+          <span class="oracle-icon">🔮</span>
+          <span>Consulter l'Oracle</span>
+        </button>
+        <div class="attachment-indicator">
+          <span>📷</span>
+          <span>Photo jointe</span>
+        </div>
+        <div class="tags-area">
+          <span class="tag ai">blindage intact <span class="remove">×</span></span>
+          <span class="tag ai">pas d'impact <span class="remove">×</span></span>
+          <span class="tag manual">verifie <span class="remove">×</span></span>
+        </div>
+      </div>
+
+      <div class="question-card">
+        <div class="question-header">
+          <div class="question-number">2</div>
+          <h3 class="question-title">Tension et usure des chenilles</h3>
+        </div>
+        <div class="response-group">
+          <button class="response-btn">✓ Conforme</button>
+          <button class="response-btn selected-nok">✗ Non conforme</button>
+          <button class="response-btn">— N/A</button>
+        </div>
+        <textarea class="comment-scroll" placeholder="Inscrivez vos observations...">Usure prononcee sur le galet tendeur droit. A remplacer avant le prochain assaut.</textarea>
+      </div>
+
+      <div class="question-card">
+        <div class="question-header">
+          <div class="question-number">3</div>
+          <h3 class="question-title">Etancheite des trappes</h3>
+        </div>
+        <div class="response-group">
+          <button class="response-btn">✓ Conforme</button>
+          <button class="response-btn">✗ Non conforme</button>
+          <button class="response-btn selected-na">— N/A</button>
+        </div>
+        <button class="oracle-btn">
+          <span class="oracle-icon">🔮</span>
+          <span>Consulter l'Oracle</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn secondary">← Precedent</button>
+      <button class="nav-btn primary">Continuer →</button>
+    </nav>
+  </div>
+</body>
+</html>
