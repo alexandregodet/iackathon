@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:injectable/injectable.dart';
 import '../../core/errors/app_errors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/connectivity_checker.dart';
+import '../../core/utils/storage_permission_helper.dart';
 import '../../domain/entities/gemma_model_info.dart';
 
 enum GemmaModelState {
@@ -74,13 +76,82 @@ class GemmaService {
     _stateController.add(_state);
   }
 
+  /// Tente d'installer le modele depuis un fichier local
+  /// Retourne true si l'installation locale a reussi
+  Future<bool> _tryInstallFromLocal(GemmaModelInfo modelInfo) async {
+    AppLogger.info(
+      'Tentative d\'installation locale pour ${modelInfo.name}',
+      'GemmaService',
+    );
+
+    // Verifier la permission de stockage
+    final hasPermission =
+        await StoragePermissionHelper.requestStoragePermission();
+    if (!hasPermission) {
+      AppLogger.info(
+        'Permission de stockage non accordee, fallback CDN',
+        'GemmaService',
+      );
+      return false;
+    }
+
+    // Verifier si le fichier existe
+    final localPath =
+        StoragePermissionHelper.getLocalModelPath(modelInfo.filename);
+    final file = File(localPath);
+
+    if (!await file.exists()) {
+      AppLogger.info(
+        'Fichier local non trouve: $localPath, fallback CDN',
+        'GemmaService',
+      );
+      return false;
+    }
+
+    try {
+      AppLogger.info(
+        'Installation depuis fichier local: $localPath',
+        'GemmaService',
+      );
+
+      await FlutterGemma.installModel(
+        modelType: modelInfo.modelType,
+        fileType: modelInfo.fileType,
+      ).fromFile(localPath).install();
+
+      AppLogger.info(
+        'Installation locale reussie pour ${modelInfo.name}',
+        'GemmaService',
+      );
+      return true;
+    } catch (e) {
+      AppLogger.warning(
+        'Echec installation locale, fallback CDN: $e',
+        'GemmaService',
+      );
+      return false;
+    }
+  }
+
   Future<void> downloadModel(
     GemmaModelInfo modelInfo, {
     void Function(double)? onProgress,
     String? token,
+    bool tryLocalFirst = true,
   }) async {
     _currentModel = modelInfo;
 
+    // Etape 1: Tenter l'installation locale si demandee
+    if (tryLocalFirst) {
+      final installedLocally = await _tryInstallFromLocal(modelInfo);
+      if (installedLocally) {
+        _state = GemmaModelState.installed;
+        _stateController.add(_state);
+        return;
+      }
+    }
+
+    // Etape 2: Fallback sur le telechargement CDN
     AppLogger.info(
       'Demarrage du telechargement de ${modelInfo.name}',
       'GemmaService',
@@ -164,8 +235,13 @@ class GemmaService {
       _state = GemmaModelState.loading;
       _stateController.add(_state);
 
+      // First, ensure the model is set as active by re-installing from local cache
+      // This is needed because getActiveModel requires the model to be "set"
+      // even if the file already exists on disk
+      await _ensureModelActive(_currentModel!);
+
       _model = await FlutterGemma.getActiveModel(
-        maxTokens: 1024,
+        maxTokens: 8192,
         supportImage: _currentModel!.isMultimodal,
         maxNumImages: _currentModel!.isMultimodal ? 1 : null,
       );
@@ -196,6 +272,41 @@ class GemmaService {
       final error = ModelError.loadingFailed(original: e, stack: stack);
       _errorMessage = error.userMessage;
       throw error;
+    }
+  }
+
+  /// Ensures the model is set as active in FlutterGemma
+  /// This is needed because isModelInstalled only checks if file exists,
+  /// but getActiveModel requires the model to be properly registered
+  Future<void> _ensureModelActive(GemmaModelInfo modelInfo) async {
+    AppLogger.info('Activation du modele ${modelInfo.name}', 'GemmaService');
+
+    // Try to find and install from local cache first
+    final localPath =
+        StoragePermissionHelper.getLocalModelPath(modelInfo.filename);
+    final localFile = File(localPath);
+
+    if (await localFile.exists()) {
+      AppLogger.info('Installation depuis cache local: $localPath', 'GemmaService');
+      await FlutterGemma.installModel(
+        modelType: modelInfo.modelType,
+        fileType: modelInfo.fileType,
+      ).fromFile(localPath).install();
+      return;
+    }
+
+    // Try flutter_gemma's internal cache
+    final isInstalled = await FlutterGemma.isModelInstalled(modelInfo.filename);
+    if (isInstalled) {
+      AppLogger.info(
+        'Modele deja installe, re-activation depuis cache interne',
+        'GemmaService',
+      );
+      // Re-install to set as active (uses cached file)
+      await FlutterGemma.installModel(
+        modelType: modelInfo.modelType,
+        fileType: modelInfo.fileType,
+      ).fromNetwork(modelInfo.url).install();
     }
   }
 
