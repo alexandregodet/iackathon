@@ -1568,6 +1568,17 @@ class $ChecklistResponsesTable extends ChecklistResponses
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _serialNumberMeta = const VerificationMeta(
+    'serialNumber',
+  );
+  @override
+  late final GeneratedColumn<String> serialNumber = GeneratedColumn<String>(
+    'serial_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _responseMeta = const VerificationMeta(
     'response',
   );
@@ -1596,6 +1607,37 @@ class $ChecklistResponsesTable extends ChecklistResponses
   @override
   late final GeneratedColumn<String> comment = GeneratedColumn<String>(
     'comment',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _aiTagsMeta = const VerificationMeta('aiTags');
+  @override
+  late final GeneratedColumn<String> aiTags = GeneratedColumn<String>(
+    'ai_tags',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _aiDescriptionMeta = const VerificationMeta(
+    'aiDescription',
+  );
+  @override
+  late final GeneratedColumn<String> aiDescription = GeneratedColumn<String>(
+    'ai_description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _aiDefectBboxMeta = const VerificationMeta(
+    'aiDefectBbox',
+  );
+  @override
+  late final GeneratedColumn<String> aiDefectBbox = GeneratedColumn<String>(
+    'ai_defect_bbox',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -1630,9 +1672,13 @@ class $ChecklistResponsesTable extends ChecklistResponses
     id,
     checklistId,
     questionUuid,
+    serialNumber,
     response,
     attachmentPaths,
     comment,
+    aiTags,
+    aiDescription,
+    aiDefectBbox,
     createdAt,
     updatedAt,
   ];
@@ -1673,6 +1719,15 @@ class $ChecklistResponsesTable extends ChecklistResponses
     } else if (isInserting) {
       context.missing(_questionUuidMeta);
     }
+    if (data.containsKey('serial_number')) {
+      context.handle(
+        _serialNumberMeta,
+        serialNumber.isAcceptableOrUnknown(
+          data['serial_number']!,
+          _serialNumberMeta,
+        ),
+      );
+    }
     if (data.containsKey('response')) {
       context.handle(
         _responseMeta,
@@ -1692,6 +1747,30 @@ class $ChecklistResponsesTable extends ChecklistResponses
       context.handle(
         _commentMeta,
         comment.isAcceptableOrUnknown(data['comment']!, _commentMeta),
+      );
+    }
+    if (data.containsKey('ai_tags')) {
+      context.handle(
+        _aiTagsMeta,
+        aiTags.isAcceptableOrUnknown(data['ai_tags']!, _aiTagsMeta),
+      );
+    }
+    if (data.containsKey('ai_description')) {
+      context.handle(
+        _aiDescriptionMeta,
+        aiDescription.isAcceptableOrUnknown(
+          data['ai_description']!,
+          _aiDescriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ai_defect_bbox')) {
+      context.handle(
+        _aiDefectBboxMeta,
+        aiDefectBbox.isAcceptableOrUnknown(
+          data['ai_defect_bbox']!,
+          _aiDefectBboxMeta,
+        ),
       );
     }
     if (data.containsKey('created_at')) {
@@ -1727,6 +1806,10 @@ class $ChecklistResponsesTable extends ChecklistResponses
         DriftSqlType.string,
         data['${effectivePrefix}question_uuid'],
       )!,
+      serialNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serial_number'],
+      ),
       response: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}response'],
@@ -1738,6 +1821,18 @@ class $ChecklistResponsesTable extends ChecklistResponses
       comment: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}comment'],
+      ),
+      aiTags: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ai_tags'],
+      ),
+      aiDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ai_description'],
+      ),
+      aiDefectBbox: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ai_defect_bbox'],
       ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -1761,18 +1856,26 @@ class ChecklistResponse extends DataClass
   final int id;
   final String checklistId;
   final String questionUuid;
+  final String? serialNumber;
   final String? response;
   final String? attachmentPaths;
   final String? comment;
+  final String? aiTags;
+  final String? aiDescription;
+  final String? aiDefectBbox;
   final DateTime createdAt;
   final DateTime updatedAt;
   const ChecklistResponse({
     required this.id,
     required this.checklistId,
     required this.questionUuid,
+    this.serialNumber,
     this.response,
     this.attachmentPaths,
     this.comment,
+    this.aiTags,
+    this.aiDescription,
+    this.aiDefectBbox,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1782,6 +1885,9 @@ class ChecklistResponse extends DataClass
     map['id'] = Variable<int>(id);
     map['checklist_id'] = Variable<String>(checklistId);
     map['question_uuid'] = Variable<String>(questionUuid);
+    if (!nullToAbsent || serialNumber != null) {
+      map['serial_number'] = Variable<String>(serialNumber);
+    }
     if (!nullToAbsent || response != null) {
       map['response'] = Variable<String>(response);
     }
@@ -1790,6 +1896,15 @@ class ChecklistResponse extends DataClass
     }
     if (!nullToAbsent || comment != null) {
       map['comment'] = Variable<String>(comment);
+    }
+    if (!nullToAbsent || aiTags != null) {
+      map['ai_tags'] = Variable<String>(aiTags);
+    }
+    if (!nullToAbsent || aiDescription != null) {
+      map['ai_description'] = Variable<String>(aiDescription);
+    }
+    if (!nullToAbsent || aiDefectBbox != null) {
+      map['ai_defect_bbox'] = Variable<String>(aiDefectBbox);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1801,6 +1916,9 @@ class ChecklistResponse extends DataClass
       id: Value(id),
       checklistId: Value(checklistId),
       questionUuid: Value(questionUuid),
+      serialNumber: serialNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialNumber),
       response: response == null && nullToAbsent
           ? const Value.absent()
           : Value(response),
@@ -1810,6 +1928,15 @@ class ChecklistResponse extends DataClass
       comment: comment == null && nullToAbsent
           ? const Value.absent()
           : Value(comment),
+      aiTags: aiTags == null && nullToAbsent
+          ? const Value.absent()
+          : Value(aiTags),
+      aiDescription: aiDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(aiDescription),
+      aiDefectBbox: aiDefectBbox == null && nullToAbsent
+          ? const Value.absent()
+          : Value(aiDefectBbox),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1824,9 +1951,13 @@ class ChecklistResponse extends DataClass
       id: serializer.fromJson<int>(json['id']),
       checklistId: serializer.fromJson<String>(json['checklistId']),
       questionUuid: serializer.fromJson<String>(json['questionUuid']),
+      serialNumber: serializer.fromJson<String?>(json['serialNumber']),
       response: serializer.fromJson<String?>(json['response']),
       attachmentPaths: serializer.fromJson<String?>(json['attachmentPaths']),
       comment: serializer.fromJson<String?>(json['comment']),
+      aiTags: serializer.fromJson<String?>(json['aiTags']),
+      aiDescription: serializer.fromJson<String?>(json['aiDescription']),
+      aiDefectBbox: serializer.fromJson<String?>(json['aiDefectBbox']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1838,9 +1969,13 @@ class ChecklistResponse extends DataClass
       'id': serializer.toJson<int>(id),
       'checklistId': serializer.toJson<String>(checklistId),
       'questionUuid': serializer.toJson<String>(questionUuid),
+      'serialNumber': serializer.toJson<String?>(serialNumber),
       'response': serializer.toJson<String?>(response),
       'attachmentPaths': serializer.toJson<String?>(attachmentPaths),
       'comment': serializer.toJson<String?>(comment),
+      'aiTags': serializer.toJson<String?>(aiTags),
+      'aiDescription': serializer.toJson<String?>(aiDescription),
+      'aiDefectBbox': serializer.toJson<String?>(aiDefectBbox),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1850,20 +1985,30 @@ class ChecklistResponse extends DataClass
     int? id,
     String? checklistId,
     String? questionUuid,
+    Value<String?> serialNumber = const Value.absent(),
     Value<String?> response = const Value.absent(),
     Value<String?> attachmentPaths = const Value.absent(),
     Value<String?> comment = const Value.absent(),
+    Value<String?> aiTags = const Value.absent(),
+    Value<String?> aiDescription = const Value.absent(),
+    Value<String?> aiDefectBbox = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => ChecklistResponse(
     id: id ?? this.id,
     checklistId: checklistId ?? this.checklistId,
     questionUuid: questionUuid ?? this.questionUuid,
+    serialNumber: serialNumber.present ? serialNumber.value : this.serialNumber,
     response: response.present ? response.value : this.response,
     attachmentPaths: attachmentPaths.present
         ? attachmentPaths.value
         : this.attachmentPaths,
     comment: comment.present ? comment.value : this.comment,
+    aiTags: aiTags.present ? aiTags.value : this.aiTags,
+    aiDescription: aiDescription.present
+        ? aiDescription.value
+        : this.aiDescription,
+    aiDefectBbox: aiDefectBbox.present ? aiDefectBbox.value : this.aiDefectBbox,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1876,11 +2021,21 @@ class ChecklistResponse extends DataClass
       questionUuid: data.questionUuid.present
           ? data.questionUuid.value
           : this.questionUuid,
+      serialNumber: data.serialNumber.present
+          ? data.serialNumber.value
+          : this.serialNumber,
       response: data.response.present ? data.response.value : this.response,
       attachmentPaths: data.attachmentPaths.present
           ? data.attachmentPaths.value
           : this.attachmentPaths,
       comment: data.comment.present ? data.comment.value : this.comment,
+      aiTags: data.aiTags.present ? data.aiTags.value : this.aiTags,
+      aiDescription: data.aiDescription.present
+          ? data.aiDescription.value
+          : this.aiDescription,
+      aiDefectBbox: data.aiDefectBbox.present
+          ? data.aiDefectBbox.value
+          : this.aiDefectBbox,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1892,9 +2047,13 @@ class ChecklistResponse extends DataClass
           ..write('id: $id, ')
           ..write('checklistId: $checklistId, ')
           ..write('questionUuid: $questionUuid, ')
+          ..write('serialNumber: $serialNumber, ')
           ..write('response: $response, ')
           ..write('attachmentPaths: $attachmentPaths, ')
           ..write('comment: $comment, ')
+          ..write('aiTags: $aiTags, ')
+          ..write('aiDescription: $aiDescription, ')
+          ..write('aiDefectBbox: $aiDefectBbox, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1906,9 +2065,13 @@ class ChecklistResponse extends DataClass
     id,
     checklistId,
     questionUuid,
+    serialNumber,
     response,
     attachmentPaths,
     comment,
+    aiTags,
+    aiDescription,
+    aiDefectBbox,
     createdAt,
     updatedAt,
   );
@@ -1919,9 +2082,13 @@ class ChecklistResponse extends DataClass
           other.id == this.id &&
           other.checklistId == this.checklistId &&
           other.questionUuid == this.questionUuid &&
+          other.serialNumber == this.serialNumber &&
           other.response == this.response &&
           other.attachmentPaths == this.attachmentPaths &&
           other.comment == this.comment &&
+          other.aiTags == this.aiTags &&
+          other.aiDescription == this.aiDescription &&
+          other.aiDefectBbox == this.aiDefectBbox &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1930,18 +2097,26 @@ class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
   final Value<int> id;
   final Value<String> checklistId;
   final Value<String> questionUuid;
+  final Value<String?> serialNumber;
   final Value<String?> response;
   final Value<String?> attachmentPaths;
   final Value<String?> comment;
+  final Value<String?> aiTags;
+  final Value<String?> aiDescription;
+  final Value<String?> aiDefectBbox;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   const ChecklistResponsesCompanion({
     this.id = const Value.absent(),
     this.checklistId = const Value.absent(),
     this.questionUuid = const Value.absent(),
+    this.serialNumber = const Value.absent(),
     this.response = const Value.absent(),
     this.attachmentPaths = const Value.absent(),
     this.comment = const Value.absent(),
+    this.aiTags = const Value.absent(),
+    this.aiDescription = const Value.absent(),
+    this.aiDefectBbox = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -1949,9 +2124,13 @@ class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
     this.id = const Value.absent(),
     required String checklistId,
     required String questionUuid,
+    this.serialNumber = const Value.absent(),
     this.response = const Value.absent(),
     this.attachmentPaths = const Value.absent(),
     this.comment = const Value.absent(),
+    this.aiTags = const Value.absent(),
+    this.aiDescription = const Value.absent(),
+    this.aiDefectBbox = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : checklistId = Value(checklistId),
@@ -1960,9 +2139,13 @@ class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
     Expression<int>? id,
     Expression<String>? checklistId,
     Expression<String>? questionUuid,
+    Expression<String>? serialNumber,
     Expression<String>? response,
     Expression<String>? attachmentPaths,
     Expression<String>? comment,
+    Expression<String>? aiTags,
+    Expression<String>? aiDescription,
+    Expression<String>? aiDefectBbox,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -1970,9 +2153,13 @@ class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
       if (id != null) 'id': id,
       if (checklistId != null) 'checklist_id': checklistId,
       if (questionUuid != null) 'question_uuid': questionUuid,
+      if (serialNumber != null) 'serial_number': serialNumber,
       if (response != null) 'response': response,
       if (attachmentPaths != null) 'attachment_paths': attachmentPaths,
       if (comment != null) 'comment': comment,
+      if (aiTags != null) 'ai_tags': aiTags,
+      if (aiDescription != null) 'ai_description': aiDescription,
+      if (aiDefectBbox != null) 'ai_defect_bbox': aiDefectBbox,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -1982,9 +2169,13 @@ class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
     Value<int>? id,
     Value<String>? checklistId,
     Value<String>? questionUuid,
+    Value<String?>? serialNumber,
     Value<String?>? response,
     Value<String?>? attachmentPaths,
     Value<String?>? comment,
+    Value<String?>? aiTags,
+    Value<String?>? aiDescription,
+    Value<String?>? aiDefectBbox,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
   }) {
@@ -1992,9 +2183,13 @@ class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
       id: id ?? this.id,
       checklistId: checklistId ?? this.checklistId,
       questionUuid: questionUuid ?? this.questionUuid,
+      serialNumber: serialNumber ?? this.serialNumber,
       response: response ?? this.response,
       attachmentPaths: attachmentPaths ?? this.attachmentPaths,
       comment: comment ?? this.comment,
+      aiTags: aiTags ?? this.aiTags,
+      aiDescription: aiDescription ?? this.aiDescription,
+      aiDefectBbox: aiDefectBbox ?? this.aiDefectBbox,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -2012,6 +2207,9 @@ class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
     if (questionUuid.present) {
       map['question_uuid'] = Variable<String>(questionUuid.value);
     }
+    if (serialNumber.present) {
+      map['serial_number'] = Variable<String>(serialNumber.value);
+    }
     if (response.present) {
       map['response'] = Variable<String>(response.value);
     }
@@ -2020,6 +2218,15 @@ class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
     }
     if (comment.present) {
       map['comment'] = Variable<String>(comment.value);
+    }
+    if (aiTags.present) {
+      map['ai_tags'] = Variable<String>(aiTags.value);
+    }
+    if (aiDescription.present) {
+      map['ai_description'] = Variable<String>(aiDescription.value);
+    }
+    if (aiDefectBbox.present) {
+      map['ai_defect_bbox'] = Variable<String>(aiDefectBbox.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -2036,9 +2243,13 @@ class ChecklistResponsesCompanion extends UpdateCompanion<ChecklistResponse> {
           ..write('id: $id, ')
           ..write('checklistId: $checklistId, ')
           ..write('questionUuid: $questionUuid, ')
+          ..write('serialNumber: $serialNumber, ')
           ..write('response: $response, ')
           ..write('attachmentPaths: $attachmentPaths, ')
           ..write('comment: $comment, ')
+          ..write('aiTags: $aiTags, ')
+          ..write('aiDescription: $aiDescription, ')
+          ..write('aiDefectBbox: $aiDefectBbox, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -3133,9 +3344,13 @@ typedef $$ChecklistResponsesTableCreateCompanionBuilder =
       Value<int> id,
       required String checklistId,
       required String questionUuid,
+      Value<String?> serialNumber,
       Value<String?> response,
       Value<String?> attachmentPaths,
       Value<String?> comment,
+      Value<String?> aiTags,
+      Value<String?> aiDescription,
+      Value<String?> aiDefectBbox,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
     });
@@ -3144,9 +3359,13 @@ typedef $$ChecklistResponsesTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> checklistId,
       Value<String> questionUuid,
+      Value<String?> serialNumber,
       Value<String?> response,
       Value<String?> attachmentPaths,
       Value<String?> comment,
+      Value<String?> aiTags,
+      Value<String?> aiDescription,
+      Value<String?> aiDefectBbox,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
     });
@@ -3175,6 +3394,11 @@ class $$ChecklistResponsesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get response => $composableBuilder(
     column: $table.response,
     builder: (column) => ColumnFilters(column),
@@ -3187,6 +3411,21 @@ class $$ChecklistResponsesTableFilterComposer
 
   ColumnFilters<String> get comment => $composableBuilder(
     column: $table.comment,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get aiTags => $composableBuilder(
+    column: $table.aiTags,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get aiDescription => $composableBuilder(
+    column: $table.aiDescription,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get aiDefectBbox => $composableBuilder(
+    column: $table.aiDefectBbox,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3225,6 +3464,11 @@ class $$ChecklistResponsesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get response => $composableBuilder(
     column: $table.response,
     builder: (column) => ColumnOrderings(column),
@@ -3237,6 +3481,21 @@ class $$ChecklistResponsesTableOrderingComposer
 
   ColumnOrderings<String> get comment => $composableBuilder(
     column: $table.comment,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get aiTags => $composableBuilder(
+    column: $table.aiTags,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get aiDescription => $composableBuilder(
+    column: $table.aiDescription,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get aiDefectBbox => $composableBuilder(
+    column: $table.aiDefectBbox,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3273,6 +3532,11 @@ class $$ChecklistResponsesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get response =>
       $composableBuilder(column: $table.response, builder: (column) => column);
 
@@ -3283,6 +3547,19 @@ class $$ChecklistResponsesTableAnnotationComposer
 
   GeneratedColumn<String> get comment =>
       $composableBuilder(column: $table.comment, builder: (column) => column);
+
+  GeneratedColumn<String> get aiTags =>
+      $composableBuilder(column: $table.aiTags, builder: (column) => column);
+
+  GeneratedColumn<String> get aiDescription => $composableBuilder(
+    column: $table.aiDescription,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get aiDefectBbox => $composableBuilder(
+    column: $table.aiDefectBbox,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -3334,18 +3611,26 @@ class $$ChecklistResponsesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> checklistId = const Value.absent(),
                 Value<String> questionUuid = const Value.absent(),
+                Value<String?> serialNumber = const Value.absent(),
                 Value<String?> response = const Value.absent(),
                 Value<String?> attachmentPaths = const Value.absent(),
                 Value<String?> comment = const Value.absent(),
+                Value<String?> aiTags = const Value.absent(),
+                Value<String?> aiDescription = const Value.absent(),
+                Value<String?> aiDefectBbox = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => ChecklistResponsesCompanion(
                 id: id,
                 checklistId: checklistId,
                 questionUuid: questionUuid,
+                serialNumber: serialNumber,
                 response: response,
                 attachmentPaths: attachmentPaths,
                 comment: comment,
+                aiTags: aiTags,
+                aiDescription: aiDescription,
+                aiDefectBbox: aiDefectBbox,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -3354,18 +3639,26 @@ class $$ChecklistResponsesTableTableManager
                 Value<int> id = const Value.absent(),
                 required String checklistId,
                 required String questionUuid,
+                Value<String?> serialNumber = const Value.absent(),
                 Value<String?> response = const Value.absent(),
                 Value<String?> attachmentPaths = const Value.absent(),
                 Value<String?> comment = const Value.absent(),
+                Value<String?> aiTags = const Value.absent(),
+                Value<String?> aiDescription = const Value.absent(),
+                Value<String?> aiDefectBbox = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => ChecklistResponsesCompanion.insert(
                 id: id,
                 checklistId: checklistId,
                 questionUuid: questionUuid,
+                serialNumber: serialNumber,
                 response: response,
                 attachmentPaths: attachmentPaths,
                 comment: comment,
+                aiTags: aiTags,
+                aiDescription: aiDescription,
+                aiDefectBbox: aiDefectBbox,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),

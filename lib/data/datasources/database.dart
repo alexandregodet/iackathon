@@ -47,9 +47,13 @@ class ChecklistResponses extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get checklistId => text()();
   TextColumn get questionUuid => text()();
+  TextColumn get serialNumber => text().nullable()();
   TextColumn get response => text().nullable()();
   TextColumn get attachmentPaths => text().nullable()();
   TextColumn get comment => text().nullable()();
+  TextColumn get aiTags => text().nullable()();
+  TextColumn get aiDescription => text().nullable()();
+  TextColumn get aiDefectBbox => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -63,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -80,6 +84,13 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 4) {
           await m.createTable(checklistResponses);
+        }
+        if (from < 5) {
+          // Add AI metadata and serial number columns to checklistResponses
+          await m.addColumn(checklistResponses, checklistResponses.serialNumber);
+          await m.addColumn(checklistResponses, checklistResponses.aiTags);
+          await m.addColumn(checklistResponses, checklistResponses.aiDescription);
+          await m.addColumn(checklistResponses, checklistResponses.aiDefectBbox);
         }
       },
     );

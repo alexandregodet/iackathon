@@ -21,6 +21,8 @@ import '../../data/datasources/settings_service.dart' as _i462;
 import '../../data/datasources/tts_service.dart' as _i119;
 import '../../presentation/blocs/chat/chat_bloc.dart' as _i142;
 import '../../presentation/blocs/checklist/checklist_bloc.dart' as _i407;
+import '../../presentation/blocs/checklist_history/checklist_history_bloc.dart'
+    as _i601;
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
@@ -52,6 +54,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i307.ChecklistService>(),
         gh<_i363.GemmaService>(),
       ),
+    );
+    gh.factory<_i601.ChecklistHistoryBloc>(
+      () => _i601.ChecklistHistoryBloc(gh<_i307.ChecklistService>()),
     );
     return this;
   }
