@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/services.dart';
@@ -7,11 +8,13 @@ import 'package:injectable/injectable.dart';
 
 import '../../../core/errors/app_errors.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../data/datasources/checklist_service.dart';
 import '../../../data/datasources/database.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
 import '../../../data/datasources/settings_service.dart';
 import '../../../domain/entities/chat_message.dart';
+import '../../../domain/entities/checklist_session.dart';
 import '../../../domain/entities/conversation_info.dart';
 import '../../../domain/entities/document_info.dart';
 import 'chat_event.dart';
@@ -23,6 +26,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final RagService _ragService;
   final AppDatabase _database;
   final SettingsService _settingsService;
+  final ChecklistService _checklistService;
   StreamSubscription<String>? _responseSubscription;
   StreamSubscription<GemmaStreamResponse>? _thinkingResponseSubscription;
 
@@ -31,6 +35,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     this._ragService,
     this._database,
     this._settingsService,
+    this._checklistService,
   )
     : super(const ChatState()) {
     on<ChatInitialize>(_onInitialize);
@@ -67,6 +72,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // Checklists events
     on<ChatResetChecklistsFlag>(_onResetChecklistsFlag);
     on<ChatLoadChecklists>(_onLoadChecklists);
+    // Checklist Session events
+    on<ChatInitializeChecklistService>(_onInitializeChecklistService);
+    on<ChatChecklistShowRemaining>(_onChecklistShowRemaining);
+    on<ChatChecklistGenerateReport>(_onChecklistGenerateReport);
+    on<ChatChecklistEndSession>(_onChecklistEndSession);
   }
 
   Future<void> _onInitialize(
@@ -81,6 +91,24 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         selectedModel: event.modelInfo,
       ),
     );
+
+    // Initialiser le ChecklistService automatiquement
+    try {
+      if (!_checklistService.isLoaded) {
+        await _checklistService.loadChecklistFromAsset();
+        AppLogger.info(
+          'ChecklistService auto-initialise avec ${_checklistService.sections.length} sections',
+          'ChatBloc',
+        );
+      }
+    } catch (e, stack) {
+      AppLogger.error(
+        'Erreur auto-init ChecklistService',
+        tag: 'ChatBloc',
+        error: e,
+        stackTrace: stack,
+      );
+    }
   }
 
   Future<void> _onDownloadModel(
@@ -184,6 +212,66 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     AppLogger.debug('Envoi du message', 'ChatBloc');
 
+    // ============== CHECKLIST TRIGGERS ==============
+    final lowerMessage = event.message.toLowerCase();
+
+    // S'assurer que le ChecklistService est charge (fallback)
+    if (!_checklistService.isLoaded) {
+      try {
+        await _checklistService.loadChecklistFromAsset();
+        AppLogger.info(
+          'ChecklistService charge (fallback) avec ${_checklistService.sections.length} sections',
+          'ChatBloc',
+        );
+      } catch (e) {
+        AppLogger.warning('Impossible de charger checklist: $e', 'ChatBloc');
+      }
+    }
+
+    // Detecter trigger de rapport JSON
+    if (_isReportTrigger(lowerMessage)) {
+      add(const ChatChecklistGenerateReport());
+      return;
+    }
+
+    // Detecter demande "qu'est-ce qu'il me reste?"
+    if (_isRemainingTrigger(lowerMessage)) {
+      add(const ChatChecklistShowRemaining());
+      return;
+    }
+
+    // Detecter fin de session
+    if (_isEndSessionTrigger(lowerMessage)) {
+      add(const ChatChecklistEndSession());
+      return;
+    }
+
+    // Detecter section si pas de session active
+    if (_checklistService.isLoaded && !state.hasActiveChecklistSession) {
+      AppLogger.debug(
+        'Tentative detection section: "${event.message}"',
+        'ChatBloc',
+      );
+      final section = _checklistService.detectSection(event.message);
+      if (section != null) {
+        AppLogger.info(
+          'Section detectee: ${section.title}',
+          'ChatBloc',
+        );
+        await _handleChecklistStartSession(section, emit);
+        return;
+      } else {
+        AppLogger.debug('Aucune section detectee', 'ChatBloc');
+      }
+    }
+
+    // Si session checklist active, traiter comme reponse
+    if (state.hasActiveChecklistSession) {
+      await _handleChecklistAnswer(event.message, emit);
+      return;
+    }
+    // ============== FIN CHECKLIST TRIGGERS ==============
+
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       role: MessageRole.user,
@@ -229,7 +317,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           );
           // Limiter la taille du prompt pour ne pas dépasser la limite du modèle
           if (promptToSend.length > 3000) {
-            promptToSend = promptToSend.substring(0, 3000) + '\n...[tronque]';
+            promptToSend = '${promptToSend.substring(0, 3000)}\n...[tronque]';
           }
           AppLogger.debug('RAG prompt augmente: ${promptToSend.length} chars', 'ChatBloc');
         } catch (e) {
@@ -1044,6 +1132,312 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         error: event.error,
       ),
     );
+  }
+
+  // ============== CHECKLIST SESSION HANDLERS ==============
+
+  bool _isReportTrigger(String message) {
+    final triggers = [
+      'genere le rapport',
+      'génère le rapport',
+      'export json',
+      'rapport json',
+      'generate report',
+      'json report',
+    ];
+    return triggers.any((t) => message.contains(t));
+  }
+
+  bool _isRemainingTrigger(String message) {
+    final triggers = [
+      'reste',
+      'manque',
+      'oublie',
+      'remaining',
+      'what\'s left',
+      'il me reste',
+      'qu\'est-ce qu\'il',
+    ];
+    return triggers.any((t) => message.contains(t));
+  }
+
+  bool _isEndSessionTrigger(String message) {
+    final triggers = [
+      'terminer',
+      'fin de session',
+      'arreter',
+      'stop checklist',
+      'end session',
+      'quitter inspection',
+    ];
+    return triggers.any((t) => message.contains(t));
+  }
+
+  Future<void> _handleChecklistStartSession(
+    dynamic section,
+    Emitter<ChatState> emit,
+  ) async {
+    final session = _checklistService.startSession(section);
+
+    // Met a jour le prompt systeme de Gemma
+    final prompt = _checklistService.buildSystemPrompt();
+    _gemmaService.setSystemPrompt(prompt);
+
+    final firstQuestion = section.questions.first;
+    final startMessage = '''Parfait, nous allons inspecter la section "${section.title}".
+
+Cette section comporte ${section.questions.length} elements a verifier dont ${section.mandatoryQuestions} obligatoires.
+
+Commencons: ${firstQuestion.questionPrompt}''';
+
+    // Ajouter les messages dans le chat
+    final userMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      role: MessageRole.user,
+      content: 'Je suis dans ${section.title}',
+      timestamp: DateTime.now(),
+    );
+
+    final assistantMessage = ChatMessage(
+      id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+      role: MessageRole.assistant,
+      content: startMessage,
+      timestamp: DateTime.now(),
+    );
+
+    emit(state.copyWith(
+      messages: [...state.messages, userMessage, assistantMessage],
+      checklistSession: session,
+      checklistResponse: startMessage,
+    ));
+
+    AppLogger.info('Session checklist demarree: ${section.title}', 'ChatBloc');
+  }
+
+  Future<void> _handleChecklistAnswer(
+    String userInput,
+    Emitter<ChatState> emit,
+  ) async {
+    // Ajouter le message utilisateur
+    final userMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      role: MessageRole.user,
+      content: userInput,
+      timestamp: DateTime.now(),
+    );
+
+    emit(state.copyWith(
+      messages: [...state.messages, userMessage],
+    ));
+
+    // D'abord essayer de parser plusieurs reponses
+    final multiAnswers = _checklistService.parseMultipleAnswers(userInput);
+
+    String responseMessage;
+
+    if (multiAnswers.isNotEmpty) {
+      // Enregistrer toutes les reponses parsees
+      for (final parsed in multiAnswers) {
+        _checklistService.recordResponse(parsed.response);
+      }
+
+      final confirmations = multiAnswers.map((a) {
+        return '${a.question.title} = ${a.response.displayValue}';
+      }).join(', ');
+
+      final session = _checklistService.currentSession!;
+      final nextMessage = _buildNextQuestionMessage(session);
+
+      responseMessage = 'J\'ai bien note: $confirmations.\n\n$nextMessage';
+    } else if (state.checklistSession?.currentQuestion != null) {
+      // Essayer de parser une seule reponse
+      final response = _checklistService.parseAnswer(
+        userInput,
+        state.checklistSession!.currentQuestion!,
+      );
+
+      if (response != null) {
+        _checklistService.recordResponse(response);
+        final session = _checklistService.currentSession!;
+        responseMessage = _buildNextQuestionMessage(session);
+      } else {
+        responseMessage =
+            'Je n\'ai pas compris la reponse. ${state.checklistSession!.currentQuestion!.questionPrompt}';
+      }
+    } else {
+      responseMessage = 'Session checklist terminee ou question non trouvee.';
+    }
+
+    // Mettre a jour le prompt systeme
+    final prompt = _checklistService.buildSystemPrompt();
+    _gemmaService.setSystemPrompt(prompt);
+
+    // Ajouter la reponse assistant
+    final assistantMessage = ChatMessage(
+      id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+      role: MessageRole.assistant,
+      content: responseMessage,
+      timestamp: DateTime.now(),
+    );
+
+    emit(state.copyWith(
+      messages: [...state.messages, assistantMessage],
+      checklistSession: _checklistService.currentSession,
+      checklistResponse: responseMessage,
+    ));
+  }
+
+  String _buildNextQuestionMessage(ChecklistSession session) {
+    if (session.currentQuestion != null) {
+      return session.currentQuestion!.shortPrompt;
+    }
+
+    final unanswered = session.unansweredMandatoryQuestions;
+    if (unanswered.isNotEmpty) {
+      return 'Excellent! Il reste ${unanswered.length} question(s) obligatoire(s) sans reponse: ${unanswered.map((q) => q.title).join(", ")}.\n\nSouhaitez-vous y revenir?';
+    }
+
+    return 'L\'inspection de cette section est complete!\n\nDites "genere le rapport" pour obtenir le JSON, ou "qu\'est-ce qu\'il me reste?" pour voir les questions optionnelles.';
+  }
+
+  Future<void> _onInitializeChecklistService(
+    ChatInitializeChecklistService event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await _checklistService.loadChecklistFromAsset();
+      AppLogger.info(
+        'ChecklistService initialise avec ${_checklistService.sections.length} sections',
+        'ChatBloc',
+      );
+    } catch (e, stack) {
+      AppLogger.error(
+        'Erreur initialisation ChecklistService',
+        tag: 'ChatBloc',
+        error: e,
+        stackTrace: stack,
+      );
+    }
+  }
+
+  Future<void> _onChecklistShowRemaining(
+    ChatChecklistShowRemaining event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (!state.hasActiveChecklistSession) {
+      final assistantMessage = ChatMessage(
+        id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+        role: MessageRole.assistant,
+        content: 'Aucune session active. Dites dans quelle section vous etes.',
+        timestamp: DateTime.now(),
+      );
+
+      emit(state.copyWith(
+        messages: [...state.messages, assistantMessage],
+      ));
+      return;
+    }
+
+    final message = _checklistService.formatRemainingQuestionsForLLM();
+    final session = _checklistService.currentSession!;
+    final nextQuestion = session.currentQuestion;
+    final fullMessage = nextQuestion != null
+        ? '$message\n\nVoulez-vous continuer avec "${nextQuestion.title}"?'
+        : message;
+
+    final userMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      role: MessageRole.user,
+      content: 'Qu\'est-ce qu\'il me reste?',
+      timestamp: DateTime.now(),
+    );
+
+    final assistantMessage = ChatMessage(
+      id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+      role: MessageRole.assistant,
+      content: fullMessage,
+      timestamp: DateTime.now(),
+    );
+
+    emit(state.copyWith(
+      messages: [...state.messages, userMessage, assistantMessage],
+      checklistResponse: fullMessage,
+    ));
+  }
+
+  Future<void> _onChecklistGenerateReport(
+    ChatChecklistGenerateReport event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (!state.hasActiveChecklistSession) {
+      final assistantMessage = ChatMessage(
+        id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+        role: MessageRole.assistant,
+        content: 'Aucune session active pour generer un rapport.',
+        timestamp: DateTime.now(),
+      );
+
+      emit(state.copyWith(
+        messages: [...state.messages, assistantMessage],
+      ));
+      return;
+    }
+
+    final report = _checklistService.generateReport();
+    final jsonReport = const JsonEncoder.withIndent('  ').convert(report);
+    final fullMessage =
+        'Voici le rapport JSON de l\'inspection:\n\n```json\n$jsonReport\n```';
+
+    final userMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      role: MessageRole.user,
+      content: 'Genere le rapport',
+      timestamp: DateTime.now(),
+    );
+
+    final assistantMessage = ChatMessage(
+      id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+      role: MessageRole.assistant,
+      content: fullMessage,
+      timestamp: DateTime.now(),
+    );
+
+    emit(state.copyWith(
+      messages: [...state.messages, userMessage, assistantMessage],
+      checklistResponse: fullMessage,
+    ));
+
+    AppLogger.info('Rapport checklist genere', 'ChatBloc');
+  }
+
+  Future<void> _onChecklistEndSession(
+    ChatChecklistEndSession event,
+    Emitter<ChatState> emit,
+  ) async {
+    _checklistService.endSession();
+    _gemmaService.setSystemPrompt(null);
+
+    final userMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      role: MessageRole.user,
+      content: 'Terminer la session',
+      timestamp: DateTime.now(),
+    );
+
+    final assistantMessage = ChatMessage(
+      id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+      role: MessageRole.assistant,
+      content: 'Session d\'inspection terminee. Merci!',
+      timestamp: DateTime.now(),
+    );
+
+    emit(state.copyWith(
+      messages: [...state.messages, userMessage, assistantMessage],
+      clearChecklistSession: true,
+      clearChecklistResponse: true,
+    ));
+
+    AppLogger.info('Session checklist terminee', 'ChatBloc');
   }
 
   @override

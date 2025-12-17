@@ -223,3 +223,20 @@ class ChatResetChecklistsFlag extends ChatEvent {
 class ChatLoadChecklists extends ChatEvent {
   const ChatLoadChecklists();
 }
+
+// Checklist Session Events
+class ChatInitializeChecklistService extends ChatEvent {
+  const ChatInitializeChecklistService();
+}
+
+class ChatChecklistShowRemaining extends ChatEvent {
+  const ChatChecklistShowRemaining();
+}
+
+class ChatChecklistGenerateReport extends ChatEvent {
+  const ChatChecklistGenerateReport();
+}
+
+class ChatChecklistEndSession extends ChatEvent {
+  const ChatChecklistEndSession();
+}

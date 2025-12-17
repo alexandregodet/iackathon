@@ -4,6 +4,7 @@ import '../../../core/errors/app_errors.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
 import '../../../domain/entities/chat_message.dart';
+import '../../../domain/entities/checklist_session.dart';
 import '../../../domain/entities/conversation_info.dart';
 import '../../../domain/entities/document_info.dart';
 import '../../../domain/entities/gemma_model_info.dart';
@@ -39,6 +40,10 @@ class ChatState extends Equatable {
   final bool checklistsLoading;
   final bool checklistsLoaded;
 
+  // Checklist Session State
+  final ChecklistSession? checklistSession;
+  final String? checklistResponse;
+
   // Error helpers
   bool get hasError => error != null;
   bool get hasRagError => ragError != null;
@@ -73,7 +78,16 @@ class ChatState extends Equatable {
     this.checklistsJustLoaded = false,
     this.checklistsLoading = false,
     this.checklistsLoaded = false,
+    // Checklist Session defaults
+    this.checklistSession,
+    this.checklistResponse,
   });
+
+  // Checklist Session getters
+  bool get hasActiveChecklistSession => checklistSession?.isActive ?? false;
+  String? get currentChecklistSectionTitle =>
+      checklistSession?.currentSection?.title;
+  int get checklistProgress => checklistSession?.progressPercentage ?? 0;
 
   bool get isModelReady => modelState == GemmaModelState.ready;
   bool get isModelInstalled =>
@@ -159,6 +173,11 @@ class ChatState extends Equatable {
     bool? checklistsJustLoaded,
     bool? checklistsLoading,
     bool? checklistsLoaded,
+    // Checklist Session
+    ChecklistSession? checklistSession,
+    bool clearChecklistSession = false,
+    String? checklistResponse,
+    bool clearChecklistResponse = false,
   }) {
     return ChatState(
       modelState: modelState ?? this.modelState,
@@ -193,6 +212,13 @@ class ChatState extends Equatable {
       checklistsJustLoaded: checklistsJustLoaded ?? this.checklistsJustLoaded,
       checklistsLoading: checklistsLoading ?? this.checklistsLoading,
       checklistsLoaded: checklistsLoaded ?? this.checklistsLoaded,
+      // Checklist Session
+      checklistSession: clearChecklistSession
+          ? null
+          : (checklistSession ?? this.checklistSession),
+      checklistResponse: clearChecklistResponse
+          ? null
+          : (checklistResponse ?? this.checklistResponse),
     );
   }
 
@@ -223,5 +249,8 @@ class ChatState extends Equatable {
     checklistsJustLoaded,
     checklistsLoading,
     checklistsLoaded,
+    // Checklist Session
+    checklistSession,
+    checklistResponse,
   ];
 }

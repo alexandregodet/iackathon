@@ -54,19 +54,6 @@
           "defaultValue": ""
         },
         {
-          "uuid": "4f9b80231c",
-          "type": "checkbox",
-          "title": "Bilge Coatings: Safety issue ?",
-          "hint": "Compartment - If safety issue, tick and add a comments",
-          "mandatory": false,
-          "comment": true,
-          "attachment": true,
-          "displayAllChoices": false,
-          "hideInReport": false,
-          "responseBelow": false,
-          "defaultValue": ""
-        },
-        {
           "uuid": "704416b669",
           "type": "multiple-choice",
           "title": "Bulkheads",
@@ -84,19 +71,6 @@
             "Repeat"
           ],
           "multipleAnswer": true,
-          "displayAllChoices": false,
-          "hideInReport": false,
-          "responseBelow": false,
-          "defaultValue": ""
-        },
-        {
-          "uuid": "b9ad972c13",
-          "type": "checkbox",
-          "title": "Bulkhead: Safety issue ?",
-          "hint": "Compartment - If safety issue, tick and add a comments",
-          "mandatory": false,
-          "comment": true,
-          "attachment": true,
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
@@ -126,19 +100,6 @@
           "defaultValue": ""
         },
         {
-          "uuid": "30b7e64dd2",
-          "type": "checkbox",
-          "title": "Deckhead: Safety issue ?",
-          "hint": "Compartment - If safety issue, tick and add a comments",
-          "mandatory": false,
-          "comment": true,
-          "attachment": true,
-          "displayAllChoices": false,
-          "hideInReport": false,
-          "responseBelow": false,
-          "defaultValue": ""
-        },
-        {
           "uuid": "4e0478b8b8",
           "type": "multiple-choice",
           "title": "Doors / Hatches",
@@ -156,19 +117,6 @@
             "Repeat"
           ],
           "multipleAnswer": true,
-          "displayAllChoices": false,
-          "hideInReport": false,
-          "responseBelow": false,
-          "defaultValue": ""
-        },
-        {
-          "uuid": "89030c7f8e",
-          "type": "checkbox",
-          "title": "Doors / Hatches: Safety issue ?",
-          "hint": "Compartment - If safety issue, tick and add a comments",
-          "mandatory": false,
-          "comment": true,
-          "attachment": true,
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
@@ -198,19 +146,6 @@
           "defaultValue": ""
         },
         {
-          "uuid": "90d2b58209",
-          "type": "checkbox",
-          "title": "Cables / Lighting: Safety issue ?",
-          "hint": "Compartment - If safety issue, tick and add a comments",
-          "mandatory": false,
-          "comment": true,
-          "attachment": true,
-          "displayAllChoices": false,
-          "hideInReport": false,
-          "responseBelow": false,
-          "defaultValue": ""
-        },
-        {
           "uuid": "36169f6385",
           "type": "multiple-choice",
           "title": "Safety",
@@ -228,19 +163,6 @@
             "Repeat"
           ],
           "multipleAnswer": true,
-          "displayAllChoices": false,
-          "hideInReport": false,
-          "responseBelow": false,
-          "defaultValue": ""
-        },
-        {
-          "uuid": "6ca8334913",
-          "type": "checkbox",
-          "title": "Safety: Safety issue ?",
-          "hint": "Compartment - If safety issue, tick and add a comments",
-          "mandatory": false,
-          "comment": true,
-          "attachment": true,
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
