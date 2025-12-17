@@ -1340,6 +1340,9 @@ Commencons: ${firstQuestion.questionPrompt}''';
       checklistResponse: startMessage,
     ));
 
+    // TTS pour la réponse checklist
+    _speakIfVoiceMode(startMessage, assistantMessage.id);
+
     AppLogger.info('Session checklist demarree: ${section.title}', 'ChatBloc');
   }
 
@@ -1461,6 +1464,9 @@ Commencons: ${firstQuestion.questionPrompt}''';
       checklistResponse: responseMessage,
       pendingQuestionForSelection: pendingQuestion,
     ));
+
+    // TTS pour la réponse checklist
+    _speakIfVoiceMode(responseMessage, messages.last.id);
   }
 
   /// Gere la selection de l'utilisateur quand on lui propose des choix
@@ -1557,6 +1563,9 @@ Commencons: ${firstQuestion.questionPrompt}''';
       checklistResponse: responseMessage,
       clearPendingQuestion: clearPending,
     ));
+
+    // TTS pour la réponse checklist
+    _speakIfVoiceMode(responseMessage, assistantMessage.id);
   }
 
   /// Resultat de classification avec confiance
@@ -1645,6 +1654,14 @@ Commencons: ${firstQuestion.questionPrompt}''';
     return buffer.toString();
   }
 
+  /// Parle le message si le mode vocal est actif
+  void _speakIfVoiceMode(String message, String messageId) {
+    if (state.isVoiceMode) {
+      AppLogger.info('Speaking checklist response: ${message.length} chars', 'ChatBloc');
+      _ttsService.speakStreaming(message, messageId);
+    }
+  }
+
   String _buildNextQuestionMessage(ChecklistSession session) {
     if (session.currentQuestion != null) {
       return session.currentQuestion!.shortPrompt;
@@ -1721,6 +1738,9 @@ Commencons: ${firstQuestion.questionPrompt}''';
       messages: [...state.messages, userMessage, assistantMessage],
       checklistResponse: fullMessage,
     ));
+
+    // TTS pour la réponse checklist
+    _speakIfVoiceMode(fullMessage, assistantMessage.id);
   }
 
   Future<void> _onChecklistGenerateReport(
@@ -1794,6 +1814,9 @@ Commencons: ${firstQuestion.questionPrompt}''';
       clearChecklistSession: true,
       clearChecklistResponse: true,
     ));
+
+    // TTS pour la réponse checklist
+    _speakIfVoiceMode('Session d\'inspection terminee. Merci!', assistantMessage.id);
 
     AppLogger.info('Session checklist terminee', 'ChatBloc');
   }
