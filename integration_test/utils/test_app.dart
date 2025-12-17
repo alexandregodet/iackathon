@@ -15,12 +15,14 @@ import 'package:iackathon/presentation/pages/home_page.dart';
 import '../mocks/mock_gemma_service.dart';
 import '../mocks/mock_rag_service.dart';
 import '../mocks/mock_settings_service.dart';
+import '../mocks/mock_stt_service.dart';
 import '../mocks/mock_tts_service.dart';
 
 /// Test app configuration for integration tests
 class TestApp {
   static late MockGemmaService mockGemmaService;
   static late MockRagService mockRagService;
+  static late MockSttService mockSttService;
   static late MockTtsService mockTtsService;
   static late MockSettingsService mockSettingsService;
   static late AppDatabase testDatabase;
@@ -35,6 +37,7 @@ class TestApp {
     // Create mocks
     mockGemmaService = MockGemmaService();
     mockRagService = MockRagService();
+    mockSttService = MockSttService();
     mockTtsService = MockTtsService();
     mockSettingsService = MockSettingsService();
 
@@ -55,7 +58,13 @@ class TestApp {
 
     // Register ChatBloc factory
     getIt.registerFactory<ChatBloc>(
-      () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
+      () => ChatBloc(
+        mockGemmaService,
+        mockRagService,
+        testDatabase,
+        mockSttService,
+        mockTtsService,
+      ),
     );
 
     // Initialize services

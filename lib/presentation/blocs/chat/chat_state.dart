@@ -48,6 +48,11 @@ class ChatState extends Equatable {
   final List<String> pendingFilteredChoices;
   final String? pendingComment;
 
+  // Voice Mode State
+  final bool isVoiceMode;
+  final bool isListening;
+  final String partialTranscription;
+
   // Error helpers
   bool get hasError => error != null;
   bool get hasRagError => ragError != null;
@@ -88,6 +93,10 @@ class ChatState extends Equatable {
     this.pendingQuestionForSelection,
     this.pendingFilteredChoices = const [],
     this.pendingComment,
+    // Voice mode defaults
+    this.isVoiceMode = false,
+    this.isListening = false,
+    this.partialTranscription = '',
   });
 
   // Checklist Session getters
@@ -190,6 +199,10 @@ class ChatState extends Equatable {
     List<String>? pendingFilteredChoices,
     String? pendingComment,
     bool clearPendingQuestion = false,
+    // Voice mode
+    bool? isVoiceMode,
+    bool? isListening,
+    String? partialTranscription,
   }) {
     return ChatState(
       modelState: modelState ?? this.modelState,
@@ -240,6 +253,10 @@ class ChatState extends Equatable {
       pendingComment: clearPendingQuestion
           ? null
           : (pendingComment ?? this.pendingComment),
+      // Voice mode
+      isVoiceMode: isVoiceMode ?? this.isVoiceMode,
+      isListening: isListening ?? this.isListening,
+      partialTranscription: partialTranscription ?? this.partialTranscription,
     );
   }
 
@@ -276,5 +293,9 @@ class ChatState extends Equatable {
     pendingQuestionForSelection,
     pendingFilteredChoices,
     pendingComment,
+    // Voice mode
+    isVoiceMode,
+    isListening,
+    partialTranscription,
   ];
 }

@@ -1173,47 +1173,52 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 // Add button (+)
                 _buildAddButton(context, state, colorScheme, isDark),
                 const SizedBox(width: 8),
-                // Text field
+                // Text field or Voice indicator
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: isDark
-                            ? colorScheme.primary.withValues(alpha: 0.3)
-                            : colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: TextField(
-                      controller: _controller,
-                      enabled: !state.isGenerating,
-                      style: const TextStyle(fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: state.isGenerating
-                            ? '> processing...'
-                            : _selectedImageBytes != null
-                            ? '> describe image...'
-                            : '> enter message...',
-                        hintStyle: TextStyle(
-                          color: colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.5,
+                  child: state.isVoiceMode
+                      ? _buildListeningIndicator(context, state, colorScheme, isDark)
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: isDark
+                                  ? colorScheme.primary.withValues(alpha: 0.3)
+                                  : colorScheme.outlineVariant,
+                            ),
                           ),
-                          fontSize: 14,
+                          child: TextField(
+                            controller: _controller,
+                            enabled: !state.isGenerating,
+                            style: const TextStyle(fontSize: 14),
+                            decoration: InputDecoration(
+                              hintText: state.isGenerating
+                                  ? '> processing...'
+                                  : _selectedImageBytes != null
+                                  ? '> describe image...'
+                                  : '> enter message...',
+                              hintStyle: TextStyle(
+                                color: colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.5,
+                                ),
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                            ),
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _sendMessage(context),
+                            maxLines: 4,
+                            minLines: 1,
+                          ),
                         ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                      ),
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(context),
-                      maxLines: 4,
-                      minLines: 1,
-                    ),
-                  ),
                 ),
+                const SizedBox(width: 8),
+                // Voice toggle button
+                _buildVoiceToggleButton(context, state, colorScheme, isDark),
                 const SizedBox(width: 8),
                 // Send/Stop button
                 _buildSendButton(context, state, colorScheme),
@@ -1315,6 +1320,145 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildVoiceToggleButton(
+    BuildContext context,
+    ChatState state,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    final isDisabled = state.isGenerating || state.isProcessingDocument;
+
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Material(
+        color: state.isVoiceMode
+            ? colorScheme.primary.withValues(alpha: 0.15)
+            : colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(4),
+        child: InkWell(
+          onTap: isDisabled
+              ? null
+              : () => context.read<ChatBloc>().add(const ChatToggleVoiceMode()),
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: state.isVoiceMode
+                    ? colorScheme.primary.withValues(alpha: 0.5)
+                    : isDark
+                    ? colorScheme.primary.withValues(alpha: 0.3)
+                    : colorScheme.outlineVariant,
+              ),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  state.isVoiceMode ? Icons.mic : Icons.mic_off,
+                  color: isDisabled
+                      ? colorScheme.outline
+                      : state.isVoiceMode
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+                // Pulsing animation when listening
+                if (state.isListening)
+                  Positioned.fill(
+                    child: AnimatedOpacity(
+                      opacity: 0.5,
+                      duration: const Duration(milliseconds: 500),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListeningIndicator(
+    BuildContext context,
+    ChatState state,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: state.isListening
+              ? colorScheme.primary.withValues(alpha: 0.5)
+              : colorScheme.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            state.isListening ? Icons.mic : Icons.mic_off,
+            color: state.isListening
+                ? colorScheme.primary
+                : colorScheme.onSurfaceVariant,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              state.isListening
+                  ? (state.partialTranscription.isEmpty
+                      ? '> listening...'
+                      : state.partialTranscription)
+                  : '> voice mode active',
+              style: TextStyle(
+                color: state.isListening
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+                fontSize: 14,
+                fontStyle: state.partialTranscription.isEmpty
+                    ? FontStyle.italic
+                    : FontStyle.normal,
+              ),
+            ),
+          ),
+          // Animated waveform when listening
+          if (state.isListening) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 40,
+              height: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(
+                  4,
+                  (index) => AnimatedContainer(
+                    duration: Duration(milliseconds: 300 + (index * 100)),
+                    width: 3,
+                    height: 8 + (index % 2 == 0 ? 6 : 0),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -13,6 +13,8 @@ import '../../../data/datasources/database.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
 import '../../../data/datasources/settings_service.dart';
+import '../../../data/datasources/stt_service.dart';
+import '../../../data/datasources/tts_service.dart';
 import '../../../domain/entities/chat_message.dart';
 import '../../../domain/entities/checklist_question.dart';
 import '../../../domain/entities/checklist_response.dart';
@@ -29,8 +31,19 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final AppDatabase _database;
   final SettingsService _settingsService;
   final ChecklistService _checklistService;
+  final SttService _sttService;
+  final TtsService _ttsService;
   StreamSubscription<String>? _responseSubscription;
   StreamSubscription<GemmaStreamResponse>? _thinkingResponseSubscription;
+  StreamSubscription<String>? _partialTranscriptionSubscription;
+  StreamSubscription<String>? _finalTranscriptionSubscription;
+  StreamSubscription<bool>? _sttStateSubscription;
+  StreamSubscription<String>? _sttErrorSubscription;
+
+  // Voice mode state
+  String _accumulatedTextForTts = '';
+  bool _hasStartedTts = false;
+  StreamSubscription<void>? _ttsCompletionSubscription;
 
   ChatBloc(
     this._gemmaService,
@@ -38,8 +51,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     this._database,
     this._settingsService,
     this._checklistService,
-  )
-    : super(const ChatState()) {
+    this._sttService,
+    this._ttsService,
+  ) : super(const ChatState()) {
     on<ChatInitialize>(_onInitialize);
     on<ChatDownloadModel>(_onDownloadModel);
     on<ChatLoadModel>(_onLoadModel);
@@ -79,6 +93,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatChecklistShowRemaining>(_onChecklistShowRemaining);
     on<ChatChecklistGenerateReport>(_onChecklistGenerateReport);
     on<ChatChecklistEndSession>(_onChecklistEndSession);
+    // Voice mode events
+    on<ChatToggleVoiceMode>(_onToggleVoiceMode);
+    on<ChatStartListening>(_onStartListening);
+    on<ChatStopListening>(_onStopListening);
+    on<ChatPartialTranscription>(_onPartialTranscription);
+    on<ChatFinalTranscription>(_onFinalTranscription);
+    on<ChatVoiceError>(_onVoiceError);
+    on<ChatUpdateListeningState>(_onUpdateListeningState);
   }
 
   Future<void> _onInitialize(
@@ -398,11 +420,77 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     final lastMessage = messages.last;
 
     if (lastMessage.role == MessageRole.assistant) {
+      final newContent = lastMessage.content + event.chunk;
       messages[messages.length - 1] = lastMessage.copyWith(
-        content: lastMessage.content + event.chunk,
+        content: newContent,
       );
       emit(state.copyWith(messages: messages));
+
+      // In voice mode, start TTS as soon as we have complete sentences
+      if (state.isVoiceMode) {
+        _accumulatedTextForTts += event.chunk;
+        _processTtsStreaming(lastMessage.id);
+      }
     }
+  }
+
+  void _processTtsStreaming(String messageId) {
+    // Check if we have a complete sentence (ends with . ! ? or has enough words)
+    final sentences = _extractCompleteSentences(_accumulatedTextForTts);
+
+    if (sentences.isNotEmpty) {
+      // Stop listening when we start speaking (first sentence)
+      if (!_hasStartedTts && state.isListening) {
+        AppLogger.info('Stopping STT before starting TTS', 'ChatBloc');
+        _sttService.stopListening();
+        _hasStartedTts = true;
+      }
+
+      // Send each complete sentence to TTS
+      for (final sentence in sentences) {
+        _ttsService.speakStreaming(
+          sentence,
+          messageId,
+          onComplete: () {
+            // Restart listening when all TTS completes
+            AppLogger.info('All TTS complete, restarting listening', 'ChatBloc');
+            if (state.isVoiceMode && !_sttService.isListening && !isClosed) {
+              _sttService.startListening();
+            }
+          },
+        );
+      }
+    }
+  }
+
+  List<String> _extractCompleteSentences(String text) {
+    final sentences = <String>[];
+    final sentenceEndings = RegExp(r'[.!?]\s*');
+    final matches = sentenceEndings.allMatches(text);
+
+    if (matches.isEmpty) {
+      // No complete sentences, but check if we have enough words (>15 words)
+      final wordCount = text.trim().split(RegExp(r'\s+')).length;
+      if (wordCount > 15) {
+        sentences.add(text);
+        _accumulatedTextForTts = '';
+      }
+      return sentences;
+    }
+
+    // Extract all complete sentences
+    int lastEnd = 0;
+    for (final match in matches) {
+      final sentence = text.substring(lastEnd, match.end).trim();
+      if (sentence.isNotEmpty) {
+        sentences.add(sentence);
+      }
+      lastEnd = match.end;
+    }
+
+    // Keep the remaining partial sentence
+    _accumulatedTextForTts = text.substring(lastEnd);
+    return sentences;
   }
 
   Future<void> _onStreamComplete(
@@ -424,6 +512,35 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       if (state.currentConversationId != null &&
           completedMessage.content.isNotEmpty) {
         await _saveMessageToDb(completedMessage, state.currentConversationId!);
+      }
+
+      // In voice mode with streaming TTS
+      if (state.isVoiceMode && completedMessage.content.isNotEmpty) {
+        // Send any remaining accumulated text to TTS
+        if (_accumulatedTextForTts.trim().isNotEmpty) {
+          AppLogger.info('Speaking remaining text: ${_accumulatedTextForTts}', 'ChatBloc');
+          _ttsService.speakStreaming(
+            _accumulatedTextForTts,
+            completedMessage.id,
+            onComplete: () {
+              // Restart listening when all TTS completes
+              AppLogger.info('All TTS complete, restarting listening', 'ChatBloc');
+              if (state.isVoiceMode && !_sttService.isListening && !isClosed) {
+                _sttService.startListening();
+              }
+            },
+          );
+        }
+
+        // Reset TTS streaming state
+        _accumulatedTextForTts = '';
+        _hasStartedTts = false;
+
+        // If no TTS was started (empty response), restart listening
+        if (!_ttsService.isPlaying && !_sttService.isListening) {
+          AppLogger.info('No TTS played, restarting listening immediately', 'ChatBloc');
+          await _sttService.startListening();
+        }
       }
     }
   }
@@ -1136,6 +1253,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     );
   }
 
+<<<<<<< HEAD
   // ============== CHECKLIST SESSION HANDLERS ==============
 
   /// Detecte l'intention de l'utilisateur via Gemma
@@ -1680,10 +1798,188 @@ Commencons: ${firstQuestion.questionPrompt}''';
     AppLogger.info('Session checklist terminee', 'ChatBloc');
   }
 
+  // ============== VOICE MODE HANDLERS ==============
+
+  Future<void> _onToggleVoiceMode(
+    ChatToggleVoiceMode event,
+    Emitter<ChatState> emit,
+  ) async {
+    final newVoiceMode = !state.isVoiceMode;
+    AppLogger.info('Toggling voice mode: $newVoiceMode', 'ChatBloc');
+
+    if (newVoiceMode) {
+      // Enabling voice mode - initialize STT service and start listening
+      await _sttService.init();
+
+      if (!_sttService.isAvailable) {
+        AppLogger.warning('STT not available', 'ChatBloc');
+        add(const ChatVoiceError('Speech recognition not available'));
+        return;
+      }
+
+      // Check/request permission
+      final hasPermission = await _sttService.checkPermission();
+      if (!hasPermission) {
+        final granted = await _sttService.requestPermission();
+        if (!granted) {
+          AppLogger.warning('Microphone permission denied', 'ChatBloc');
+          add(const ChatVoiceError('Microphone permission denied'));
+          return;
+        }
+      }
+
+      // Subscribe to STT streams
+      await _partialTranscriptionSubscription?.cancel();
+      await _finalTranscriptionSubscription?.cancel();
+      await _sttStateSubscription?.cancel();
+      await _sttErrorSubscription?.cancel();
+
+      _partialTranscriptionSubscription =
+          _sttService.partialResultStream.listen((text) {
+        add(ChatPartialTranscription(text));
+      });
+
+      _finalTranscriptionSubscription = _sttService.finalResultStream.listen(
+        (text) {
+          add(ChatFinalTranscription(text));
+        },
+      );
+
+      _sttStateSubscription = _sttService.isListeningStream.listen((listening) {
+        if (!isClosed) {
+          add(ChatUpdateListeningState(listening));
+        }
+      });
+
+      _sttErrorSubscription = _sttService.errorStream.listen((error) {
+        add(ChatVoiceError(error));
+      });
+
+      // Start listening
+      await _sttService.startListening();
+      emit(state.copyWith(
+        isVoiceMode: true,
+        isListening: _sttService.isListening,
+      ));
+    } else {
+      // Disabling voice mode - stop listening and cleanup
+      await _sttService.stopListening();
+      await _partialTranscriptionSubscription?.cancel();
+      await _finalTranscriptionSubscription?.cancel();
+      await _sttStateSubscription?.cancel();
+      await _sttErrorSubscription?.cancel();
+
+      _partialTranscriptionSubscription = null;
+      _finalTranscriptionSubscription = null;
+      _sttStateSubscription = null;
+      _sttErrorSubscription = null;
+
+      emit(state.copyWith(
+        isVoiceMode: false,
+        isListening: false,
+        partialTranscription: '',
+      ));
+    }
+  }
+
+  Future<void> _onStartListening(
+    ChatStartListening event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (!state.isVoiceMode || !_sttService.isAvailable) return;
+
+    await _sttService.startListening();
+    emit(state.copyWith(isListening: _sttService.isListening));
+  }
+
+  Future<void> _onStopListening(
+    ChatStopListening event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (!_sttService.isListening) return;
+
+    await _sttService.stopListening();
+    emit(state.copyWith(isListening: false, partialTranscription: ''));
+  }
+
+  void _onPartialTranscription(
+    ChatPartialTranscription event,
+    Emitter<ChatState> emit,
+  ) {
+    // Update partial transcription for real-time UI feedback
+    emit(state.copyWith(partialTranscription: event.text));
+  }
+
+  Future<void> _onFinalTranscription(
+    ChatFinalTranscription event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (event.text.trim().isEmpty) {
+      AppLogger.info('Empty transcription, ignoring', 'ChatBloc');
+      emit(state.copyWith(partialTranscription: ''));
+      return;
+    }
+
+    AppLogger.info('Final transcription: "${event.text}"', 'ChatBloc');
+
+    // Clear partial transcription
+    emit(state.copyWith(partialTranscription: ''));
+
+    // Send the transcribed message
+    add(ChatSendMessage(event.text));
+
+    // Note: Listening will be restarted automatically in _onStreamComplete
+    // after the AI response is complete and TTS finishes
+  }
+
+  void _onVoiceError(
+    ChatVoiceError event,
+    Emitter<ChatState> emit,
+  ) {
+    AppLogger.error('Voice error: ${event.error}', tag: 'ChatBloc');
+
+    // Don't show error for "no match" - it's normal, just restart listening
+    if (event.error == 'error_no_match') {
+      AppLogger.info('No speech detected, continuing to listen', 'ChatBloc');
+      if (state.isVoiceMode && !_sttService.isListening) {
+        add(const ChatStartListening());
+      }
+      return;
+    }
+
+    emit(state.copyWith(
+      error: ModelError.inferenceError(original: event.error),
+    ));
+  }
+
+  void _onUpdateListeningState(
+    ChatUpdateListeningState event,
+    Emitter<ChatState> emit,
+  ) {
+    emit(state.copyWith(isListening: event.isListening));
+
+    // Auto-restart listening if it stopped while in voice mode
+    if (!event.isListening &&
+        state.isVoiceMode &&
+        !state.isGenerating &&
+        state.partialTranscription.isEmpty) {
+      AppLogger.info('Auto-restarting listening in voice mode', 'ChatBloc');
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (state.isVoiceMode && !_sttService.isListening && !isClosed) {
+          add(const ChatStartListening());
+        }
+      });
+    }
+  }
+
   @override
   Future<void> close() {
     _responseSubscription?.cancel();
     _thinkingResponseSubscription?.cancel();
+    _partialTranscriptionSubscription?.cancel();
+    _finalTranscriptionSubscription?.cancel();
+    _sttStateSubscription?.cancel();
+    _sttErrorSubscription?.cancel();
     return super.close();
   }
 }

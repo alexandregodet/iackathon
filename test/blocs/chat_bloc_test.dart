@@ -15,10 +15,14 @@ import 'package:iackathon/presentation/blocs/chat/chat_state.dart';
 
 import '../mocks/mock_gemma_service.dart';
 import '../mocks/mock_rag_service.dart';
+import '../mocks/mock_stt_service.dart';
+import '../mocks/mock_tts_service.dart';
 
 void main() {
   late MockGemmaService mockGemmaService;
   late MockRagService mockRagService;
+  late MockSttService mockSttService;
+  late MockTtsService mockTtsService;
   late AppDatabase testDatabase;
   late ChatBloc chatBloc;
 
@@ -31,8 +35,16 @@ void main() {
   setUp(() {
     mockGemmaService = MockGemmaService();
     mockRagService = MockRagService();
+    mockSttService = MockSttService();
+    mockTtsService = MockTtsService();
     testDatabase = AppDatabase.forTesting(NativeDatabase.memory());
-    chatBloc = ChatBloc(mockGemmaService, mockRagService, testDatabase);
+    chatBloc = ChatBloc(
+      mockGemmaService,
+      mockRagService,
+      testDatabase,
+      mockSttService,
+      mockTtsService,
+    );
   });
 
   tearDown(() async {
@@ -54,7 +66,13 @@ void main() {
       'emits state with selected model when initialized',
       build: () {
         mockGemmaService.setModelState(GemmaModelState.installed);
-        return ChatBloc(mockGemmaService, mockRagService, testDatabase);
+        return ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        );
       },
       act: (bloc) => bloc.add(ChatInitialize(testModel)),
       expect: () => [
@@ -77,7 +95,13 @@ void main() {
       'checks model status on initialize',
       build: () {
         mockGemmaService.setModelState(GemmaModelState.notInstalled);
-        return ChatBloc(mockGemmaService, mockRagService, testDatabase);
+        return ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        );
       },
       act: (bloc) => bloc.add(ChatInitialize(testModel)),
       verify: (_) {
@@ -92,7 +116,13 @@ void main() {
       'downloads model and updates progress',
       build: () {
         mockGemmaService.setModelState(GemmaModelState.notInstalled);
-        final bloc = ChatBloc(mockGemmaService, mockRagService, testDatabase);
+        final bloc = ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        );
         bloc.emit(chatBloc.state.copyWith(selectedModel: testModel));
         return bloc;
       },
@@ -168,7 +198,13 @@ void main() {
 
     blocTest<ChatBloc, ChatState>(
       'does nothing when no model is selected',
-      build: () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
+      build: () => ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        ),
       act: (bloc) => bloc.add(const ChatDownloadModel()),
       expect: () => [],
     );
@@ -179,7 +215,13 @@ void main() {
       'loads model and transitions to ready state',
       build: () {
         mockGemmaService.setModelState(GemmaModelState.installed);
-        return ChatBloc(mockGemmaService, mockRagService, testDatabase);
+        return ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        );
       },
       act: (bloc) => bloc.add(const ChatLoadModel()),
       wait: const Duration(milliseconds: 100),
@@ -204,7 +246,13 @@ void main() {
       build: () {
         mockGemmaService.setModelState(GemmaModelState.ready);
         mockGemmaService.setMockResponses(['Test response.']);
-        return ChatBloc(mockGemmaService, mockRagService, testDatabase);
+        return ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        );
       },
       act: (bloc) => bloc.add(const ChatSendMessage('Hello')),
       wait: const Duration(milliseconds: 500),
@@ -224,7 +272,13 @@ void main() {
       'emits error when model is not ready',
       build: () {
         mockGemmaService.setModelState(GemmaModelState.notInstalled);
-        return ChatBloc(mockGemmaService, mockRagService, testDatabase);
+        return ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        );
       },
       act: (bloc) => bloc.add(const ChatSendMessage('Hello')),
       expect: () => [
@@ -236,7 +290,13 @@ void main() {
       'does not send when already generating',
       build: () {
         mockGemmaService.setModelState(GemmaModelState.ready);
-        return ChatBloc(mockGemmaService, mockRagService, testDatabase);
+        return ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        );
       },
       seed: () => const ChatState(
         modelState: GemmaModelState.ready,
@@ -250,7 +310,13 @@ void main() {
   group('ChatClearConversation', () {
     blocTest<ChatBloc, ChatState>(
       'clears all messages',
-      build: () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
+      build: () => ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        ),
       seed: () => ChatState(
         messages: [
           ChatMessage(
@@ -271,7 +337,13 @@ void main() {
   group('ChatStopGeneration', () {
     blocTest<ChatBloc, ChatState>(
       'stops generation and keeps partial content',
-      build: () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
+      build: () => ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        ),
       seed: () => ChatState(
         modelState: GemmaModelState.ready,
         isGenerating: true,
@@ -308,7 +380,13 @@ void main() {
   group('Conversation Management', () {
     blocTest<ChatBloc, ChatState>(
       'creates new conversation',
-      build: () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
+      build: () => ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        ),
       act: (bloc) =>
           bloc.add(const ChatCreateConversation(title: 'Test Conversation')),
       wait: const Duration(milliseconds: 100),
@@ -342,7 +420,13 @@ void main() {
             .into(testDatabase.conversations)
             .insert(ConversationsCompanion.insert(title: 'Test Conv'));
       },
-      build: () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
+      build: () => ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        ),
       act: (bloc) => bloc.add(const ChatLoadConversations()),
       wait: const Duration(milliseconds: 100),
       expect: () => [
@@ -364,7 +448,13 @@ void main() {
             .into(testDatabase.conversations)
             .insert(ConversationsCompanion.insert(title: 'To Delete'));
       },
-      build: () => ChatBloc(mockGemmaService, mockRagService, testDatabase),
+      build: () => ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        ),
       act: (bloc) async {
         final convs = await testDatabase
             .select(testDatabase.conversations)
@@ -408,7 +498,13 @@ void main() {
       'checks embedder status',
       build: () {
         mockRagService.setEmbedderState(EmbedderState.installed);
-        return ChatBloc(mockGemmaService, mockRagService, testDatabase);
+        return ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        );
       },
       act: (bloc) => bloc.add(const ChatCheckEmbedder()),
       expect: () => [
@@ -424,7 +520,13 @@ void main() {
       'loads embedder',
       build: () {
         mockRagService.setEmbedderState(EmbedderState.installed);
-        return ChatBloc(mockGemmaService, mockRagService, testDatabase);
+        return ChatBloc(
+          mockGemmaService,
+          mockRagService,
+          testDatabase,
+          mockSttService,
+          mockTtsService,
+        );
       },
       act: (bloc) => bloc.add(const ChatLoadEmbedder()),
       wait: const Duration(milliseconds: 100),

@@ -62,7 +62,12 @@ dependencies:
   read_pdf_text: ^0.3.1
   intl: ^0.20.2
   shared_preferences: ^2.5.4
+
+  # Voice - Text-to-Speech and Speech-to-Text
   flutter_tts: ^4.2.3
+  speech_to_text: ^7.0.0
+  permission_handler: ^11.3.1
+
   google_fonts: ^6.2.1
 
 dev_dependencies:

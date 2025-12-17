@@ -255,3 +255,52 @@ class ChatChecklistEndSession extends ChatEvent {
   @override
   List<Object?> get props => [userMessage];
 }
+
+// Voice Mode Events
+class ChatToggleVoiceMode extends ChatEvent {
+  const ChatToggleVoiceMode();
+}
+
+class ChatStartListening extends ChatEvent {
+  const ChatStartListening();
+}
+
+class ChatStopListening extends ChatEvent {
+  const ChatStopListening();
+}
+
+class ChatPartialTranscription extends ChatEvent {
+  final String text;
+
+  const ChatPartialTranscription(this.text);
+
+  @override
+  List<Object?> get props => [text];
+}
+
+class ChatFinalTranscription extends ChatEvent {
+  final String text;
+
+  const ChatFinalTranscription(this.text);
+
+  @override
+  List<Object?> get props => [text];
+}
+
+class ChatVoiceError extends ChatEvent {
+  final String error;
+
+  const ChatVoiceError(this.error);
+
+  @override
+  List<Object?> get props => [error];
+}
+
+class ChatUpdateListeningState extends ChatEvent {
+  final bool isListening;
+
+  const ChatUpdateListeningState(this.isListening);
+
+  @override
+  List<Object?> get props => [isListening];
+}
