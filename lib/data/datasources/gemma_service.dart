@@ -346,6 +346,50 @@ class GemmaService {
     }
   }
 
+  /// Genere une reponse "one-shot" sans polluer l'historique de conversation
+  /// Utilise un chat temporaire qui est detruit apres la generation
+  Stream<String> generateOneShot(String prompt) async* {
+    if (_model == null || _currentModel == null || !isReady) {
+      final error = ModelError.notLoaded();
+      AppLogger.logAppError(error, 'GemmaService');
+      throw error;
+    }
+
+    AppLogger.debug(
+      'Generation one-shot pour: ${prompt.substring(0, min(50, prompt.length))}...',
+      'GemmaService',
+    );
+
+    // Creer un chat temporaire pour cette requete uniquement
+    InferenceChat? tempChat;
+    try {
+      tempChat = await _model!.createChat(
+        modelType: _currentModel!.modelType,
+        supportImage: false,
+        isThinking: false,
+      );
+
+      await tempChat.addQuery(Message.text(text: prompt, isUser: true));
+
+      await for (final response in tempChat.generateChatResponseAsync()) {
+        if (response is TextResponse) {
+          yield response.token;
+        }
+      }
+      AppLogger.debug('Generation one-shot terminee', 'GemmaService');
+    } catch (e, stack) {
+      AppLogger.error(
+        'Erreur pendant la generation one-shot',
+        tag: 'GemmaService',
+        error: e,
+        stackTrace: stack,
+      );
+      if (e is AppError) rethrow;
+      throw ModelError.inferenceError(original: e, stack: stack);
+    }
+    // Le chat temporaire sera garbage collected
+  }
+
   Future<void> clearChat() async {
     _systemPromptSent = false;
     if (_model != null && _currentModel != null) {

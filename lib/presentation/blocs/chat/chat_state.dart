@@ -46,6 +46,7 @@ class ChatState extends Equatable {
   final String? checklistResponse;
   final ChecklistQuestion? pendingQuestionForSelection;
   final List<String> pendingFilteredChoices;
+  final String? pendingComment;
 
   // Error helpers
   bool get hasError => error != null;
@@ -86,6 +87,7 @@ class ChatState extends Equatable {
     this.checklistResponse,
     this.pendingQuestionForSelection,
     this.pendingFilteredChoices = const [],
+    this.pendingComment,
   });
 
   // Checklist Session getters
@@ -186,6 +188,7 @@ class ChatState extends Equatable {
     bool clearChecklistResponse = false,
     ChecklistQuestion? pendingQuestionForSelection,
     List<String>? pendingFilteredChoices,
+    String? pendingComment,
     bool clearPendingQuestion = false,
   }) {
     return ChatState(
@@ -234,6 +237,9 @@ class ChatState extends Equatable {
       pendingFilteredChoices: clearPendingQuestion
           ? const []
           : (pendingFilteredChoices ?? this.pendingFilteredChoices),
+      pendingComment: clearPendingQuestion
+          ? null
+          : (pendingComment ?? this.pendingComment),
     );
   }
 
@@ -269,5 +275,6 @@ class ChatState extends Equatable {
     checklistResponse,
     pendingQuestionForSelection,
     pendingFilteredChoices,
+    pendingComment,
   ];
 }

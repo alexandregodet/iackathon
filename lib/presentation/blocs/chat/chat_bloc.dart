@@ -1255,7 +1255,6 @@ Commencons: ${firstQuestion.questionPrompt}''';
     String responseMessage;
     final confirmations = <String>[];
     ChecklistQuestion? pendingQuestion;
-    List<String> filteredChoices = [];
 
     try {
       // Detecter si plusieurs questions sont mentionnees
@@ -1266,15 +1265,16 @@ Commencons: ${firstQuestion.questionPrompt}''';
         for (final question in mentionedQuestions) {
           final result = await _classifyWithConfidence(userInput, question);
           if (result != null) {
-            if (result.isConfident) {
-              _checklistService.recordResponse(result.response);
-              confirmations.add('${question.title} = ${result.response.displayValue}');
-            } else {
-              // Incertain - demander a l'utilisateur avec choix filtres
-              pendingQuestion = question;
-              filteredChoices = result.probableChoices;
-              break;
-            }
+            // Classification reussie - enregistrer
+            _checklistService.recordResponse(result.response);
+            final confirmation = result.comment != null
+                ? '${question.title} = ${result.response.displayValue} (${result.comment})'
+                : '${question.title} = ${result.response.displayValue}';
+            confirmations.add(confirmation);
+          } else {
+            // Pas de classification - proposer tous les choix
+            pendingQuestion = question;
+            break;
           }
         }
       } else if (state.checklistSession?.currentQuestion != null) {
@@ -1283,24 +1283,22 @@ Commencons: ${firstQuestion.questionPrompt}''';
         final result = await _classifyWithConfidence(userInput, question);
 
         if (result != null) {
-          if (result.isConfident) {
-            _checklistService.recordResponse(result.response);
-            confirmations.add('${question.title} = ${result.response.displayValue}');
-          } else {
-            // Incertain - demander a l'utilisateur avec choix filtres
-            pendingQuestion = question;
-            filteredChoices = result.probableChoices;
-          }
+          // Classification reussie - enregistrer
+          _checklistService.recordResponse(result.response);
+          final confirmation = result.comment != null
+              ? '${question.title} = ${result.response.displayValue} (${result.comment})'
+              : '${question.title} = ${result.response.displayValue}';
+          confirmations.add(confirmation);
+        } else {
+          // Pas de classification - proposer tous les choix
+          pendingQuestion = question;
         }
       }
 
       // Construire le message de reponse
       if (pendingQuestion != null) {
-        // Gemma n'est pas sur, proposer les choix filtres
-        responseMessage = _checklistService.formatChoicesForUser(
-          pendingQuestion,
-          filteredChoices: filteredChoices,
-        );
+        // Gemma n'a pas trouve de choix - proposer tous les choix
+        responseMessage = _checklistService.formatChoicesForUser(pendingQuestion);
       } else {
         final session = _checklistService.currentSession!;
         final nextMessage = _buildNextQuestionMessage(session);
@@ -1335,32 +1333,47 @@ Commencons: ${firstQuestion.questionPrompt}''';
       checklistSession: _checklistService.currentSession,
       checklistResponse: responseMessage,
       pendingQuestionForSelection: pendingQuestion,
-      pendingFilteredChoices: filteredChoices,
     ));
   }
 
-  /// Gere la selection directe de l'utilisateur (numero ou nom du choix)
+  /// Gere la selection de l'utilisateur quand on lui propose des choix
+  /// L'utilisateur peut: repondre librement (Gemma re-analyse), donner un numero, ou demander tous les choix
   Future<void> _handleDirectSelection(
     String userInput,
     Emitter<ChatState> emit,
   ) async {
     final question = state.pendingQuestionForSelection!;
-    final filteredChoices = state.pendingFilteredChoices;
-
-    final choice = _checklistService.parseDirectChoice(
-      userInput,
-      question,
-      filteredChoices: filteredChoices,
-    );
 
     String responseMessage;
+    bool clearPending = false;
 
-    if (choice != null) {
-      // Choix valide - enregistrer la reponse
+    // 1. Verifier si l'utilisateur demande tous les choix
+    if (_checklistService.isAskingForAllChoices(userInput)) {
+      responseMessage = _checklistService.formatChoicesForUser(question);
+
+      final assistantMessage = ChatMessage(
+        id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+        role: MessageRole.assistant,
+        content: responseMessage,
+        timestamp: DateTime.now(),
+      );
+
+      emit(state.copyWith(
+        messages: [...state.messages, assistantMessage],
+        checklistResponse: responseMessage,
+      ));
+      return;
+    }
+
+    // 2. Essayer de parser une selection directe (numero ou nom exact)
+    final directChoice = _checklistService.parseDirectChoice(userInput, question);
+
+    if (directChoice != null) {
+      // Choix direct valide - enregistrer
       final response = _checklistService.createResponseFromChoice(
         userInput,
         question,
-        choice,
+        directChoice,
       );
 
       if (response != null) {
@@ -1368,13 +1381,54 @@ Commencons: ${firstQuestion.questionPrompt}''';
 
         final session = _checklistService.currentSession!;
         final nextMessage = _buildNextQuestionMessage(session);
-        responseMessage = 'J\'ai bien note: ${question.title} = $choice.\n\n$nextMessage';
+        responseMessage = 'J\'ai bien note: ${question.title} = $directChoice.\n\n$nextMessage';
+        clearPending = true;
       } else {
         responseMessage = 'Erreur lors de l\'enregistrement.';
       }
     } else {
-      // Choix invalide - redemander avec les memes choix filtres
-      responseMessage = 'Je n\'ai pas compris votre choix. ${_checklistService.formatChoicesForUser(question, filteredChoices: filteredChoices)}';
+      // 3. Pas de selection directe - re-analyser avec Gemma
+      final result = await _classifyWithConfidence(userInput, question);
+
+      if (result != null) {
+        // Classification reussie
+        final response = _checklistService.createResponseFromChoice(
+          userInput,
+          question,
+          result.response.selectedChoices.first,
+          comment: result.comment,
+        );
+
+        if (response != null) {
+          _checklistService.recordResponse(response);
+
+          final session = _checklistService.currentSession!;
+          final nextMessage = _buildNextQuestionMessage(session);
+          final confirmationText = result.comment != null
+              ? '${question.title} = ${result.response.selectedChoices.first} (${result.comment})'
+              : '${question.title} = ${result.response.selectedChoices.first}';
+          responseMessage = 'J\'ai bien note: $confirmationText.\n\n$nextMessage';
+          clearPending = true;
+        } else {
+          responseMessage = 'Erreur lors de l\'enregistrement.';
+        }
+      } else {
+        // Gemma n'a pas pu classifier - remontrer les choix
+        responseMessage = 'Je n\'ai pas compris votre reponse. ${_checklistService.formatChoicesForUser(question)}';
+
+        final assistantMessage = ChatMessage(
+          id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+          role: MessageRole.assistant,
+          content: responseMessage,
+          timestamp: DateTime.now(),
+        );
+
+        emit(state.copyWith(
+          messages: [...state.messages, assistantMessage],
+          checklistResponse: responseMessage,
+        ));
+        return;
+      }
     }
 
     // Mettre a jour le prompt systeme
@@ -1392,8 +1446,7 @@ Commencons: ${firstQuestion.questionPrompt}''';
       messages: [...state.messages, assistantMessage],
       checklistSession: _checklistService.currentSession,
       checklistResponse: responseMessage,
-      // Effacer la question en attente si choix valide
-      clearPendingQuestion: choice != null,
+      clearPendingQuestion: clearPending,
     ));
   }
 
@@ -1453,12 +1506,14 @@ Commencons: ${firstQuestion.questionPrompt}''';
           userInput,
           question,
           result.choice,
+          comment: result.comment,
         );
         return response != null
             ? _ClassificationWithConfidence(
                 response: response,
                 isConfident: result.isConfident,
                 probableChoices: result.probableChoices,
+                comment: result.comment,
               )
             : null;
       }
@@ -1470,11 +1525,11 @@ Commencons: ${firstQuestion.questionPrompt}''';
     }
   }
 
-  /// Obtient une reponse de Gemma de maniere synchrone (en collectant le stream)
+  /// Obtient une reponse de Gemma en mode "one-shot" (sans polluer l'historique)
   Future<String> _getGemmaResponse(String prompt) async {
     final buffer = StringBuffer();
 
-    await for (final chunk in _gemmaService.generateResponse(prompt)) {
+    await for (final chunk in _gemmaService.generateOneShot(prompt)) {
       buffer.write(chunk);
     }
 
@@ -1647,10 +1702,12 @@ class _ClassificationWithConfidence {
   final ChecklistResponse response;
   final bool isConfident;
   final List<String> probableChoices;
+  final String? comment;
 
   _ClassificationWithConfidence({
     required this.response,
     required this.isConfident,
     this.probableChoices = const [],
+    this.comment,
   });
 }

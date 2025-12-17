@@ -251,11 +251,11 @@ Commencons: ${firstQuestion.questionPrompt}''';
     }
   }
 
-  /// Obtient une reponse de Gemma de maniere synchrone
+  /// Obtient une reponse de Gemma en mode "one-shot" (sans polluer l'historique)
   Future<String> _getGemmaResponse(String prompt) async {
     final buffer = StringBuffer();
 
-    await for (final chunk in _gemmaService.generateResponse(prompt)) {
+    await for (final chunk in _gemmaService.generateOneShot(prompt)) {
       buffer.write(chunk);
     }
 
