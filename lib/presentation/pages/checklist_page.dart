@@ -64,6 +64,361 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
     }
   }
 
+  void _showCompletionSummaryDialog(BuildContext context, ChecklistState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final tagController = TextEditingController();
+    // Capture navigator and bloc before showing dialog to avoid context issues
+    final navigator = Navigator.of(context);
+    final bloc = context.read<ChecklistBloc>();
+
+    // Collect all AI tags from responses (mutable list for editing)
+    final editableTags = <_EditableTag>[];
+    for (final response in state.responses.values) {
+      if (response.aiTags != null) {
+        for (final tagData in response.aiTags!) {
+          final tag = tagData['tag'] as String?;
+          if (tag != null && tag.isNotEmpty) {
+            // Avoid duplicates
+            if (!editableTags.any((t) => t.tag == tag)) {
+              editableTags.add(_EditableTag(tag: tag, isAiGenerated: true));
+            }
+          }
+        }
+      }
+    }
+
+    // Build summary of responses
+    final responseSummaries = <_ResponseSummary>[];
+    if (state.checklist != null) {
+      for (final section in state.checklist!.answers.sections) {
+        for (final question in section.questions) {
+          final response = state.responses[question.uuid];
+          if (response != null && response.response != null && response.response!.isNotEmpty) {
+            responseSummaries.add(_ResponseSummary(
+              sectionTitle: section.title,
+              questionTitle: question.title,
+              response: response.response!,
+              hasAttachment: response.attachmentPaths.isNotEmpty,
+              hasAiAnalysis: response.aiTags != null && response.aiTags!.isNotEmpty,
+            ));
+          }
+        }
+      }
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.check_circle,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Checklist terminee',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'SN: ${state.serialNumber}',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Success message
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.save, color: colorScheme.primary, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Donnees enregistrees en base de donnees',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Responses summary
+                  Text(
+                    'Resume des reponses (${responseSummaries.length})',
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: responseSummaries.length,
+                      itemBuilder: (context, index) {
+                        final summary = responseSummaries[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      summary.questionTitle,
+                                      style: textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (summary.hasAttachment)
+                                    Icon(Icons.attach_file, size: 14, color: colorScheme.onSurfaceVariant),
+                                  if (summary.hasAiAnalysis)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 4),
+                                      child: Icon(Icons.auto_awesome, size: 14, color: colorScheme.secondary),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                summary.response,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Tags section (editable)
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(Icons.label, size: 18, color: colorScheme.secondary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Tags (${editableTags.length})',
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Appuyez sur un tag pour le supprimer',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Display tags with delete capability
+                  if (editableTags.isNotEmpty)
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: editableTags.map((editableTag) {
+                        return GestureDetector(
+                          onTap: () {
+                            setDialogState(() {
+                              editableTags.remove(editableTag);
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: editableTag.isAiGenerated
+                                  ? colorScheme.secondaryContainer
+                                  : colorScheme.tertiaryContainer,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (editableTag.isAiGenerated)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: Icon(
+                                      Icons.auto_awesome,
+                                      size: 12,
+                                      color: colorScheme.onSecondaryContainer,
+                                    ),
+                                  ),
+                                Text(
+                                  editableTag.tag,
+                                  style: textTheme.labelSmall?.copyWith(
+                                    color: editableTag.isAiGenerated
+                                        ? colorScheme.onSecondaryContainer
+                                        : colorScheme.onTertiaryContainer,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: editableTag.isAiGenerated
+                                      ? colorScheme.onSecondaryContainer
+                                      : colorScheme.onTertiaryContainer,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    )
+                  else
+                    Text(
+                      'Aucun tag',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+
+                  // Add new tag input
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: tagController,
+                          decoration: InputDecoration(
+                            hintText: 'Ajouter un tag...',
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            prefixIcon: const Icon(Icons.add, size: 20),
+                          ),
+                          onSubmitted: (value) {
+                            final trimmed = value.trim();
+                            if (trimmed.isNotEmpty && !editableTags.any((t) => t.tag == trimmed)) {
+                              setDialogState(() {
+                                editableTags.add(_EditableTag(tag: trimmed, isAiGenerated: false));
+                                tagController.clear();
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        onPressed: () {
+                          final trimmed = tagController.text.trim();
+                          if (trimmed.isNotEmpty && !editableTags.any((t) => t.tag == trimmed)) {
+                            setDialogState(() {
+                              editableTags.add(_EditableTag(tag: trimmed, isAiGenerated: false));
+                              tagController.clear();
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.add),
+                        style: IconButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                navigator.popUntil((route) => route.isFirst);
+              },
+              child: const Text('Ignorer les modifications'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                // Save the modified tags
+                _saveModifiedTagsWithBloc(bloc, editableTags);
+                Navigator.of(dialogContext).pop();
+                navigator.popUntil((route) => route.isFirst);
+              },
+              icon: const Icon(Icons.save),
+              label: const Text('Enregistrer'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveModifiedTagsWithBloc(
+    ChecklistBloc bloc,
+    List<_EditableTag> editableTags,
+  ) {
+    // Convert editable tags to the format expected by the database
+    final tagsData = editableTags.map((t) => {
+      'tag': t.tag,
+      'type': t.isAiGenerated ? 'ia' : 'manuel',
+      'bbox': null,
+    }).toList();
+
+    bloc.add(ChecklistUpdateTags(tags: tagsData));
+  }
+
   void _showImageSourceDialog(String questionUuid) {
     showModalBottomSheet(
       context: context,
@@ -107,13 +462,7 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
           );
         }
         if (state.isSubmitted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Checklist terminee pour SN: ${state.serialNumber}'),
-              backgroundColor: colorScheme.primary,
-            ),
-          );
-          Navigator.of(context).popUntil((route) => route.isFirst);
+          _showCompletionSummaryDialog(context, state);
         }
       },
       builder: (context, state) {
@@ -489,7 +838,6 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                           questionTitle: question.title,
                           questionHint: question.hint,
                           answer: response.response ?? '',
-                          comment: response.comment ?? '',
                           imagePath: response.attachmentPaths.first,
                         ));
                   }
@@ -567,4 +915,30 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
       ),
     );
   }
+}
+
+class _ResponseSummary {
+  final String sectionTitle;
+  final String questionTitle;
+  final String response;
+  final bool hasAttachment;
+  final bool hasAiAnalysis;
+
+  const _ResponseSummary({
+    required this.sectionTitle,
+    required this.questionTitle,
+    required this.response,
+    required this.hasAttachment,
+    required this.hasAiAnalysis,
+  });
+}
+
+class _EditableTag {
+  final String tag;
+  final bool isAiGenerated;
+
+  const _EditableTag({
+    required this.tag,
+    required this.isAiGenerated,
+  });
 }

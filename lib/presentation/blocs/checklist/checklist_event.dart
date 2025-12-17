@@ -102,7 +102,6 @@ class ChecklistAnalyzeWithAI extends ChecklistEvent {
   final String questionTitle;
   final String? questionHint;
   final String answer;
-  final String comment;
   final String imagePath;
 
   const ChecklistAnalyzeWithAI({
@@ -112,7 +111,6 @@ class ChecklistAnalyzeWithAI extends ChecklistEvent {
     required this.questionTitle,
     this.questionHint,
     required this.answer,
-    required this.comment,
     required this.imagePath,
   });
 
@@ -124,7 +122,15 @@ class ChecklistAnalyzeWithAI extends ChecklistEvent {
         questionTitle,
         questionHint,
         answer,
-        comment,
         imagePath,
       ];
+}
+
+class ChecklistUpdateTags extends ChecklistEvent {
+  final List<Map<String, dynamic>> tags;
+
+  const ChecklistUpdateTags({required this.tags});
+
+  @override
+  List<Object?> get props => [tags];
 }

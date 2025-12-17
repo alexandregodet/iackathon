@@ -81,9 +81,8 @@ class _QuestionCardState extends State<QuestionCard> {
 
   bool get _canAnalyzeWithAI {
     final hasResponse = widget.response?.response?.isNotEmpty ?? false;
-    final hasComment = widget.response?.comment?.isNotEmpty ?? false;
     final hasAttachment = widget.response?.attachmentPaths.isNotEmpty ?? false;
-    return hasResponse && hasComment && hasAttachment;
+    return hasResponse && hasAttachment;
   }
 
   @override
