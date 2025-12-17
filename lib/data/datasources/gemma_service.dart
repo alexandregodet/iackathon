@@ -150,8 +150,14 @@ class GemmaService {
     }
   }
 
-  Future<void> loadModel([GemmaModelInfo? modelInfo]) async {
-    AppLogger.info('Chargement du modele en memoire', 'GemmaService');
+  Future<void> loadModel({
+    GemmaModelInfo? modelInfo,
+    int maxTokens = 1024,
+  }) async {
+    AppLogger.info(
+      'Chargement du modele en memoire (maxTokens: $maxTokens)',
+      'GemmaService',
+    );
 
     try {
       if (modelInfo != null) {
@@ -166,7 +172,7 @@ class GemmaService {
       _stateController.add(_state);
 
       _model = await FlutterGemma.getActiveModel(
-        maxTokens: 1024,
+        maxTokens: maxTokens,
         supportImage: _currentModel!.isMultimodal,
         maxNumImages: _currentModel!.isMultimodal ? 1 : null,
       );

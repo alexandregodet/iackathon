@@ -1,18 +1,6 @@
 {
   "title": "Compartments (simple)",
   "description": "Ville tug checklist",
-  "header": "",
-  "cover": "",
-  "footer": "",
-  "pdfOptions": {
-    "newPageOnSection": false,
-    "pageMargins": [
-      50,
-      75,
-      50,
-      75
-    ]
-  },
   "sections": [
     {
       "uuid": "1cb8fd8aec",
@@ -40,82 +28,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 1
-        },
-        {
-          "uuid": "27a1b5ec0a",
-          "type": "checkbox",
-          "title": "Deck Plates: Safety issue ?",
-          "hint": "Compartment - If safety issue, tick and add a comments",
-          "mandatory": false,
-          "comment": true,
-          "attachment": true,
-          "displayAllChoices": false,
-          "hideInReport": false,
-          "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 2
+          "defaultValue": ""
         },
         {
           "uuid": "6cde17b529",
@@ -138,38 +51,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 3
+          "defaultValue": ""
         },
         {
           "uuid": "4f9b80231c",
@@ -182,38 +64,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 4
+          "defaultValue": ""
         },
         {
           "uuid": "704416b669",
@@ -236,38 +87,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 5
+          "defaultValue": ""
         },
         {
           "uuid": "b9ad972c13",
@@ -280,38 +100,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 6
+          "defaultValue": ""
         },
         {
           "uuid": "22a6fd082f",
@@ -334,38 +123,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 7
+          "defaultValue": ""
         },
         {
           "uuid": "30b7e64dd2",
@@ -378,38 +136,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 8
+          "defaultValue": ""
         },
         {
           "uuid": "4e0478b8b8",
@@ -432,38 +159,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 9
+          "defaultValue": ""
         },
         {
           "uuid": "89030c7f8e",
@@ -476,38 +172,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 10
+          "defaultValue": ""
         },
         {
           "uuid": "faed12f6a8",
@@ -530,38 +195,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 11
+          "defaultValue": ""
         },
         {
           "uuid": "90d2b58209",
@@ -574,38 +208,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 12
+          "defaultValue": ""
         },
         {
           "uuid": "36169f6385",
@@ -628,38 +231,7 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 13
+          "defaultValue": ""
         },
         {
           "uuid": "6ca8334913",
@@ -672,56 +244,11 @@
           "displayAllChoices": false,
           "hideInReport": false,
           "responseBelow": false,
-          "defaultValue": "",
-          "table": {
-            "settings": {
-              "colWidths": [
-                54,
-                115,
-                115
-              ],
-              "withHeaders": true,
-              "lineByLine": false
-            },
-            "values": [
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                ""
-              ]
-            ]
-          },
-          "metadata": {},
-          "signatureAuto": false,
-          "id": 14
+          "defaultValue": ""
         }
       ]
     }
   ],
   "createdAt": "2025-12-16T16:14:42.094Z",
-  "updatedAt": "2025-12-16T16:15:43.308Z",
-  "metadata": {
-    "partNumbers": [
-      "VILLE"
-    ],
-    "codes": [],
-    "additional": {
-      "multipleAnswersDefaultKey": "COMPARTMENTS"
-    }
-  },
-  "template": {
-    "carboneio": {
-      "availableTemplates": []
-    }
-  }
+  "updatedAt": "2025-12-16T16:15:43.308Z"
 }

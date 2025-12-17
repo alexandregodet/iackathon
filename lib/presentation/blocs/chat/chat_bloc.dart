@@ -10,6 +10,7 @@ import '../../../core/utils/app_logger.dart';
 import '../../../data/datasources/database.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
+import '../../../data/datasources/settings_service.dart';
 import '../../../domain/entities/chat_message.dart';
 import '../../../domain/entities/conversation_info.dart';
 import '../../../domain/entities/document_info.dart';
@@ -21,10 +22,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final GemmaService _gemmaService;
   final RagService _ragService;
   final AppDatabase _database;
+  final SettingsService _settingsService;
   StreamSubscription<String>? _responseSubscription;
   StreamSubscription<GemmaStreamResponse>? _thinkingResponseSubscription;
 
-  ChatBloc(this._gemmaService, this._ragService, this._database)
+  ChatBloc(
+    this._gemmaService,
+    this._ragService,
+    this._database,
+    this._settingsService,
+  )
     : super(const ChatState()) {
     on<ChatInitialize>(_onInitialize);
     on<ChatDownloadModel>(_onDownloadModel);
@@ -125,13 +132,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ChatLoadModel event,
     Emitter<ChatState> emit,
   ) async {
-    AppLogger.info('Chargement du modele', 'ChatBloc');
+    final maxTokens = _settingsService.maxTokens;
+    AppLogger.info('Chargement du modele (maxTokens: $maxTokens)', 'ChatBloc');
 
     try {
       emit(
         state.copyWith(modelState: GemmaModelState.loading, clearError: true),
       );
-      await _gemmaService.loadModel();
+      await _gemmaService.loadModel(maxTokens: maxTokens);
       emit(state.copyWith(modelState: GemmaModelState.ready));
     } on AppError catch (e) {
       AppLogger.logAppError(e, 'ChatBloc');

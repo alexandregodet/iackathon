@@ -40,6 +40,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i363.GemmaService>(),
         gh<_i909.RagService>(),
         gh<_i104.AppDatabase>(),
+        gh<_i462.SettingsService>(),
       ),
     );
     return this;
