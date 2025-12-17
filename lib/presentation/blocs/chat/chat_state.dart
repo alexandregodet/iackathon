@@ -34,6 +34,11 @@ class ChatState extends Equatable {
   final bool isThinking;
   final String currentThinkingContent;
 
+  // Checklists State
+  final bool checklistsJustLoaded;
+  final bool checklistsLoading;
+  final bool checklistsLoaded;
+
   // Error helpers
   bool get hasError => error != null;
   bool get hasRagError => ragError != null;
@@ -64,6 +69,10 @@ class ChatState extends Equatable {
     // Thinking defaults
     this.isThinking = false,
     this.currentThinkingContent = '',
+    // Checklists defaults
+    this.checklistsJustLoaded = false,
+    this.checklistsLoading = false,
+    this.checklistsLoaded = false,
   });
 
   bool get isModelReady => modelState == GemmaModelState.ready;
@@ -146,6 +155,10 @@ class ChatState extends Equatable {
     // Thinking
     bool? isThinking,
     String? currentThinkingContent,
+    // Checklists
+    bool? checklistsJustLoaded,
+    bool? checklistsLoading,
+    bool? checklistsLoaded,
   }) {
     return ChatState(
       modelState: modelState ?? this.modelState,
@@ -176,6 +189,10 @@ class ChatState extends Equatable {
       isThinking: isThinking ?? this.isThinking,
       currentThinkingContent:
           currentThinkingContent ?? this.currentThinkingContent,
+      // Checklists
+      checklistsJustLoaded: checklistsJustLoaded ?? this.checklistsJustLoaded,
+      checklistsLoading: checklistsLoading ?? this.checklistsLoading,
+      checklistsLoaded: checklistsLoaded ?? this.checklistsLoaded,
     );
   }
 
@@ -202,5 +219,9 @@ class ChatState extends Equatable {
     // Thinking
     isThinking,
     currentThinkingContent,
+    // Checklists
+    checklistsJustLoaded,
+    checklistsLoading,
+    checklistsLoaded,
   ];
 }

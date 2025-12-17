@@ -234,6 +234,170 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     );
   }
 
+  void _showEmbedderManagerDialog(BuildContext context, ChatState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final bloc = context.read<ChatBloc>();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => BlocProvider.value(
+        value: bloc,
+        child: BlocBuilder<ChatBloc, ChatState>(
+          builder: (context, state) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.dataset, color: colorScheme.primary),
+                  const SizedBox(width: 8),
+                  const Text('Embedder RAG'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Statut embedder
+                  _buildStatusRow(
+                    'Embedder',
+                    _getEmbedderStatusText(state),
+                    _getEmbedderStatusColor(state),
+                  ),
+                  const SizedBox(height: 8),
+                  // Statut checklists
+                  _buildStatusRow(
+                    'Checklists',
+                    _getChecklistsStatusText(state),
+                    _getChecklistsStatusColor(state),
+                  ),
+                  if (state.embedderState == EmbedderState.downloading) ...[
+                    const SizedBox(height: 16),
+                    LinearProgressIndicator(
+                      value: state.embedderDownloadProgress,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${(state.embedderDownloadProgress * 100).toInt()}%',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  if (state.checklistsLoading) ...[
+                    const SizedBox(height: 16),
+                    const Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Chargement des checklists...'),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Fermer'),
+                ),
+                if (state.embedderState == EmbedderState.notInstalled)
+                  FilledButton(
+                    onPressed: () {
+                      context.read<ChatBloc>().add(const ChatDownloadEmbedder());
+                    },
+                    child: const Text('Telecharger'),
+                  ),
+                if (state.embedderState == EmbedderState.installed)
+                  FilledButton(
+                    onPressed: () {
+                      context.read<ChatBloc>().add(const ChatLoadEmbedder());
+                    },
+                    child: const Text('Charger'),
+                  ),
+                if (state.isEmbedderReady && !state.checklistsLoaded && !state.checklistsLoading)
+                  FilledButton(
+                    onPressed: () {
+                      context.read<ChatBloc>().add(const ChatLoadChecklists());
+                    },
+                    child: const Text('Charger checklists'),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusRow(String label, String status, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label),
+        Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(status),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _getEmbedderStatusText(ChatState state) {
+    switch (state.embedderState) {
+      case EmbedderState.notInstalled:
+        return 'Non installe';
+      case EmbedderState.downloading:
+        return 'Telechargement...';
+      case EmbedderState.installed:
+        return 'Installe';
+      case EmbedderState.loading:
+        return 'Chargement...';
+      case EmbedderState.ready:
+        return 'Pret';
+      case EmbedderState.error:
+        return 'Erreur';
+    }
+  }
+
+  Color _getEmbedderStatusColor(ChatState state) {
+    switch (state.embedderState) {
+      case EmbedderState.notInstalled:
+        return Colors.grey;
+      case EmbedderState.downloading:
+      case EmbedderState.loading:
+        return Colors.orange;
+      case EmbedderState.installed:
+        return Colors.blue;
+      case EmbedderState.ready:
+        return Colors.green;
+      case EmbedderState.error:
+        return Colors.red;
+    }
+  }
+
+  String _getChecklistsStatusText(ChatState state) {
+    if (state.checklistsLoading) return 'Chargement...';
+    if (state.checklistsLoaded) return 'Chargees';
+    return 'Non chargees';
+  }
+
+  Color _getChecklistsStatusColor(ChatState state) {
+    if (state.checklistsLoading) return Colors.orange;
+    if (state.checklistsLoaded) return Colors.green;
+    return Colors.grey;
+  }
+
   Future<void> _pickPdf(BuildContext context) async {
     final bloc = context.read<ChatBloc>();
     final state = bloc.state;
@@ -632,6 +796,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                   ),
                   const SizedBox(width: 8),
                   _buildModelStatusBadge(context, state),
+                  _buildChecklistsStatusIcon(context, state),
                 ],
               );
             },
@@ -663,6 +828,11 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                       tooltip: 'Instructions systeme',
                     ),
                     IconButton(
+                      icon: const Icon(Icons.dataset),
+                      onPressed: () => _showEmbedderManagerDialog(context, state),
+                      tooltip: 'Gerer l\'embedder RAG',
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.memory),
                       onPressed: () => _showUnloadConfirmDialog(context),
                       tooltip: 'Liberer la memoire',
@@ -684,9 +854,10 @@ class _ChatPageContentState extends State<_ChatPageContent> {
         ),
         body: BlocConsumer<ChatBloc, ChatState>(
           listenWhen: (previous, current) {
-            // Seulement ecouter les nouvelles erreurs
+            // Seulement ecouter les nouvelles erreurs ou changements importants
             return (current.hasError && previous.error != current.error) ||
-                (current.isGenerating && !previous.isGenerating);
+                (current.isGenerating && !previous.isGenerating) ||
+                (current.checklistsJustLoaded && !previous.checklistsJustLoaded);
           },
           listener: (context, state) {
             if (state.hasError) {
@@ -694,6 +865,16 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             }
             if (state.isGenerating) {
               _scrollToBottom();
+            }
+            if (state.checklistsJustLoaded) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Checklists chargees avec succes'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              // Reset le flag
+              context.read<ChatBloc>().add(const ChatResetChecklistsFlag());
             }
           },
           builder: (context, state) {
@@ -1141,11 +1322,12 @@ class _ChatPageContentState extends State<_ChatPageContent> {
   void _showAttachmentMenu(BuildContext context, ChatState state) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final parentContext = context; // Capture le contexte parent avec accès au ChatBloc
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (bottomSheetContext) => Container(
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isDark ? colorScheme.surfaceContainerLow : colorScheme.surface,
@@ -1184,7 +1366,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             ),
             // PDF option
             _buildAttachmentOption(
-              context: context,
+              context: bottomSheetContext,
               icon: Icons.description,
               label: 'pdf',
               subtitle: state.hasActiveDocuments
@@ -1192,19 +1374,19 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                   : 'add document',
               isActive: state.hasActiveDocuments,
               onTap: () {
-                Navigator.pop(context);
-                _pickPdf(context);
+                Navigator.pop(bottomSheetContext);
+                _pickPdf(parentContext);
               },
               onLongPress: () {
-                Navigator.pop(context);
-                _showDocumentsDialog(context);
+                Navigator.pop(bottomSheetContext);
+                _showDocumentsDialog(parentContext);
               },
               colorScheme: colorScheme,
             ),
             // Image option (multimodal only)
             if (state.isMultimodal)
               _buildAttachmentOption(
-                context: context,
+                context: bottomSheetContext,
                 icon: Icons.image,
                 label: 'image',
                 subtitle: _selectedImageBytes != null
@@ -1212,20 +1394,20 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                     : 'add photo',
                 isActive: _selectedImageBytes != null,
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(bottomSheetContext);
                   _showImageSourceDialog();
                 },
                 colorScheme: colorScheme,
               ),
             // Templates option
             _buildAttachmentOption(
-              context: context,
+              context: bottomSheetContext,
               icon: Icons.code,
               label: 'template',
               subtitle: 'prompt library',
               onTap: () {
-                Navigator.pop(context);
-                _showTemplatePicker(context);
+                Navigator.pop(bottomSheetContext);
+                _showTemplatePicker(parentContext);
               },
               colorScheme: colorScheme,
               useSecondary: true,
@@ -1401,6 +1583,44 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     return Tooltip(
       message: tooltip,
       child: Icon(icon, size: 16, color: badgeColor),
+    );
+  }
+
+  Widget _buildChecklistsStatusIcon(BuildContext context, ChatState state) {
+    // Ne rien afficher si le modèle n'est pas prêt
+    if (!state.isModelReady) return const SizedBox.shrink();
+
+    Color iconColor;
+    String tooltip;
+    Widget child;
+
+    if (state.checklistsLoading) {
+      iconColor = Colors.orange;
+      tooltip = 'Chargement des checklists...';
+      child = SizedBox(
+        width: 16,
+        height: 16,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: iconColor,
+        ),
+      );
+    } else if (state.checklistsLoaded) {
+      iconColor = Colors.green;
+      tooltip = 'Checklists chargees';
+      child = Icon(Icons.checklist, size: 16, color: iconColor);
+    } else {
+      iconColor = Colors.grey;
+      tooltip = 'Checklists non chargees';
+      child = Icon(Icons.checklist, size: 16, color: iconColor);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Tooltip(
+        message: tooltip,
+        child: child,
+      ),
     );
   }
 }

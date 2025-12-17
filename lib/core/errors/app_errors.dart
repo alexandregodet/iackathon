@@ -205,6 +205,22 @@ class RagError extends AppError {
     );
   }
 
+  factory RagError.jsonExtractionFailed({
+    String? fileName,
+    dynamic original,
+    StackTrace? stack,
+  }) {
+    final name = fileName ?? 'le fichier';
+    return RagError._(
+      code: 'RAG_JSON_EXTRACTION_FAILED',
+      message: 'Failed to extract text from JSON: $fileName',
+      userMessage:
+          'Impossible de lire $name. Le fichier JSON est peut-etre invalide ou corrompu.',
+      originalError: original,
+      stackTrace: stack,
+    );
+  }
+
   factory RagError.embeddingFailed({dynamic original, StackTrace? stack}) {
     return RagError._(
       code: 'RAG_EMBEDDING_FAILED',

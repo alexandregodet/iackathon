@@ -57,6 +57,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatRegenerateMessage>(_onRegenerateMessage);
     on<ChatStopGeneration>(_onStopGeneration);
     on<ChatStreamError>(_onStreamError);
+    // Checklists events
+    on<ChatResetChecklistsFlag>(_onResetChecklistsFlag);
+    on<ChatLoadChecklists>(_onLoadChecklists);
   }
 
   Future<void> _onInitialize(
@@ -203,14 +206,28 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
 
     try {
-      // Build augmented prompt if RAG is active
+      // Build augmented prompt if RAG is active (documents ou checklists)
+      // Ne pas utiliser le RAG si les checklists sont en cours de chargement
       String promptToSend = event.message;
-      if (state.hasActiveDocuments && _ragService.isReady) {
-        promptToSend = await _ragService.buildAugmentedPrompt(
-          userQuery: event.message,
-          topK: 3,
-          threshold: 0.5,
-        );
+      final useRag = _ragService.isReady &&
+          (state.hasActiveDocuments || state.checklistsLoaded) &&
+          !state.checklistsLoading; // Pas de RAG pendant le chargement
+      if (useRag) {
+        try {
+          promptToSend = await _ragService.buildAugmentedPrompt(
+            userQuery: event.message,
+            topK: 2, // Réduit pour éviter de dépasser la limite de tokens
+            threshold: 0.5,
+          );
+          // Limiter la taille du prompt pour ne pas dépasser la limite du modèle
+          if (promptToSend.length > 3000) {
+            promptToSend = promptToSend.substring(0, 3000) + '\n...[tronque]';
+          }
+          AppLogger.debug('RAG prompt augmente: ${promptToSend.length} chars', 'ChatBloc');
+        } catch (e) {
+          AppLogger.warning('RAG search failed, using original prompt: $e', 'ChatBloc');
+          // Continue avec le prompt original
+        }
       }
 
       _responseSubscription?.cancel();
@@ -432,6 +449,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       );
       await _ragService.loadEmbedder();
       emit(state.copyWith(embedderState: EmbedderState.ready));
+
+      // Charger automatiquement les checklists après que l'embedder soit prêt
+      _loadChecklistsInBackground();
     } on AppError catch (e) {
       AppLogger.logAppError(e, 'ChatBloc');
       emit(state.copyWith(embedderState: EmbedderState.error, ragError: e));
@@ -449,6 +469,68 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         ),
       );
     }
+  }
+
+  Future<void> _loadChecklistsInBackground() async {
+    // Vérifier si déjà chargées avant de lancer
+    final alreadyLoaded = await _ragService.areChecklistsLoaded();
+    if (alreadyLoaded) {
+      AppLogger.debug('Checklists deja chargees, skip', 'ChatBloc');
+      // ignore: invalid_use_of_visible_for_testing_member
+      emit(state.copyWith(checklistsLoaded: true));
+      return;
+    }
+
+    // Indiquer que le chargement commence
+    // ignore: invalid_use_of_visible_for_testing_member
+    emit(state.copyWith(checklistsLoading: true));
+
+    // Chargement en arrière-plan sans bloquer l'UI
+    _ragService.loadAssetJsonsToVectorStore(
+      onProgress: (current, total, fileName) {
+        AppLogger.debug(
+          'Chargement checklist $current/$total: $fileName',
+          'ChatBloc',
+        );
+      },
+    ).then((_) {
+      AppLogger.info('Checklists chargees avec succes', 'ChatBloc');
+      // Notifier l'UI que les checklists sont chargées
+      // ignore: invalid_use_of_visible_for_testing_member
+      emit(state.copyWith(
+        checklistsJustLoaded: true,
+        checklistsLoading: false,
+        checklistsLoaded: true,
+      ));
+    }).catchError((e, stack) {
+      AppLogger.error(
+        'Erreur chargement checklists',
+        tag: 'ChatBloc',
+        error: e,
+        stackTrace: stack,
+      );
+      // ignore: invalid_use_of_visible_for_testing_member
+      emit(state.copyWith(checklistsLoading: false));
+    });
+  }
+
+  void _onResetChecklistsFlag(
+    ChatResetChecklistsFlag event,
+    Emitter<ChatState> emit,
+  ) {
+    emit(state.copyWith(checklistsJustLoaded: false));
+  }
+
+  Future<void> _onLoadChecklists(
+    ChatLoadChecklists event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (!_ragService.isReady) {
+      AppLogger.warning('Embedder non pret, impossible de charger les checklists', 'ChatBloc');
+      return;
+    }
+
+    _loadChecklistsInBackground();
   }
 
   Future<void> _onLoadDocuments(

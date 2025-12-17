@@ -214,3 +214,12 @@ class ChatStreamError extends ChatEvent {
   @override
   List<Object?> get props => [error];
 }
+
+// Checklists Events
+class ChatResetChecklistsFlag extends ChatEvent {
+  const ChatResetChecklistsFlag();
+}
+
+class ChatLoadChecklists extends ChatEvent {
+  const ChatLoadChecklists();
+}

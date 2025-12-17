@@ -1,0 +1,727 @@
+{
+  "title": "Compartments (simple)",
+  "description": "Ville tug checklist",
+  "header": "",
+  "cover": "",
+  "footer": "",
+  "pdfOptions": {
+    "newPageOnSection": false,
+    "pageMargins": [
+      50,
+      75,
+      50,
+      75
+    ]
+  },
+  "sections": [
+    {
+      "uuid": "1cb8fd8aec",
+      "title": "2 Deck - Engine Room",
+      "description": "",
+      "questions": [
+        {
+          "uuid": "24614a66b7",
+          "type": "multiple-choice",
+          "title": "Deck Plates",
+          "hint": "Compartment",
+          "mandatory": true,
+          "comment": true,
+          "attachment": true,
+          "choices": [
+            "Satisfactory",
+            "Monitor",
+            "Minor",
+            "Major",
+            "Immediate",
+            "Not Fitted / Surveyed",
+            "Repeat"
+          ],
+          "multipleAnswer": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 1
+        },
+        {
+          "uuid": "27a1b5ec0a",
+          "type": "checkbox",
+          "title": "Deck Plates: Safety issue ?",
+          "hint": "Compartment - If safety issue, tick and add a comments",
+          "mandatory": false,
+          "comment": true,
+          "attachment": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 2
+        },
+        {
+          "uuid": "6cde17b529",
+          "type": "multiple-choice",
+          "title": "Bilge Coatings",
+          "hint": "Compartment",
+          "mandatory": true,
+          "comment": true,
+          "attachment": true,
+          "choices": [
+            "Satisfactory",
+            "Monitor",
+            "Minor",
+            "Major",
+            "Immediate",
+            "Not Fitted / Surveyed",
+            "Repeat"
+          ],
+          "multipleAnswer": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 3
+        },
+        {
+          "uuid": "4f9b80231c",
+          "type": "checkbox",
+          "title": "Bilge Coatings: Safety issue ?",
+          "hint": "Compartment - If safety issue, tick and add a comments",
+          "mandatory": false,
+          "comment": true,
+          "attachment": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 4
+        },
+        {
+          "uuid": "704416b669",
+          "type": "multiple-choice",
+          "title": "Bulkheads",
+          "hint": "Compartment",
+          "mandatory": true,
+          "comment": true,
+          "attachment": true,
+          "choices": [
+            "Satisfactory",
+            "Monitor",
+            "Minor",
+            "Major",
+            "Immediate",
+            "Not Fitted / Surveyed",
+            "Repeat"
+          ],
+          "multipleAnswer": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 5
+        },
+        {
+          "uuid": "b9ad972c13",
+          "type": "checkbox",
+          "title": "Bulkhead: Safety issue ?",
+          "hint": "Compartment - If safety issue, tick and add a comments",
+          "mandatory": false,
+          "comment": true,
+          "attachment": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 6
+        },
+        {
+          "uuid": "22a6fd082f",
+          "type": "multiple-choice",
+          "title": "Deckhead",
+          "hint": "Compartment",
+          "mandatory": true,
+          "comment": true,
+          "attachment": true,
+          "choices": [
+            "Satisfactory",
+            "Monitor",
+            "Minor",
+            "Major",
+            "Immediate",
+            "Not Fitted / Surveyed",
+            "Repeat"
+          ],
+          "multipleAnswer": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 7
+        },
+        {
+          "uuid": "30b7e64dd2",
+          "type": "checkbox",
+          "title": "Deckhead: Safety issue ?",
+          "hint": "Compartment - If safety issue, tick and add a comments",
+          "mandatory": false,
+          "comment": true,
+          "attachment": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 8
+        },
+        {
+          "uuid": "4e0478b8b8",
+          "type": "multiple-choice",
+          "title": "Doors / Hatches",
+          "hint": "Compartment",
+          "mandatory": true,
+          "comment": true,
+          "attachment": true,
+          "choices": [
+            "Satisfactory",
+            "Monitor",
+            "Minor",
+            "Major",
+            "Immediate",
+            "Not Fitted / Surveyed",
+            "Repeat"
+          ],
+          "multipleAnswer": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 9
+        },
+        {
+          "uuid": "89030c7f8e",
+          "type": "checkbox",
+          "title": "Doors / Hatches: Safety issue ?",
+          "hint": "Compartment - If safety issue, tick and add a comments",
+          "mandatory": false,
+          "comment": true,
+          "attachment": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 10
+        },
+        {
+          "uuid": "faed12f6a8",
+          "type": "multiple-choice",
+          "title": "Cables / Lighting",
+          "hint": "Compartment",
+          "mandatory": true,
+          "comment": true,
+          "attachment": true,
+          "choices": [
+            "Satisfactory",
+            "Monitor",
+            "Minor",
+            "Major",
+            "Immediate",
+            "Not Fitted / Surveyed",
+            "Repeat"
+          ],
+          "multipleAnswer": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 11
+        },
+        {
+          "uuid": "90d2b58209",
+          "type": "checkbox",
+          "title": "Cables / Lighting: Safety issue ?",
+          "hint": "Compartment - If safety issue, tick and add a comments",
+          "mandatory": false,
+          "comment": true,
+          "attachment": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 12
+        },
+        {
+          "uuid": "36169f6385",
+          "type": "multiple-choice",
+          "title": "Safety",
+          "hint": "Compartment",
+          "mandatory": true,
+          "comment": true,
+          "attachment": true,
+          "choices": [
+            "Satisfactory",
+            "Monitor",
+            "Minor",
+            "Major",
+            "Immediate",
+            "Not Fitted / Surveyed",
+            "Repeat"
+          ],
+          "multipleAnswer": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 13
+        },
+        {
+          "uuid": "6ca8334913",
+          "type": "checkbox",
+          "title": "Safety: Safety issue ?",
+          "hint": "Compartment - If safety issue, tick and add a comments",
+          "mandatory": false,
+          "comment": true,
+          "attachment": true,
+          "displayAllChoices": false,
+          "hideInReport": false,
+          "responseBelow": false,
+          "defaultValue": "",
+          "table": {
+            "settings": {
+              "colWidths": [
+                54,
+                115,
+                115
+              ],
+              "withHeaders": true,
+              "lineByLine": false
+            },
+            "values": [
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                ""
+              ]
+            ]
+          },
+          "metadata": {},
+          "signatureAuto": false,
+          "id": 14
+        }
+      ]
+    }
+  ],
+  "createdAt": "2025-12-16T16:14:42.094Z",
+  "updatedAt": "2025-12-16T16:15:43.308Z",
+  "metadata": {
+    "partNumbers": [
+      "VILLE"
+    ],
+    "codes": [],
+    "additional": {
+      "multipleAnswersDefaultKey": "COMPARTMENTS"
+    }
+  },
+  "template": {
+    "carboneio": {
+      "availableTemplates": []
+    }
+  }
+}

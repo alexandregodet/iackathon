@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:read_pdf_text/read_pdf_text.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/errors/app_errors.dart';
 import '../../core/utils/app_logger.dart';
@@ -97,17 +101,17 @@ class RagService {
           .modelFromNetwork(_embeddingModelUrl)
           .tokenizerFromNetwork(_tokenizerUrl)
           .withModelProgress((progress) {
-            _downloadProgress =
-                progress.toDouble() / 100.0 * 0.8; // 80% for model
-            _progressController.add(_downloadProgress);
-            onProgress?.call(_downloadProgress);
-          })
+        _downloadProgress =
+            progress.toDouble() / 100.0 * 0.8; // 80% for model
+        _progressController.add(_downloadProgress);
+        onProgress?.call(_downloadProgress);
+      })
           .withTokenizerProgress((progress) {
-            _downloadProgress =
-                0.8 + (progress.toDouble() / 100.0 * 0.2); // 20% for tokenizer
-            _progressController.add(_downloadProgress);
-            onProgress?.call(_downloadProgress);
-          })
+        _downloadProgress =
+            0.8 + (progress.toDouble() / 100.0 * 0.2); // 20% for tokenizer
+        _progressController.add(_downloadProgress);
+        onProgress?.call(_downloadProgress);
+      })
           .install();
 
       AppLogger.info('Telechargement de l\'embedder termine', 'RagService');
@@ -193,18 +197,311 @@ class RagService {
     }
   }
 
+  // ============== JSON PROCESSING ==============
+
+  Future<String> extractTextFromJson(String filePath) async {
+    AppLogger.debug('Extraction du texte JSON: $filePath', 'RagService');
+
+    final file = File(filePath);
+
+    if (!await file.exists()) {
+      final fileName = p.basename(filePath);
+      throw RagError.jsonExtractionFailed(
+        fileName: fileName,
+        original: Exception("Fichier introuvable sur le disque"),
+        stack: StackTrace.current,
+      );
+    }
+
+    try {
+      final content = await file.readAsString();
+      final jsonData = jsonDecode(content);
+      final text = _flattenJson(jsonData);
+
+      if (text.isEmpty) {
+        throw Exception("Le JSON est vide ou ne contient pas de texte.");
+      }
+
+      AppLogger.debug(
+        'Extraction JSON terminee: ${text.length} caracteres',
+        'RagService',
+      );
+      return text;
+    } catch (e, stack) {
+      AppLogger.error(
+        'Erreur extraction JSON',
+        tag: 'RagService',
+        error: e,
+        stackTrace: stack,
+      );
+
+      final fileName = p.basename(filePath);
+
+      if (e is AppError) rethrow;
+
+      throw RagError.jsonExtractionFailed(
+        fileName: fileName,
+        original: e,
+        stack: stack,
+      );
+    }
+  }
+
+  Future<String> extractTextFromJsonString(String jsonString) async {
+    AppLogger.debug('Extraction du texte depuis JSON string', 'RagService');
+
+    try {
+      final jsonData = jsonDecode(jsonString);
+      final text = _flattenJson(jsonData);
+
+      if (text.isEmpty) {
+        throw Exception("Le JSON est vide ou ne contient pas de texte.");
+      }
+
+      AppLogger.debug(
+        'Extraction JSON string terminee: ${text.length} caracteres',
+        'RagService',
+      );
+      return text;
+    } catch (e, stack) {
+      AppLogger.error(
+        'Erreur extraction JSON string',
+        tag: 'RagService',
+        error: e,
+        stackTrace: stack,
+      );
+
+      if (e is AppError) rethrow;
+
+      throw RagError.jsonExtractionFailed(
+        fileName: 'json_string',
+        original: e,
+        stack: stack,
+      );
+    }
+  }
+
+  String _flattenJson(dynamic json, {String prefix = ''}) {
+    final buffer = StringBuffer();
+
+    if (json is Map<String, dynamic>) {
+      for (final entry in json.entries) {
+        final key = prefix.isEmpty ? entry.key : '$prefix.${entry.key}';
+        final value = entry.value;
+
+        if (value is Map || value is List) {
+          buffer.write(_flattenJson(value, prefix: key));
+        } else if (value != null) {
+          buffer.writeln('$key: $value');
+        }
+      }
+    } else if (json is List) {
+      for (int i = 0; i < json.length; i++) {
+        final item = json[i];
+        final key = '$prefix[$i]';
+
+        if (item is Map || item is List) {
+          buffer.write(_flattenJson(item, prefix: key));
+        } else if (item != null) {
+          buffer.writeln('$key: $item');
+        }
+      }
+    } else if (json != null) {
+      buffer.writeln(json.toString());
+    }
+
+    return buffer.toString();
+  }
+
+  Future<List<DocumentChunk>> processJsonFile({
+    required String filePath,
+    required int documentId,
+    int chunkSize = 500,
+    int overlap = 50,
+  }) async {
+    final text = await extractTextFromJson(filePath);
+    return chunkText(
+      text: text,
+      documentId: documentId,
+      chunkSize: chunkSize,
+      overlap: overlap,
+    );
+  }
+
+  Future<List<DocumentChunk>> processJsonString({
+    required String jsonString,
+    required int documentId,
+    int chunkSize = 500,
+    int overlap = 50,
+  }) async {
+    final text = await extractTextFromJsonString(jsonString);
+    return chunkText(
+      text: text,
+      documentId: documentId,
+      chunkSize: chunkSize,
+      overlap: overlap,
+    );
+  }
+
+  // ============== ASSET JSON LOADING ==============
+
+  static const List<String> _assetJsonFiles = [
+    'lib/asset/checklist.json',
+  ];
+
+  static const String _checklistsLoadedKey = 'rag_checklists_loaded_v1';
+
+  Future<bool> areChecklistsLoaded() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_checklistsLoadedKey) ?? false;
+  }
+
+  Future<void> _markChecklistsLoaded() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_checklistsLoadedKey, true);
+  }
+
+  Future<String> _loadJsonFromAsset(String assetPath) async {
+    AppLogger.debug('Chargement JSON depuis asset: $assetPath', 'RagService');
+
+    try {
+      final content = await rootBundle.loadString(assetPath);
+      return content;
+    } catch (e, stack) {
+      AppLogger.error(
+        'Erreur chargement asset JSON',
+        tag: 'RagService',
+        error: e,
+        stackTrace: stack,
+      );
+
+      throw RagError.jsonExtractionFailed(
+        fileName: assetPath,
+        original: e,
+        stack: stack,
+      );
+    }
+  }
+
+  Future<void> loadAssetJsonsToVectorStore({
+    void Function(int current, int total, String fileName)? onProgress,
+    bool force = false,
+  }) async {
+    // Vérifier si déjà chargé
+    if (!force && await areChecklistsLoaded()) {
+      AppLogger.info('Checklists deja chargees, skip', 'RagService');
+      return;
+    }
+
+    AppLogger.info(
+      'Chargement des ${_assetJsonFiles.length} fichiers JSON assets',
+      'RagService',
+    );
+
+    if (!isReady) {
+      await ensureReady();
+    }
+
+    for (int i = 0; i < _assetJsonFiles.length; i++) {
+      final assetPath = _assetJsonFiles[i];
+      final fileName = p.basename(assetPath);
+
+      onProgress?.call(i + 1, _assetJsonFiles.length, fileName);
+
+      try {
+        final jsonContent = await _loadJsonFromAsset(assetPath);
+        final chunks = await processJsonString(
+          jsonString: jsonContent,
+          documentId: i + 1000,
+          chunkSize: 500,
+          overlap: 50,
+        );
+
+        await addDocumentChunks(chunks);
+
+        AppLogger.info(
+          'Asset $fileName charge: ${chunks.length} chunks',
+          'RagService',
+        );
+      } catch (e, stack) {
+        AppLogger.error(
+          'Erreur chargement asset $fileName',
+          tag: 'RagService',
+          error: e,
+          stackTrace: stack,
+        );
+        // Continue avec les autres fichiers
+      }
+    }
+
+    await _markChecklistsLoaded();
+    AppLogger.info('Chargement des assets JSON termine', 'RagService');
+  }
+
+  Future<void> loadSingleAssetJson({
+    required String assetPath,
+    required int documentId,
+    int chunkSize = 500,
+    int overlap = 50,
+    void Function(int current, int total)? onChunkProgress,
+  }) async {
+    AppLogger.info('Chargement asset JSON: $assetPath', 'RagService');
+
+    if (!isReady) {
+      await ensureReady();
+    }
+
+    final jsonContent = await _loadJsonFromAsset(assetPath);
+    final chunks = await processJsonString(
+      jsonString: jsonContent,
+      documentId: documentId,
+      chunkSize: chunkSize,
+      overlap: overlap,
+    );
+
+    await addDocumentChunks(chunks, onProgress: onChunkProgress);
+
+    AppLogger.info(
+      'Asset $assetPath charge: ${chunks.length} chunks',
+      'RagService',
+    );
+  }
+
   // ============== PDF PROCESSING ==============
 
   Future<String> extractTextFromPdf(String filePath) async {
     AppLogger.debug('Extraction du texte PDF: $filePath', 'RagService');
 
+    final file = File(filePath);
+
+    // 1. Vérification de l'existence physique du fichier
+    if (!await file.exists()) {
+      final fileName = p.basename(filePath);
+      throw RagError.pdfExtractionFailed(
+        fileName: fileName,
+        original: Exception("Fichier introuvable sur le disque"),
+        stack: StackTrace.current,
+      );
+    }
+
     try {
-      final text = await ReadPdfText.getPDFtext(filePath);
+      // 2. Extraction (utilisation du chemin absolu pour éviter les erreurs de path)
+      final text = await ReadPdfText.getPDFtext(file.absolute.path);
+
+      // 3. Vérification du contenu
+      if (text.isEmpty) {
+        throw Exception(
+            "Le texte extrait est vide. Le PDF est peut-être une image ou protégé.");
+      }
+
+      // 4. Nettoyage initial (suppression des caractères de contrôle bizarres)
+      final cleanText = text.replaceAll(RegExp(r'\0'), '');
+
       AppLogger.debug(
-        'Extraction terminee: ${text.length} caracteres',
+        'Extraction terminee: ${cleanText.length} caracteres',
         'RagService',
       );
-      return text;
+      return cleanText;
     } catch (e, stack) {
       AppLogger.error(
         'Erreur extraction PDF',
@@ -212,7 +509,12 @@ class RagService {
         error: e,
         stackTrace: stack,
       );
-      final fileName = filePath.split('/').last.split('\\').last;
+
+      final fileName = p.basename(filePath);
+
+      // Si c'est déjà une RagError, on la relance
+      if (e is AppError) rethrow;
+
       throw RagError.pdfExtractionFailed(
         fileName: fileName,
         original: e,
@@ -234,20 +536,23 @@ class RagService {
     // Clean and normalize text
     final cleanedText = text.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-    int start = 0;
+    if (cleanedText.isEmpty) return chunks;
+
+    int start = 0;  
     int chunkIndex = 0;
 
     while (start < cleanedText.length) {
       int end = start + chunkSize;
 
       // Adjust end to not cut words
-      if (end < cleanedText.length) {
+      if (end >= cleanedText.length) {
+        end = cleanedText.length;
+      } else {
         final spaceIndex = cleanedText.lastIndexOf(' ', end);
+        // On recule seulement si l'espace est après le début du chunk actuel
         if (spaceIndex > start) {
           end = spaceIndex;
         }
-      } else {
-        end = cleanedText.length;
       }
 
       final chunkContent = cleanedText.substring(start, end).trim();
@@ -264,10 +569,17 @@ class RagService {
         chunkIndex++;
       }
 
+      // Condition de sortie cruciale
+      if (end == cleanedText.length) break;
+
       // Move start with overlap
       start = end - overlap;
-      if (start <= 0 && end >= cleanedText.length) break;
-      if (end >= cleanedText.length) break;
+
+      // Sécurité anti-boucle infinie
+      if (start <= (end - chunkSize)) {
+        start = end;
+      }
+      if (start < 0) start = 0;
     }
 
     return chunks;
@@ -313,14 +625,14 @@ class RagService {
       content: chunk.content,
       embedding: embedding,
       metadata:
-          '{"document_id": ${chunk.documentId}, "chunk_index": ${chunk.chunkIndex}}',
+      '{"document_id": ${chunk.documentId}, "chunk_index": ${chunk.chunkIndex}}',
     );
   }
 
   Future<void> addDocumentChunks(
-    List<DocumentChunk> chunks, {
-    void Function(int current, int total)? onProgress,
-  }) async {
+      List<DocumentChunk> chunks, {
+        void Function(int current, int total)? onProgress,
+      }) async {
     for (int i = 0; i < chunks.length; i++) {
       await addChunkToVectorStore(chunks[i]);
       onProgress?.call(i + 1, chunks.length);
