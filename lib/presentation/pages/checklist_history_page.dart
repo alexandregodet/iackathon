@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/di/injection.dart';
+import '../../core/theme/app_theme.dart';
 import '../../domain/entities/checklist_summary.dart';
 import '../blocs/checklist_history/checklist_history_bloc.dart';
 import '../blocs/checklist_history/checklist_history_event.dart';
@@ -45,12 +47,7 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Text('> ', style: TextStyle(color: colorScheme.primary)),
-            const Text('Historique'),
-          ],
-        ),
+        title: const Text('Archives du Royaume'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -63,7 +60,23 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
             child: BlocBuilder<ChecklistHistoryBloc, ChecklistHistoryState>(
               builder: (context, state) {
                 if (state.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Consultation des grimoires...',
+                          style: GoogleFonts.crimsonText(
+                            fontSize: 16,
+                            fontStyle: FontStyle.italic,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 if (state.error != null) {
@@ -71,10 +84,31 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline,
-                            size: 64, color: colorScheme.error),
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colorScheme.errorContainer,
+                            border: Border.all(
+                              color: colorScheme.error,
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.error_outline,
+                            size: 40,
+                            color: colorScheme.error,
+                          ),
+                        ),
                         const SizedBox(height: 16),
-                        Text(state.error!),
+                        Text(
+                          state.error!,
+                          style: GoogleFonts.crimsonText(
+                            fontSize: 14,
+                            color: colorScheme.error,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         FilledButton(
                           onPressed: () => context
@@ -94,19 +128,49 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          state.hasSearch
-                              ? Icons.search_off
-                              : Icons.assignment_outlined,
-                          size: 64,
-                          color: colorScheme.onSurfaceVariant,
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colorScheme.surfaceContainer,
+                            border: Border.all(
+                              color: colorScheme.outline,
+                              width: 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              state.hasSearch ? '\u2717' : '\u2617',
+                              style: TextStyle(
+                                fontSize: 32,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           state.hasSearch
-                              ? 'Aucun resultat pour "${state.searchQuery}"'
-                              : 'Aucune checklist completee',
-                          style: TextStyle(color: colorScheme.onSurfaceVariant),
+                              ? 'Aucun parchemin trouve'
+                              : 'Les archives sont vides',
+                          style: GoogleFonts.cinzel(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          state.hasSearch
+                              ? 'La quete "${state.searchQuery}" ne figure point dans les grimoires'
+                              : 'Aucune quete n\'a encore ete accomplie',
+                          style: GoogleFonts.crimsonText(
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
@@ -148,8 +212,8 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Rechercher par tag, SN ou titre...',
-          prefixIcon: const Icon(Icons.search),
+          hintText: 'Fouiller les parchemins...',
+          prefixIcon: Icon(Icons.search, color: colorScheme.primary),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear),
@@ -161,12 +225,8 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
                   },
                 )
               : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          filled: true,
-          fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         ),
+        style: GoogleFonts.crimsonText(fontSize: 15),
         onChanged: (value) {
           context
               .read<ChecklistHistoryBloc>()
@@ -181,175 +241,213 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
     ChecklistSummary summary,
     ColorScheme colorScheme,
   ) {
-    final textTheme = Theme.of(context).textTheme;
     final isExpanded = _expandedItems.contains(summary.checklistId);
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outlineVariant),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: colorScheme.outline,
+          width: 1,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // Main content - tappable to expand
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                setState(() {
-                  if (isExpanded) {
-                    _expandedItems.remove(summary.checklistId);
-                  } else {
-                    _expandedItems.add(summary.checklistId);
-                  }
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header row with title and expand icon
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.assignment,
-                            color: colorScheme.onPrimaryContainer,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                summary.checklistTitle,
-                                style: textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
+          // Left accent border
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: colorScheme.primary,
+                  width: 4,
+                ),
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    if (isExpanded) {
+                      _expandedItems.remove(summary.checklistId);
+                    } else {
+                      _expandedItems.add(summary.checklistId);
+                    }
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header row
+                      Row(
+                        children: [
+                          // Royal seal icon
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colorScheme.primaryContainer,
+                              border: Border.all(
+                                color: AppTheme.goldColor,
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '\u2617',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: colorScheme.onPrimaryContainer,
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.tag,
-                                    size: 14,
-                                    color: colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  summary.checklistTitle,
+                                  style: GoogleFonts.cinzel(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurface,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'SN: ${summary.serialNumber}',
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.w500,
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '\u2694 ',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colorScheme.primary,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: summary.allTags.isNotEmpty
-                                ? colorScheme.secondaryContainer
-                                : colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.auto_awesome,
-                                size: 14,
-                                color: summary.allTags.isNotEmpty
-                                    ? colorScheme.onSecondaryContainer
-                                    : colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${summary.allTags.length}',
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: summary.allTags.isNotEmpty
-                                      ? colorScheme.onSecondaryContainer
-                                      : colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.bold,
+                                    Text(
+                                      'Destrier: ${summary.serialNumber}',
+                                      style: GoogleFonts.cinzel(
+                                        fontSize: 11,
+                                        color: colorScheme.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                              ],
+                            ),
+                          ),
+                          // Tags count badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: summary.allTags.isNotEmpty
+                                  ? colorScheme.secondaryContainer
+                                  : colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(2),
+                              border: Border.all(
+                                color: summary.allTags.isNotEmpty
+                                    ? AppTheme.goldColor.withValues(alpha: 0.5)
+                                    : colorScheme.outline,
                               ),
-                            ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '\u2728 ',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: summary.allTags.isNotEmpty
+                                        ? AppTheme.goldColor
+                                        : colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                Text(
+                                  '${summary.allTags.length}',
+                                  style: GoogleFonts.cinzel(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: summary.allTags.isNotEmpty
+                                        ? colorScheme.onSecondaryContainer
+                                        : colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        AnimatedRotation(
-                          turns: isExpanded ? 0.5 : 0,
-                          duration: const Duration(milliseconds: 200),
-                          child: Icon(
-                            Icons.keyboard_arrow_down,
-                            color: colorScheme.onSurfaceVariant,
+                          const SizedBox(width: 8),
+                          AnimatedRotation(
+                            turns: isExpanded ? 0.5 : 0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(
+                              Icons.keyboard_arrow_down,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Info row
-                    Row(
-                      children: [
-                        _buildInfoChip(
-                          colorScheme,
-                          Icons.calendar_today,
-                          dateFormat.format(summary.completedAt),
-                        ),
-                        const SizedBox(width: 12),
-                        _buildInfoChip(
-                          colorScheme,
-                          Icons.check_circle_outline,
-                          '${summary.filledFields}/${summary.totalFields} champs',
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Info row
+                      Row(
+                        children: [
+                          _buildInfoChip(
+                            colorScheme,
+                            '\u2726',
+                            dateFormat.format(summary.completedAt),
+                          ),
+                          const SizedBox(width: 12),
+                          _buildInfoChip(
+                            colorScheme,
+                            '\u2714',
+                            '${summary.filledFields}/${summary.totalFields} epreuves',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          // Expanded tags section with animation
+          // Expanded tags section
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
             secondChild: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                color: colorScheme.surfaceContainer.withValues(alpha: 0.5),
+                border: Border(
+                  top: BorderSide(color: colorScheme.outlineVariant),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 16,
-                        color: colorScheme.secondary,
-                      ),
-                      const SizedBox(width: 8),
                       Text(
-                        'Tags IA',
-                        style: textTheme.labelMedium?.copyWith(
+                        '\u269C ',
+                        style: TextStyle(
+                          color: AppTheme.goldColor,
+                        ),
+                      ),
+                      Text(
+                        'Sceaux Magiques',
+                        style: GoogleFonts.cinzel(
+                          fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.secondary,
                         ),
@@ -359,10 +457,11 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
                   const SizedBox(height: 12),
                   if (summary.allTags.isEmpty)
                     Text(
-                      'Aucun tag IA genere pour cette checklist',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      'Aucun sceau n\'a ete appose sur ce parchemin',
+                      style: GoogleFonts.crimsonText(
+                        fontSize: 13,
                         fontStyle: FontStyle.italic,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     )
                   else
@@ -376,14 +475,30 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            tag,
-                            style: textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onPrimaryContainer,
+                            color: colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(2),
+                            border: Border.all(
+                              color: AppTheme.goldColor.withValues(alpha: 0.5),
                             ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '\u2726 ',
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  color: AppTheme.goldColor,
+                                ),
+                              ),
+                              Text(
+                                tag,
+                                style: GoogleFonts.crimsonText(
+                                  fontSize: 12,
+                                  color: colorScheme.onSecondaryContainer,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }).toList(),
@@ -401,19 +516,21 @@ class _ChecklistHistoryContentState extends State<_ChecklistHistoryContent> {
     );
   }
 
-  Widget _buildInfoChip(ColorScheme colorScheme, IconData icon, String text) {
+  Widget _buildInfoChip(ColorScheme colorScheme, String icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
+        Text(
           icon,
-          size: 14,
-          color: colorScheme.onSurfaceVariant,
+          style: TextStyle(
+            fontSize: 12,
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(width: 4),
         Text(
           text,
-          style: TextStyle(
+          style: GoogleFonts.crimsonText(
             fontSize: 12,
             color: colorScheme.onSurfaceVariant,
           ),

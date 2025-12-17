@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/checklist.dart';
 import '../../../domain/entities/checklist_response.dart';
 import '../../blocs/checklist/checklist_state.dart';
@@ -90,36 +92,61 @@ class _QuestionCardState extends State<QuestionCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: colorScheme.outlineVariant,
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: colorScheme.outline,
+          width: 1,
         ),
+        // Left accent border (burgundy)
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildQuestionHeader(colorScheme, textTheme),
-            const SizedBox(height: 12),
-            _buildResponseField(colorScheme),
-            if (widget.question.attachment) ...[
-              const SizedBox(height: 12),
-              _buildAttachmentSection(colorScheme, textTheme),
-            ],
-            if (widget.question.comment) ...[
-              const SizedBox(height: 12),
-              _buildCommentSection(colorScheme, textTheme),
-            ],
-            if (widget.aiAnalysisResult != null) ...[
-              const SizedBox(height: 12),
-              _buildAiAnalysisResult(colorScheme, textTheme),
-            ],
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Left border accent
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: colorScheme.primary,
+                  width: 4,
+                ),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildQuestionHeader(colorScheme, textTheme),
+                  const SizedBox(height: 12),
+                  _buildResponseField(colorScheme),
+                  if (widget.question.attachment) ...[
+                    const SizedBox(height: 12),
+                    _buildAttachmentSection(colorScheme, textTheme),
+                  ],
+                  if (widget.question.comment) ...[
+                    const SizedBox(height: 12),
+                    _buildCommentSection(colorScheme, textTheme),
+                  ],
+                  if (widget.aiAnalysisResult != null) ...[
+                    const SizedBox(height: 12),
+                    _buildAiAnalysisResult(colorScheme, textTheme),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -131,19 +158,25 @@ class _QuestionCardState extends State<QuestionCard> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Question number badge - medieval style
             Container(
               width: 28,
               height: 28,
               decoration: BoxDecoration(
                 color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(6),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppTheme.goldColor,
+                  width: 2,
+                ),
               ),
               child: Center(
                 child: Text(
                   '${widget.question.id}',
-                  style: textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onPrimary,
+                  style: GoogleFonts.cinzel(
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
+                    color: AppTheme.goldColor,
                   ),
                 ),
               ),
@@ -155,15 +188,18 @@ class _QuestionCardState extends State<QuestionCard> {
                 children: [
                   Text(
                     widget.question.title,
-                    style: textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
+                    style: GoogleFonts.cinzel(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   if (widget.question.mandatory)
                     Text(
-                      '* Obligatoire',
+                      '* Epreuve obligatoire',
                       style: textTheme.labelSmall?.copyWith(
                         color: colorScheme.error,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                 ],
@@ -174,25 +210,33 @@ class _QuestionCardState extends State<QuestionCard> {
         if (widget.question.hint != null && widget.question.hint!.isNotEmpty) ...[
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              color: colorScheme.surfaceContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(4),
+              border: Border(
+                left: BorderSide(
+                  color: AppTheme.goldColor,
+                  width: 3,
+                ),
+              ),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.lightbulb_outline,
-                  size: 16,
-                  color: colorScheme.primary,
+                Text(
+                  '\u2726 ',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.goldColor,
+                  ),
                 ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.question.hint!,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                    style: GoogleFonts.crimsonText(
+                      fontSize: 13,
                       fontStyle: FontStyle.italic,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -210,13 +254,9 @@ class _QuestionCardState extends State<QuestionCard> {
     return TextField(
       controller: _responseController,
       decoration: InputDecoration(
-        hintText: 'Votre reponse...',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        filled: true,
-        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        hintText: 'Inscrivez votre reponse, brave chevalier...',
       ),
+      style: GoogleFonts.crimsonText(fontSize: 15),
       maxLines: isLongFormat ? 4 : 1,
       onChanged: widget.onResponseChanged,
     );
@@ -230,15 +270,14 @@ class _QuestionCardState extends State<QuestionCard> {
       children: [
         Row(
           children: [
-            Icon(
-              Icons.attach_file,
-              size: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 4),
             Text(
-              'Pieces jointes',
-              style: textTheme.labelMedium?.copyWith(
+              '\u2617 ',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+            Text(
+              'Preuves visuelles',
+              style: GoogleFonts.cinzel(
+                fontSize: 12,
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
@@ -246,7 +285,7 @@ class _QuestionCardState extends State<QuestionCard> {
             TextButton.icon(
               onPressed: widget.onAddAttachment,
               icon: const Icon(Icons.add_a_photo, size: 18),
-              label: const Text('Ajouter'),
+              label: const Text('Capturer'),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
@@ -281,11 +320,14 @@ class _QuestionCardState extends State<QuestionCard> {
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: colorScheme.outline,
+              width: 2,
+            ),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(7),
+            borderRadius: BorderRadius.circular(2),
             child: Image.file(
               File(path),
               fit: BoxFit.cover,
@@ -311,6 +353,7 @@ class _QuestionCardState extends State<QuestionCard> {
               decoration: BoxDecoration(
                 color: colorScheme.error,
                 shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1),
               ),
               child: Icon(
                 Icons.close,
@@ -337,7 +380,7 @@ class _QuestionCardState extends State<QuestionCard> {
                     _showComment = !_showComment;
                   });
                 },
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
@@ -349,8 +392,9 @@ class _QuestionCardState extends State<QuestionCard> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Ajouter un commentaire',
-                        style: textTheme.labelMedium?.copyWith(
+                        'Ajouter une note',
+                        style: GoogleFonts.crimsonText(
+                          fontSize: 14,
                           color: colorScheme.primary,
                         ),
                       ),
@@ -368,13 +412,9 @@ class _QuestionCardState extends State<QuestionCard> {
           TextField(
             controller: _commentController,
             decoration: InputDecoration(
-              hintText: 'Commentaire optionnel...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              hintText: 'Notez vos observations, brave chevalier...',
             ),
+            style: GoogleFonts.crimsonText(fontSize: 14),
             maxLines: 2,
             onChanged: widget.onCommentChanged,
           ),
@@ -390,18 +430,23 @@ class _QuestionCardState extends State<QuestionCard> {
       color: Colors.transparent,
       child: InkWell(
         onTap: isEnabled ? widget.onAnalyzeWithAI : null,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(4),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isEnabled
-                ? colorScheme.secondaryContainer
-                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
+            gradient: isEnabled
+                ? LinearGradient(
+                    colors: [
+                      AppTheme.forestColor,
+                      AppTheme.forestColor.withValues(alpha: 0.8),
+                    ],
+                  )
+                : null,
+            color: isEnabled ? null : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(4),
             border: Border.all(
-              color: isEnabled
-                  ? colorScheme.secondary
-                  : colorScheme.outlineVariant,
+              color: isEnabled ? AppTheme.goldColor : colorScheme.outlineVariant,
+              width: isEnabled ? 2 : 1,
             ),
           ),
           child: Row(
@@ -409,29 +454,31 @@ class _QuestionCardState extends State<QuestionCard> {
             children: [
               if (widget.isAnalyzing)
                 SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: 14,
+                  height: 14,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: colorScheme.secondary,
+                    color: AppTheme.goldColor,
                   ),
                 )
               else
-                Icon(
-                  Icons.auto_awesome,
-                  size: 16,
-                  color: isEnabled
-                      ? colorScheme.onSecondaryContainer
-                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                Text(
+                  '\u2728',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isEnabled
+                        ? AppTheme.goldColor
+                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
                 ),
               const SizedBox(width: 4),
               Text(
-                'IA',
-                style: TextStyle(
-                  fontSize: 12,
+                'Oracle',
+                style: GoogleFonts.cinzel(
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: isEnabled
-                      ? colorScheme.onSecondaryContainer
+                      ? AppTheme.goldColor
                       : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
               ),
@@ -448,10 +495,18 @@ class _QuestionCardState extends State<QuestionCard> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.forestColor.withValues(alpha: 0.1),
+            AppTheme.forestColor.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: colorScheme.secondary.withValues(alpha: 0.5),
+          color: AppTheme.forestColor.withValues(alpha: 0.5),
+          width: 2,
         ),
       ),
       child: Column(
@@ -459,17 +514,16 @@ class _QuestionCardState extends State<QuestionCard> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.auto_awesome,
-                size: 16,
-                color: colorScheme.secondary,
-              ),
-              const SizedBox(width: 8),
               Text(
-                'Analyse IA',
-                style: textTheme.labelMedium?.copyWith(
+                '\u2728 ',
+                style: TextStyle(fontSize: 14, color: AppTheme.goldColor),
+              ),
+              Text(
+                'Vision de l\'Oracle',
+                style: GoogleFonts.cinzel(
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: colorScheme.secondary,
+                  color: AppTheme.forestColor,
                 ),
               ),
             ],
@@ -492,17 +546,36 @@ class _QuestionCardState extends State<QuestionCard> {
                   decoration: BoxDecoration(
                     color: isPhrase
                         ? colorScheme.tertiaryContainer
-                        : colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(isPhrase ? 8 : 16),
-                  ),
-                  child: Text(
-                    tagText,
-                    style: textTheme.labelSmall?.copyWith(
+                        : colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(2),
+                    border: Border.all(
                       color: isPhrase
-                          ? colorScheme.onTertiaryContainer
-                          : colorScheme.onPrimaryContainer,
-                      fontWeight: isPhrase ? FontWeight.normal : FontWeight.w500,
+                          ? colorScheme.tertiary.withValues(alpha: 0.5)
+                          : AppTheme.goldColor.withValues(alpha: 0.5),
                     ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isPhrase)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Text(
+                            '\u2726',
+                            style: TextStyle(fontSize: 8, color: AppTheme.goldColor),
+                          ),
+                        ),
+                      Text(
+                        tagText,
+                        style: GoogleFonts.crimsonText(
+                          fontSize: 12,
+                          color: isPhrase
+                              ? colorScheme.onTertiaryContainer
+                              : colorScheme.onSecondaryContainer,
+                          fontWeight: isPhrase ? FontWeight.normal : FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }).toList(),
@@ -512,7 +585,9 @@ class _QuestionCardState extends State<QuestionCard> {
             const SizedBox(height: 8),
             Text(
               result.description,
-              style: textTheme.bodySmall?.copyWith(
+              style: GoogleFonts.crimsonText(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
