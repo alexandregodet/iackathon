@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/di/injection.dart';
+import '../../core/theme/app_theme.dart';
 import '../../domain/entities/checklist.dart';
 import '../blocs/checklist/checklist_bloc.dart';
 import '../blocs/checklist/checklist_event.dart';
 import '../blocs/checklist/checklist_state.dart';
 import '../widgets/checklist/question_card.dart';
 import '../widgets/checklist/section_header.dart';
+import 'checklist_history_page.dart';
 
 class ChecklistPage extends StatelessWidget {
   final String assetPath;
@@ -114,15 +117,28 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
         builder: (dialogContext, setDialogState) => AlertDialog(
           title: Row(
             children: [
+              // Royal seal for success
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.forestColor,
+                      AppTheme.forestColor.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  border: Border.all(color: AppTheme.goldColor, width: 2),
                 ),
-                child: Icon(
-                  Icons.check_circle,
-                  color: colorScheme.onPrimaryContainer,
+                child: Center(
+                  child: Text(
+                    '\u2714', // Checkmark
+                    style: TextStyle(
+                      fontSize: 24,
+                      color: AppTheme.goldColor,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -131,15 +147,17 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Checklist terminee',
-                      style: textTheme.titleMedium?.copyWith(
+                      'Quete Accomplie!',
+                      style: GoogleFonts.cinzel(
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
                       ),
                     ),
                     Text(
-                      'SN: ${state.serialNumber}',
+                      'Destrier: ${state.serialNumber}',
                       style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.primary,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -158,18 +176,22 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppTheme.forestColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: AppTheme.forestColor.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.save, color: colorScheme.primary, size: 20),
+                        Icon(Icons.save_alt, color: AppTheme.forestColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Donnees enregistrees en base de donnees',
+                            'Les parchemins ont ete archives dans les grimoires du royaume',
                             style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.primary,
+                              color: AppTheme.forestColor,
+                              fontStyle: FontStyle.italic,
                             ),
                           ),
                         ),
@@ -179,11 +201,21 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                   const SizedBox(height: 16),
 
                   // Responses summary
-                  Text(
-                    'Resume des reponses (${responseSummaries.length})',
-                    style: textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        '\u2726 ',
+                        style: TextStyle(color: AppTheme.goldColor),
+                      ),
+                      Text(
+                        'Compte-Rendu (${responseSummaries.length})',
+                        style: GoogleFonts.cinzel(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -197,8 +229,14 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(8),
+                            color: colorScheme.surfaceContainer.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border(
+                              left: BorderSide(
+                                color: colorScheme.primary,
+                                width: 3,
+                              ),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,7 +258,10 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                                   if (summary.hasAiAnalysis)
                                     Padding(
                                       padding: const EdgeInsets.only(left: 4),
-                                      child: Icon(Icons.auto_awesome, size: 14, color: colorScheme.secondary),
+                                      child: Text(
+                                        '\u2728',
+                                        style: TextStyle(fontSize: 12, color: AppTheme.goldColor),
+                                      ),
                                     ),
                                 ],
                               ),
@@ -244,12 +285,15 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Icon(Icons.label, size: 18, color: colorScheme.secondary),
-                      const SizedBox(width: 8),
                       Text(
-                        'Tags (${editableTags.length})',
-                        style: textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        '\u269C ',
+                        style: TextStyle(color: AppTheme.goldColor),
+                      ),
+                      Text(
+                        'Sceaux Magiques (${editableTags.length})',
+                        style: GoogleFonts.cinzel(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                           color: colorScheme.secondary,
                         ),
                       ),
@@ -257,7 +301,7 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Appuyez sur un tag pour le supprimer',
+                    'Touchez un sceau pour le retirer',
                     style: textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                       fontStyle: FontStyle.italic,
@@ -283,7 +327,12 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                               color: editableTag.isAiGenerated
                                   ? colorScheme.secondaryContainer
                                   : colorScheme.tertiaryContainer,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(2),
+                              border: Border.all(
+                                color: editableTag.isAiGenerated
+                                    ? AppTheme.goldColor.withValues(alpha: 0.5)
+                                    : colorScheme.outline,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -291,10 +340,9 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                                 if (editableTag.isAiGenerated)
                                   Padding(
                                     padding: const EdgeInsets.only(right: 4),
-                                    child: Icon(
-                                      Icons.auto_awesome,
-                                      size: 12,
-                                      color: colorScheme.onSecondaryContainer,
+                                    child: Text(
+                                      '\u2728',
+                                      style: TextStyle(fontSize: 10, color: AppTheme.goldColor),
                                     ),
                                   ),
                                 Text(
@@ -321,7 +369,7 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                     )
                   else
                     Text(
-                      'Aucun tag',
+                      'Aucun sceau appose',
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                         fontStyle: FontStyle.italic,
@@ -336,14 +384,11 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                         child: TextField(
                           controller: tagController,
                           decoration: InputDecoration(
-                            hintText: 'Ajouter un tag...',
+                            hintText: 'Apposer un nouveau sceau...',
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
                             ),
                             prefixIcon: const Icon(Icons.add, size: 20),
                           ),
@@ -370,10 +415,6 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                           }
                         },
                         icon: const Icon(Icons.add),
-                        style: IconButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                        ),
                       ),
                     ],
                   ),
@@ -387,17 +428,21 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                 Navigator.of(dialogContext).pop();
                 navigator.popUntil((route) => route.isFirst);
               },
-              child: const Text('Ignorer les modifications'),
+              child: const Text('Ignorer'),
             ),
             FilledButton.icon(
               onPressed: () {
                 // Save the modified tags
                 _saveModifiedTagsWithBloc(bloc, editableTags);
                 Navigator.of(dialogContext).pop();
+                // Go back to home then navigate to history
                 navigator.popUntil((route) => route.isFirst);
+                navigator.push(
+                  MaterialPageRoute(builder: (_) => const ChecklistHistoryPage()),
+                );
               },
               icon: const Icon(Icons.save),
-              label: const Text('Enregistrer'),
+              label: const Text('Sceller'),
             ),
           ],
         ),
@@ -420,28 +465,65 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
   }
 
   void _showImageSourceDialog(String questionUuid) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Prendre une photo'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera, questionUuid);
-              },
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: AppTheme.goldColor, width: 3),
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Choisir depuis la galerie'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery, questionUuid);
-              },
-            ),
-          ],
+          ),
+          child: Wrap(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Capturer une Image',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(Icons.camera_alt, color: colorScheme.onPrimaryContainer),
+                ),
+                title: Text('Invoquer le miroir magique', style: GoogleFonts.crimsonText(fontSize: 16)),
+                subtitle: Text('Prendre une photo', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera, questionUuid);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(Icons.photo_library, color: colorScheme.onSecondaryContainer),
+                ),
+                title: Text('Consulter les archives', style: GoogleFonts.crimsonText(fontSize: 16)),
+                subtitle: Text('Choisir depuis la galerie', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery, questionUuid);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );
@@ -452,6 +534,12 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return BlocConsumer<ChecklistBloc, ChecklistState>(
+      listenWhen: (previous, current) {
+        // Only listen when isSubmitted changes from false to true
+        // or when there's a new error
+        return (current.isSubmitted && !previous.isSubmitted) ||
+            (current.error != null && current.error != previous.error);
+      },
       listener: (context, state) {
         if (state.error != null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -468,22 +556,43 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
       builder: (context, state) {
         return Scaffold(
           appBar: AppBar(
-            title: Row(
-              children: [
-                Text('> ', style: TextStyle(color: colorScheme.primary)),
-                Expanded(
-                  child: Text(
-                    state.checklist?.answers.title ?? 'Checklist',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+            title: Text(
+              state.checklist?.answers.title ?? 'Checklist',
+              overflow: TextOverflow.ellipsis,
             ),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
+              // Royal seal
+              if (state.serialNumber.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.goldColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppTheme.goldColor),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '\u2694 ',
+                        style: TextStyle(fontSize: 12, color: AppTheme.goldColor),
+                      ),
+                      Text(
+                        state.serialNumber,
+                        style: GoogleFonts.cinzel(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               if (state.isSaving)
                 const Padding(
                   padding: EdgeInsets.all(16.0),
@@ -506,7 +615,23 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
 
   Widget _buildBody(BuildContext context, ChecklistState state) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Chargement des parchemins...',
+              style: GoogleFonts.crimsonText(
+                fontSize: 16,
+                fontStyle: FontStyle.italic,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (state.checklist == null) {
@@ -514,9 +639,42 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.errorContainer,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.error,
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.error_outline,
+                  size: 40,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
-            const Text('Impossible de charger la checklist'),
+            Text(
+              'Parchemin introuvable',
+              style: GoogleFonts.cinzel(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'La quete ne peut etre chargee',
+              style: GoogleFonts.crimsonText(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       );
@@ -556,82 +714,121 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Manuscript-style context card
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: colorScheme.primary.withValues(alpha: 0.3),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.5),
+                  Colors.white.withValues(alpha: 0.2),
+                ],
               ),
+              border: Border.all(color: colorScheme.outline, width: 2),
+              borderRadius: BorderRadius.circular(4),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Stack(
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.assignment, color: colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        state.checklist?.answers.title ?? 'Checklist',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (state.checklist?.answers.description.isNotEmpty ?? false) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    state.checklist!.answers.description,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                // Decorative ornament
+                Positioned(
+                  top: -12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    color: colorScheme.surface,
+                    child: Text(
+                      '\u2619',
+                      style: TextStyle(fontSize: 20, color: colorScheme.primary),
                     ),
                   ),
-                ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Illuminated letter
+                      Text(
+                        state.checklist?.answers.title.isNotEmpty == true
+                            ? state.checklist!.answers.title[0]
+                            : 'C',
+                        style: GoogleFonts.medievalSharp(
+                          fontSize: 56,
+                          color: colorScheme.primary,
+                          height: 0.9,
+                          shadows: [
+                            Shadow(
+                              color: AppTheme.goldColor.withValues(alpha: 0.5),
+                              offset: const Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              state.checklist?.answers.title ?? 'Checklist',
+                              style: textTheme.titleLarge?.copyWith(
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            if (state.checklist?.answers.description.isNotEmpty ?? false) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                state.checklist!.answers.description,
+                                style: textTheme.bodyLarge?.copyWith(
+                                  fontStyle: FontStyle.italic,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
+
+          // Serial number input - Scroll style
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outlineVariant),
+              color: colorScheme.surfaceContainer,
+              border: Border.all(color: colorScheme.outline, width: 2),
+              borderRadius: BorderRadius.circular(4),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.qr_code,
-                        color: colorScheme.onPrimary,
-                        size: 24,
-                      ),
+                    Text(
+                      '\u269C ',
+                      style: TextStyle(color: AppTheme.goldColor, fontSize: 18),
                     ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Numero de serie (SN)',
-                            style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
+                            'Numero du Destrier',
+                            style: GoogleFonts.cinzel(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
                             ),
                           ),
                           Text(
-                            'Identifiant unique du vehicule GRIFFON-FELIN',
+                            'Identifiant unique du vehicule',
                             style: textTheme.bodySmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -645,21 +842,21 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                 TextField(
                   decoration: InputDecoration(
                     hintText: 'Ex: 62030010',
-                    labelText: 'Serial Number *',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    labelText: 'Serial Number',
                     prefixIcon: const Icon(Icons.tag),
-                    filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   ),
+                  style: GoogleFonts.cinzel(
+                    fontSize: 16,
+                    letterSpacing: 2,
+                  ),
+                  textAlign: TextAlign.center,
                   onChanged: (value) {
                     context.read<ChecklistBloc>().add(ChecklistUpdateSerialNumber(value));
                   },
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '* Champ obligatoire pour demarrer la checklist',
+                  '* Requis pour debuter la quete',
                   style: textTheme.labelSmall?.copyWith(
                     color: colorScheme.error,
                     fontStyle: FontStyle.italic,
@@ -669,30 +866,90 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
             ),
           ),
           const SizedBox(height: 24),
+
+          // Medieval divider
+          _buildMedievalDivider(colorScheme),
+          const SizedBox(height: 24),
+
+          // Info section
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(12),
+              color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Informations',
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      '\u2726 ',
+                      style: TextStyle(color: AppTheme.goldColor),
+                    ),
+                    Text(
+                      'Details de la Quete',
+                      style: GoogleFonts.cinzel(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                _buildInfoRow(context, 'Sections', '${state.totalSections}'),
-                _buildInfoRow(context, 'Questions', '${state.totalQuestionsCount}'),
-                _buildInfoRow(context, 'Part Number', state.checklist?.context.pn ?? '-'),
+                const SizedBox(height: 12),
+                _buildInfoRow(context, 'Chapitres', '${state.totalSections}'),
+                _buildInfoRow(context, 'Epreuves', '${state.totalQuestionsCount}'),
+                _buildInfoRow(context, 'Grimoire', state.checklist?.context.pn ?? '-'),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMedievalDivider(ColorScheme colorScheme) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  colorScheme.outline.withValues(alpha: 0.5),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            '\u269C',
+            style: TextStyle(
+              fontSize: 20,
+              color: colorScheme.outline.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.outline.withValues(alpha: 0.5),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -703,8 +960,21 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: colorScheme.onSurfaceVariant)),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.primary)),
+          Text(
+            label,
+            style: GoogleFonts.crimsonText(
+              fontSize: 14,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.cinzel(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.primary,
+            ),
+          ),
         ],
       ),
     );
@@ -722,27 +992,45 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Progression',
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
+                'Progression de la Quete',
+                style: GoogleFonts.cinzel(
                   fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
               Text(
                 '${state.answeredQuestionsCount}/${state.totalQuestionsCount}',
-                style: TextStyle(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+                style: GoogleFonts.cinzel(
                   fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          LinearProgressIndicator(
-            value: state.progressPercent,
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+          const SizedBox(height: 8),
+          Container(
+            height: 8,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: colorScheme.outline),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: state.progressPercent,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.primary,
+                      AppTheme.goldColor,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -758,17 +1046,38 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
           state.totalPages,
-          (index) => Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: index == state.currentSectionIndex
-                  ? colorScheme.primary
-                  : colorScheme.surfaceContainerHighest,
-            ),
-          ),
+          (index) {
+            final isActive = index == state.currentSectionIndex;
+            final isCompleted = index < state.currentSectionIndex;
+
+            return Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isActive
+                    ? colorScheme.primary
+                    : isCompleted
+                        ? AppTheme.forestColor
+                        : Colors.transparent,
+                border: Border.all(
+                  color: isActive
+                      ? AppTheme.goldColor
+                      : colorScheme.outline,
+                  width: isActive ? 2 : 1,
+                ),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: AppTheme.goldColor.withValues(alpha: 0.5),
+                          blurRadius: 8,
+                        ),
+                      ]
+                    : null,
+              ),
+            );
+          },
         ),
       ),
     );
@@ -857,14 +1166,17 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            colorScheme.primary,
+            colorScheme.primaryContainer,
+          ],
+        ),
+        border: Border(
+          top: BorderSide(color: AppTheme.goldColor, width: 3),
+        ),
       ),
       child: SafeArea(
         child: Row(
@@ -880,6 +1192,10 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                   },
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('Precedent'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colorScheme.onPrimary,
+                    side: BorderSide(color: AppTheme.goldColor),
+                  ),
                 ),
               )
             else
@@ -897,7 +1213,11 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                           );
                         },
                   icon: Icon(state.isOnContextPage ? Icons.play_arrow : Icons.arrow_forward),
-                  label: Text(state.isOnContextPage ? 'Demarrer' : 'Suivant'),
+                  label: Text(state.isOnContextPage ? 'Debuter' : 'Suivant'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.goldColor,
+                    foregroundColor: AppTheme.inkColor,
+                  ),
                 ),
               )
             else
@@ -908,6 +1228,10 @@ class _ChecklistPageContentState extends State<_ChecklistPageContent> {
                   },
                   icon: const Icon(Icons.check),
                   label: const Text('Terminer'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.goldColor,
+                    foregroundColor: AppTheme.inkColor,
+                  ),
                 ),
               ),
           ],
