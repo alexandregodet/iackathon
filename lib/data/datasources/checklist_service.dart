@@ -9,6 +9,34 @@ import '../../domain/entities/checklist_response.dart';
 import '../../domain/entities/checklist_section.dart';
 import '../../domain/entities/checklist_session.dart';
 
+/// Resultat de la classification avec niveau de confiance
+class ClassificationResult {
+  final String choice;
+  final bool isConfident;
+  final List<String> probableChoices;
+  final String rawResponse;
+
+  ClassificationResult({
+    required this.choice,
+    required this.isConfident,
+    this.probableChoices = const [],
+    required this.rawResponse,
+  });
+}
+
+/// Resultat de la classification checkbox avec niveau de confiance
+class CheckboxClassificationResult {
+  final bool value;
+  final bool isConfident;
+  final String rawResponse;
+
+  CheckboxClassificationResult({
+    required this.value,
+    required this.isConfident,
+    required this.rawResponse,
+  });
+}
+
 @singleton
 class ChecklistService {
   List<ChecklistSection> _sections = [];
@@ -228,30 +256,37 @@ class ChecklistService {
   // ============== CLASSIFICATION PAR LLM ==============
 
   /// Construit le prompt pour que Gemma classifie la reponse utilisateur
+  /// avec indication du niveau de confiance
   String buildClassificationPrompt(
     String userInput,
     ChecklistQuestion question,
   ) {
     final choicesStr = question.choices.join(', ');
+    final choicesNumbered = question.choices
+        .asMap()
+        .entries
+        .map((e) => '${e.key + 1}. ${e.value}')
+        .join('\n');
 
     return '''Tu es un assistant d'inspection. Analyse la reponse de l'utilisateur et determine le choix le plus approprie.
 
 QUESTION: "${question.title}"
-CHOIX POSSIBLES: [$choicesStr]
+CHOIX POSSIBLES:
+$choicesNumbered
 
 REPONSE UTILISATEUR: "$userInput"
 
 INSTRUCTIONS:
-- Analyse le sens de la reponse utilisateur
-- Choisis UN SEUL choix parmi la liste qui correspond le mieux
-- Reponds UNIQUEMENT avec le nom exact du choix (ex: "Satisfactory" ou "Major")
-- Si la reponse indique que tout va bien/ok/ras -> "Satisfactory"
-- Si la reponse indique un probleme mineur/leger -> "Minor"
-- Si la reponse indique un probleme important/defectueux/casse -> "Major"
-- Si la reponse indique une urgence/danger/critique -> "Immediate"
-- Si la reponse indique a surveiller/attention -> "Monitor"
+- Analyse le sens et l'intention de la reponse utilisateur
+- Determine si tu es SUR ou INCERTAIN de ta classification
+- SUR = la reponse correspond clairement a un seul choix
+- INCERTAIN = la reponse est vague, ambigue ou pourrait correspondre a plusieurs choix
+- Si INCERTAIN, liste les 2-3 choix les plus probables selon le contexte de la reponse
 
-CHOIX:''';
+REPONDS EXACTEMENT DANS CE FORMAT:
+CONFIANCE: [SUR ou INCERTAIN]
+CHOIX: [ton meilleur choix parmi: $choicesStr]
+PROBABLES: [si INCERTAIN, liste les 2-3 choix les plus probables separes par des virgules]''';
   }
 
   /// Construit le prompt pour classifier une reponse checkbox (oui/non)
@@ -266,48 +301,170 @@ REPONSE UTILISATEUR: "$userInput"
 
 INSTRUCTIONS:
 - Analyse si la reponse indique un probleme de securite ou non
-- Reponds UNIQUEMENT par "OUI" ou "NON"
-- Si l'utilisateur mentionne un danger, probleme de securite, risque -> "OUI"
-- Si l'utilisateur dit que c'est ok, pas de probleme, ras -> "NON"
+- Determine si tu es SUR ou INCERTAIN de ta reponse
 
-REPONSE:''';
+REPONDS EXACTEMENT DANS CE FORMAT:
+CONFIANCE: [SUR ou INCERTAIN]
+REPONSE: [OUI ou NON]''';
   }
 
-  /// Parse la reponse de Gemma pour extraire le choix
-  String? parseGemmaChoice(String gemmaResponse, ChecklistQuestion question) {
+  /// Resultat de la classification avec niveau de confiance
+  ClassificationResult? parseGemmaClassification(
+    String gemmaResponse,
+    ChecklistQuestion question,
+  ) {
     final response = gemmaResponse.trim();
+    final lowerResponse = response.toLowerCase();
 
-    // Chercher le choix exact dans la reponse
-    for (final choice in question.choices) {
-      if (response.toLowerCase().contains(choice.toLowerCase())) {
-        return choice;
-      }
+    // Detecter le niveau de confiance
+    bool isConfident = true;
+    if (lowerResponse.contains('incertain')) {
+      isConfident = false;
+    } else if (!lowerResponse.contains('sur')) {
+      // Si ni SUR ni INCERTAIN n'est mentionne, considerer comme incertain
+      isConfident = false;
     }
 
-    // Si pas trouve, prendre la premiere ligne non vide
-    final lines = response.split('\n').where((l) => l.trim().isNotEmpty);
-    if (lines.isNotEmpty) {
-      final firstLine = lines.first.trim();
-      // Verifier si c'est un choix valide
-      for (final choice in question.choices) {
-        if (firstLine.toLowerCase() == choice.toLowerCase()) {
-          return choice;
+    // Extraire le choix principal
+    String? choice;
+
+    // Chercher apres "CHOIX:" ou "choix:"
+    final choixMatch = RegExp(r'choix\s*:\s*(.+)', caseSensitive: false)
+        .firstMatch(response);
+    if (choixMatch != null) {
+      final choixValue = choixMatch.group(1)?.trim();
+      if (choixValue != null) {
+        for (final c in question.choices) {
+          if (choixValue.toLowerCase().contains(c.toLowerCase())) {
+            choice = c;
+            break;
+          }
         }
       }
     }
 
-    return null;
+    // Si pas trouve avec le format, chercher directement
+    if (choice == null) {
+      for (final c in question.choices) {
+        if (lowerResponse.contains(c.toLowerCase())) {
+          choice = c;
+          break;
+        }
+      }
+    }
+
+    if (choice == null) return null;
+
+    // Extraire les choix probables si incertain
+    final probableChoices = <String>[];
+    if (!isConfident) {
+      // Chercher apres "PROBABLES:" ou "probables:"
+      final probablesMatch = RegExp(
+        r'probables?\s*:\s*(.+)',
+        caseSensitive: false,
+      ).firstMatch(response);
+
+      if (probablesMatch != null) {
+        final probablesValue = probablesMatch.group(1)?.trim() ?? '';
+        // Parser les choix separes par des virgules
+        for (final c in question.choices) {
+          if (probablesValue.toLowerCase().contains(c.toLowerCase())) {
+            probableChoices.add(c);
+          }
+        }
+      }
+
+      // Si pas de probables trouves, utiliser le choix principal
+      if (probableChoices.isEmpty) {
+        probableChoices.add(choice);
+      }
+
+      // S'assurer que le choix principal est dans les probables
+      if (!probableChoices.contains(choice)) {
+        probableChoices.insert(0, choice);
+      }
+    }
+
+    return ClassificationResult(
+      choice: choice,
+      isConfident: isConfident,
+      probableChoices: probableChoices,
+      rawResponse: response,
+    );
   }
 
-  /// Parse la reponse de Gemma pour une checkbox
-  bool? parseGemmaCheckbox(String gemmaResponse) {
+  /// Parse la reponse de Gemma pour une checkbox avec confiance
+  CheckboxClassificationResult? parseGemmaCheckboxClassification(
+    String gemmaResponse,
+  ) {
     final response = gemmaResponse.toLowerCase().trim();
 
-    if (response.contains('oui') || response.contains('yes')) {
-      return true;
+    // Detecter le niveau de confiance
+    bool isConfident = true;
+    if (response.contains('incertain')) {
+      isConfident = false;
+    } else if (!response.contains('sur')) {
+      isConfident = false;
     }
-    if (response.contains('non') || response.contains('no')) {
-      return false;
+
+    // Detecter la reponse
+    bool? value;
+    if (response.contains('oui') || response.contains('yes')) {
+      value = true;
+    } else if (response.contains('non') || response.contains('no')) {
+      value = false;
+    }
+
+    if (value == null) return null;
+
+    return CheckboxClassificationResult(
+      value: value,
+      isConfident: isConfident,
+      rawResponse: gemmaResponse,
+    );
+  }
+
+  /// Formate les choix filtres pour affichage a l'utilisateur
+  /// Si filteredChoices est vide, affiche tous les choix
+  String formatChoicesForUser(
+    ChecklistQuestion question, {
+    List<String> filteredChoices = const [],
+  }) {
+    final choices = filteredChoices.isNotEmpty ? filteredChoices : question.choices;
+
+    final buffer = StringBuffer();
+    buffer.writeln('Je ne suis pas sur de comprendre. Quel est l\'etat de "${question.title}"?');
+    buffer.writeln();
+    for (var i = 0; i < choices.length; i++) {
+      buffer.writeln('${i + 1}. ${choices[i]}');
+    }
+    buffer.writeln();
+    buffer.writeln('Repondez avec le numero ou le nom du choix.');
+    return buffer.toString();
+  }
+
+  /// Tente de parser une selection directe de l'utilisateur (numero ou nom)
+  /// Si filteredChoices est fourni, utilise ces choix pour le parsing
+  String? parseDirectChoice(
+    String userInput,
+    ChecklistQuestion question, {
+    List<String> filteredChoices = const [],
+  }) {
+    final choices = filteredChoices.isNotEmpty ? filteredChoices : question.choices;
+    final input = userInput.trim().toLowerCase();
+
+    // Essayer de parser un numero
+    final number = int.tryParse(input);
+    if (number != null && number >= 1 && number <= choices.length) {
+      return choices[number - 1];
+    }
+
+    // Essayer de matcher un nom de choix
+    for (final choice in choices) {
+      if (input == choice.toLowerCase() ||
+          input.contains(choice.toLowerCase())) {
+        return choice;
+      }
     }
 
     return null;

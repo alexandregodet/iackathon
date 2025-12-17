@@ -208,13 +208,14 @@ Commencons: ${firstQuestion.questionPrompt}''';
         );
 
         final gemmaResponse = await _getGemmaResponse(classificationPrompt);
-        final checkboxValue = _checklistService.parseGemmaCheckbox(gemmaResponse);
+        final result =
+            _checklistService.parseGemmaCheckboxClassification(gemmaResponse);
 
-        if (checkboxValue != null) {
+        if (result != null) {
           return _checklistService.createCheckboxResponse(
             userInput,
             question,
-            checkboxValue,
+            result.value,
           );
         }
         return null;
@@ -227,13 +228,14 @@ Commencons: ${firstQuestion.questionPrompt}''';
       );
 
       final gemmaResponse = await _getGemmaResponse(classificationPrompt);
-      final choice = _checklistService.parseGemmaChoice(gemmaResponse, question);
+      final result =
+          _checklistService.parseGemmaClassification(gemmaResponse, question);
 
-      if (choice != null) {
+      if (result != null) {
         return _checklistService.createResponseFromChoice(
           userInput,
           question,
-          choice,
+          result.choice,
         );
       }
 

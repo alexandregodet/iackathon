@@ -1228,6 +1228,16 @@ Commencons: ${firstQuestion.questionPrompt}''';
       timestamp: DateTime.now(),
     );
 
+    emit(state.copyWith(
+      messages: [...state.messages, userMessage],
+    ));
+
+    // Si on attend une selection manuelle de l'utilisateur
+    if (state.isWaitingForSelection && state.pendingQuestionForSelection != null) {
+      await _handleDirectSelection(userInput, emit);
+      return;
+    }
+
     // Ajouter un message "en cours de traitement"
     final processingMessage = ChatMessage(
       id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
@@ -1238,12 +1248,14 @@ Commencons: ${firstQuestion.questionPrompt}''';
     );
 
     emit(state.copyWith(
-      messages: [...state.messages, userMessage, processingMessage],
+      messages: [...state.messages, processingMessage],
       isGenerating: true,
     ));
 
     String responseMessage;
     final confirmations = <String>[];
+    ChecklistQuestion? pendingQuestion;
+    List<String> filteredChoices = [];
 
     try {
       // Detecter si plusieurs questions sont mentionnees
@@ -1252,30 +1264,52 @@ Commencons: ${firstQuestion.questionPrompt}''';
       if (mentionedQuestions.isNotEmpty) {
         // Classifier chaque question mentionnee avec Gemma
         for (final question in mentionedQuestions) {
-          final classified = await _classifyAnswerWithGemma(userInput, question);
-          if (classified != null) {
-            _checklistService.recordResponse(classified);
-            confirmations.add('${question.title} = ${classified.displayValue}');
+          final result = await _classifyWithConfidence(userInput, question);
+          if (result != null) {
+            if (result.isConfident) {
+              _checklistService.recordResponse(result.response);
+              confirmations.add('${question.title} = ${result.response.displayValue}');
+            } else {
+              // Incertain - demander a l'utilisateur avec choix filtres
+              pendingQuestion = question;
+              filteredChoices = result.probableChoices;
+              break;
+            }
           }
         }
       } else if (state.checklistSession?.currentQuestion != null) {
         // Classifier la reponse pour la question courante
         final question = state.checklistSession!.currentQuestion!;
-        final classified = await _classifyAnswerWithGemma(userInput, question);
+        final result = await _classifyWithConfidence(userInput, question);
 
-        if (classified != null) {
-          _checklistService.recordResponse(classified);
-          confirmations.add('${question.title} = ${classified.displayValue}');
+        if (result != null) {
+          if (result.isConfident) {
+            _checklistService.recordResponse(result.response);
+            confirmations.add('${question.title} = ${result.response.displayValue}');
+          } else {
+            // Incertain - demander a l'utilisateur avec choix filtres
+            pendingQuestion = question;
+            filteredChoices = result.probableChoices;
+          }
         }
       }
 
-      final session = _checklistService.currentSession!;
-      final nextMessage = _buildNextQuestionMessage(session);
-
-      if (confirmations.isNotEmpty) {
-        responseMessage = 'J\'ai bien note: ${confirmations.join(", ")}.\n\n$nextMessage';
+      // Construire le message de reponse
+      if (pendingQuestion != null) {
+        // Gemma n'est pas sur, proposer les choix filtres
+        responseMessage = _checklistService.formatChoicesForUser(
+          pendingQuestion,
+          filteredChoices: filteredChoices,
+        );
       } else {
-        responseMessage = 'Je n\'ai pas pu interpreter votre reponse. ${state.checklistSession?.currentQuestion?.questionPrompt ?? nextMessage}';
+        final session = _checklistService.currentSession!;
+        final nextMessage = _buildNextQuestionMessage(session);
+
+        if (confirmations.isNotEmpty) {
+          responseMessage = 'J\'ai bien note: ${confirmations.join(", ")}.\n\n$nextMessage';
+        } else {
+          responseMessage = 'Je n\'ai pas pu interpreter votre reponse. ${state.checklistSession?.currentQuestion?.questionPrompt ?? nextMessage}';
+        }
       }
     } catch (e, stack) {
       AppLogger.error('Erreur classification reponse', tag: 'ChatBloc', error: e, stackTrace: stack);
@@ -1300,32 +1334,103 @@ Commencons: ${firstQuestion.questionPrompt}''';
       isGenerating: false,
       checklistSession: _checklistService.currentSession,
       checklistResponse: responseMessage,
+      pendingQuestionForSelection: pendingQuestion,
+      pendingFilteredChoices: filteredChoices,
     ));
   }
 
-  /// Utilise Gemma pour classifier la reponse de l'utilisateur
-  Future<ChecklistResponse?> _classifyAnswerWithGemma(
+  /// Gere la selection directe de l'utilisateur (numero ou nom du choix)
+  Future<void> _handleDirectSelection(
+    String userInput,
+    Emitter<ChatState> emit,
+  ) async {
+    final question = state.pendingQuestionForSelection!;
+    final filteredChoices = state.pendingFilteredChoices;
+
+    final choice = _checklistService.parseDirectChoice(
+      userInput,
+      question,
+      filteredChoices: filteredChoices,
+    );
+
+    String responseMessage;
+
+    if (choice != null) {
+      // Choix valide - enregistrer la reponse
+      final response = _checklistService.createResponseFromChoice(
+        userInput,
+        question,
+        choice,
+      );
+
+      if (response != null) {
+        _checklistService.recordResponse(response);
+
+        final session = _checklistService.currentSession!;
+        final nextMessage = _buildNextQuestionMessage(session);
+        responseMessage = 'J\'ai bien note: ${question.title} = $choice.\n\n$nextMessage';
+      } else {
+        responseMessage = 'Erreur lors de l\'enregistrement.';
+      }
+    } else {
+      // Choix invalide - redemander avec les memes choix filtres
+      responseMessage = 'Je n\'ai pas compris votre choix. ${_checklistService.formatChoicesForUser(question, filteredChoices: filteredChoices)}';
+    }
+
+    // Mettre a jour le prompt systeme
+    final prompt = _checklistService.buildSystemPrompt();
+    _gemmaService.setSystemPrompt(prompt);
+
+    final assistantMessage = ChatMessage(
+      id: '${DateTime.now().millisecondsSinceEpoch}_assistant',
+      role: MessageRole.assistant,
+      content: responseMessage,
+      timestamp: DateTime.now(),
+    );
+
+    emit(state.copyWith(
+      messages: [...state.messages, assistantMessage],
+      checklistSession: _checklistService.currentSession,
+      checklistResponse: responseMessage,
+      // Effacer la question en attente si choix valide
+      clearPendingQuestion: choice != null,
+    ));
+  }
+
+  /// Resultat de classification avec confiance
+  Future<_ClassificationWithConfidence?> _classifyWithConfidence(
     String userInput,
     ChecklistQuestion question,
   ) async {
     try {
       if (question.type == QuestionType.text) {
-        // Pour les questions texte, pas besoin de classification
-        return _checklistService.createTextResponse(userInput, question);
+        final response = _checklistService.createTextResponse(userInput, question);
+        return response != null
+            ? _ClassificationWithConfidence(response: response, isConfident: true)
+            : null;
       }
 
       if (question.type == QuestionType.checkbox) {
-        // Pour les checkbox, classifier oui/non
         final classificationPrompt = _checklistService.buildCheckboxClassificationPrompt(
           userInput,
           question,
         );
 
         final gemmaResponse = await _getGemmaResponse(classificationPrompt);
-        final checkboxValue = _checklistService.parseGemmaCheckbox(gemmaResponse);
+        final result = _checklistService.parseGemmaCheckboxClassification(gemmaResponse);
 
-        if (checkboxValue != null) {
-          return _checklistService.createCheckboxResponse(userInput, question, checkboxValue);
+        if (result != null) {
+          final response = _checklistService.createCheckboxResponse(
+            userInput,
+            question,
+            result.value,
+          );
+          return response != null
+              ? _ClassificationWithConfidence(
+                  response: response,
+                  isConfident: result.isConfident,
+                )
+              : null;
         }
         return null;
       }
@@ -1341,10 +1446,21 @@ Commencons: ${firstQuestion.questionPrompt}''';
       final gemmaResponse = await _getGemmaResponse(classificationPrompt);
       AppLogger.debug('Gemma classification response: $gemmaResponse', 'ChatBloc');
 
-      final choice = _checklistService.parseGemmaChoice(gemmaResponse, question);
+      final result = _checklistService.parseGemmaClassification(gemmaResponse, question);
 
-      if (choice != null) {
-        return _checklistService.createResponseFromChoice(userInput, question, choice);
+      if (result != null) {
+        final response = _checklistService.createResponseFromChoice(
+          userInput,
+          question,
+          result.choice,
+        );
+        return response != null
+            ? _ClassificationWithConfidence(
+                response: response,
+                isConfident: result.isConfident,
+                probableChoices: result.probableChoices,
+              )
+            : null;
       }
 
       return null;
@@ -1524,4 +1640,17 @@ Commencons: ${firstQuestion.questionPrompt}''';
     _thinkingResponseSubscription?.cancel();
     return super.close();
   }
+}
+
+/// Classe interne pour le resultat de classification avec confiance
+class _ClassificationWithConfidence {
+  final ChecklistResponse response;
+  final bool isConfident;
+  final List<String> probableChoices;
+
+  _ClassificationWithConfidence({
+    required this.response,
+    required this.isConfident,
+    this.probableChoices = const [],
+  });
 }

@@ -4,6 +4,7 @@ import '../../../core/errors/app_errors.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
 import '../../../domain/entities/chat_message.dart';
+import '../../../domain/entities/checklist_question.dart';
 import '../../../domain/entities/checklist_session.dart';
 import '../../../domain/entities/conversation_info.dart';
 import '../../../domain/entities/document_info.dart';
@@ -43,6 +44,8 @@ class ChatState extends Equatable {
   // Checklist Session State
   final ChecklistSession? checklistSession;
   final String? checklistResponse;
+  final ChecklistQuestion? pendingQuestionForSelection;
+  final List<String> pendingFilteredChoices;
 
   // Error helpers
   bool get hasError => error != null;
@@ -81,12 +84,15 @@ class ChatState extends Equatable {
     // Checklist Session defaults
     this.checklistSession,
     this.checklistResponse,
+    this.pendingQuestionForSelection,
+    this.pendingFilteredChoices = const [],
   });
 
   // Checklist Session getters
   bool get hasActiveChecklistSession => checklistSession?.isActive ?? false;
   String? get currentChecklistSectionTitle =>
       checklistSession?.currentSection?.title;
+  bool get isWaitingForSelection => pendingQuestionForSelection != null;
   int get checklistProgress => checklistSession?.progressPercentage ?? 0;
 
   bool get isModelReady => modelState == GemmaModelState.ready;
@@ -178,6 +184,9 @@ class ChatState extends Equatable {
     bool clearChecklistSession = false,
     String? checklistResponse,
     bool clearChecklistResponse = false,
+    ChecklistQuestion? pendingQuestionForSelection,
+    List<String>? pendingFilteredChoices,
+    bool clearPendingQuestion = false,
   }) {
     return ChatState(
       modelState: modelState ?? this.modelState,
@@ -219,6 +228,12 @@ class ChatState extends Equatable {
       checklistResponse: clearChecklistResponse
           ? null
           : (checklistResponse ?? this.checklistResponse),
+      pendingQuestionForSelection: clearPendingQuestion
+          ? null
+          : (pendingQuestionForSelection ?? this.pendingQuestionForSelection),
+      pendingFilteredChoices: clearPendingQuestion
+          ? const []
+          : (pendingFilteredChoices ?? this.pendingFilteredChoices),
     );
   }
 
@@ -252,5 +267,7 @@ class ChatState extends Equatable {
     // Checklist Session
     checklistSession,
     checklistResponse,
+    pendingQuestionForSelection,
+    pendingFilteredChoices,
   ];
 }
