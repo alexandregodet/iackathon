@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../core/errors/app_errors.dart';
+import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
 import '../../../domain/entities/pdf_source.dart';
 
@@ -8,6 +9,10 @@ class AskPdfState extends Equatable {
   // Embedder state
   final EmbedderState embedderState;
   final double embedderDownloadProgress;
+
+  // Gemma model state (for response generation)
+  final GemmaModelState gemmaState;
+  final double gemmaDownloadProgress;
 
   // Document state
   final PdfDocumentInfo? currentDocument;
@@ -32,6 +37,8 @@ class AskPdfState extends Equatable {
   const AskPdfState({
     this.embedderState = EmbedderState.notInstalled,
     this.embedderDownloadProgress = 0.0,
+    this.gemmaState = GemmaModelState.notInstalled,
+    this.gemmaDownloadProgress = 0.0,
     this.currentDocument,
     this.isLoadingDocument = false,
     this.documentProcessingCurrent = 0,
@@ -53,6 +60,13 @@ class AskPdfState extends Equatable {
   bool get isEmbedderDownloading => embedderState == EmbedderState.downloading;
   bool get isEmbedderLoading => embedderState == EmbedderState.loading;
 
+  // Gemma model getters
+  bool get isGemmaReady => gemmaState == GemmaModelState.ready;
+  bool get isGemmaInstalled =>
+      gemmaState == GemmaModelState.installed || isGemmaReady;
+  bool get isGemmaDownloading => gemmaState == GemmaModelState.downloading;
+  bool get isGemmaLoading => gemmaState == GemmaModelState.loading;
+
   // Document getters
   bool get hasDocument => currentDocument != null;
   String get documentName => currentDocument?.name ?? '';
@@ -67,7 +81,8 @@ class AskPdfState extends Equatable {
   // Chat getters
   bool get hasMessages => messages.isNotEmpty;
   PdfChatMessage? get lastMessage => messages.isNotEmpty ? messages.last : null;
-  bool get canSendQuestion => isEmbedderReady && hasDocument && !isGenerating;
+  bool get canSendQuestion =>
+      isEmbedderReady && isGemmaReady && hasDocument && !isGenerating;
 
   // Source getters
   bool get hasSources => currentSources.isNotEmpty;
@@ -85,6 +100,8 @@ class AskPdfState extends Equatable {
   AskPdfState copyWith({
     EmbedderState? embedderState,
     double? embedderDownloadProgress,
+    GemmaModelState? gemmaState,
+    double? gemmaDownloadProgress,
     PdfDocumentInfo? currentDocument,
     bool clearDocument = false,
     bool? isLoadingDocument,
@@ -105,6 +122,9 @@ class AskPdfState extends Equatable {
       embedderState: embedderState ?? this.embedderState,
       embedderDownloadProgress:
           embedderDownloadProgress ?? this.embedderDownloadProgress,
+      gemmaState: gemmaState ?? this.gemmaState,
+      gemmaDownloadProgress:
+          gemmaDownloadProgress ?? this.gemmaDownloadProgress,
       currentDocument:
           clearDocument ? null : (currentDocument ?? this.currentDocument),
       isLoadingDocument: isLoadingDocument ?? this.isLoadingDocument,
@@ -130,6 +150,8 @@ class AskPdfState extends Equatable {
   List<Object?> get props => [
         embedderState,
         embedderDownloadProgress,
+        gemmaState,
+        gemmaDownloadProgress,
         currentDocument,
         isLoadingDocument,
         documentProcessingCurrent,

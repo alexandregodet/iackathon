@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../core/errors/app_errors.dart';
+import '../../../domain/entities/gemma_model_info.dart';
 import '../../../domain/entities/pdf_source.dart';
 
 abstract class AskPdfEvent extends Equatable {
@@ -10,9 +11,14 @@ abstract class AskPdfEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Initialize the Ask PDF service
+/// Initialize the Ask PDF service with a specific model
 class AskPdfInitialize extends AskPdfEvent {
-  const AskPdfInitialize();
+  final GemmaModelInfo modelInfo;
+
+  const AskPdfInitialize(this.modelInfo);
+
+  @override
+  List<Object?> get props => [modelInfo];
 }
 
 /// Download the embedding model
@@ -23,6 +29,16 @@ class AskPdfDownloadEmbedder extends AskPdfEvent {
 /// Load the embedding model
 class AskPdfLoadEmbedder extends AskPdfEvent {
   const AskPdfLoadEmbedder();
+}
+
+/// Download the Gemma model for response generation
+class AskPdfDownloadGemma extends AskPdfEvent {
+  const AskPdfDownloadGemma();
+}
+
+/// Load the Gemma model for response generation
+class AskPdfLoadGemma extends AskPdfEvent {
+  const AskPdfLoadGemma();
 }
 
 /// Select and load a PDF file

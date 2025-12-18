@@ -48,7 +48,7 @@ class _AskPdfPageState extends State<AskPdfPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => getIt<AskPdfBloc>()..add(const AskPdfInitialize()),
+      create: (_) => getIt<AskPdfBloc>()..add(AskPdfInitialize(widget.modelInfo)),
       child: BlocConsumer<AskPdfBloc, AskPdfState>(
         listener: (context, state) {
           // Scroll to bottom when new messages arrive
@@ -132,7 +132,7 @@ class _AskPdfPageState extends State<AskPdfPage> {
 
     // Check if embedder needs setup
     if (!state.isEmbedderReady) {
-      return _buildEmbedderSetup(context, state);
+      return _buildModelsSetup(context, state);
     }
 
     return Row(
@@ -169,8 +169,9 @@ class _AskPdfPageState extends State<AskPdfPage> {
     );
   }
 
-  Widget _buildEmbedderSetup(BuildContext context, AskPdfState state) {
+  Widget _buildModelsSetup(BuildContext context, AskPdfState state) {
     final colorScheme = Theme.of(context).colorScheme;
+    final needsEmbedder = !state.isEmbedderReady;
 
     return Center(
       child: Padding(
@@ -185,7 +186,7 @@ class _AskPdfPageState extends State<AskPdfPage> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Configuration requise',
+              needsEmbedder ? 'Configuration Embedder' : 'Configuration Modele IA',
               style: GoogleFonts.cinzel(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -194,57 +195,124 @@ class _AskPdfPageState extends State<AskPdfPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Le modele d\'embedding doit etre installe pour analyser vos PDFs',
+              needsEmbedder
+                  ? 'Le modele d\'embedding doit etre installe pour analyser vos PDFs'
+                  : 'Le modele Gemma doit etre charge pour generer les reponses',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-              ),
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+            // Progress steps
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildStepIndicator(colorScheme, '1', 'Embedder', state.isEmbedderReady, needsEmbedder),
+                Container(width: 40, height: 2, color: state.isEmbedderReady ? colorScheme.primary : colorScheme.outline),
+                _buildStepIndicator(colorScheme, '2', 'Gemma', state.isGemmaReady, !needsEmbedder),
+              ],
             ),
             const SizedBox(height: 32),
-            if (state.isEmbedderDownloading) ...[
-              SizedBox(
-                width: 200,
-                child: Column(
-                  children: [
-                    LinearProgressIndicator(
-                      value: state.embedderDownloadProgress,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${(state.embedderDownloadProgress * 100).toInt()}%',
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
-            ] else if (state.isEmbedderLoading) ...[
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                'Chargement...',
-                style: TextStyle(color: colorScheme.onSurfaceVariant),
-              ),
-            ] else if (!state.isEmbedderInstalled) ...[
-              FilledButton.icon(
-                onPressed: () => context.read<AskPdfBloc>().add(
-                      const AskPdfDownloadEmbedder(),
-                    ),
-                icon: const Icon(Icons.download),
-                label: const Text('Telecharger'),
-              ),
-            ] else ...[
-              FilledButton.icon(
-                onPressed: () => context.read<AskPdfBloc>().add(
-                      const AskPdfLoadEmbedder(),
-                    ),
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Charger'),
-              ),
-            ],
+            if (needsEmbedder)
+              _buildEmbedderActions(context, state, colorScheme)
+            else
+              _buildGemmaActions(context, state, colorScheme),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildStepIndicator(ColorScheme colorScheme, String num, String label, bool done, bool current) {
+    return Column(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: done ? colorScheme.primary : (current ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest),
+            border: current && !done ? Border.all(color: colorScheme.primary, width: 2) : null,
+          ),
+          child: Center(
+            child: done
+                ? Icon(Icons.check, size: 18, color: colorScheme.onPrimary)
+                : Text(num, style: TextStyle(color: current ? colorScheme.primary : colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold)),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 12, color: current ? colorScheme.primary : colorScheme.onSurfaceVariant)),
+      ],
+    );
+  }
+
+  Widget _buildEmbedderActions(BuildContext context, AskPdfState state, ColorScheme colorScheme) {
+    if (state.isEmbedderDownloading) {
+      return SizedBox(
+        width: 200,
+        child: Column(
+          children: [
+            LinearProgressIndicator(value: state.embedderDownloadProgress),
+            const SizedBox(height: 8),
+            Text('${(state.embedderDownloadProgress * 100).toInt()}%', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      );
+    } else if (state.isEmbedderLoading) {
+      return Column(
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text('Chargement...', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+        ],
+      );
+    } else if (!state.isEmbedderInstalled) {
+      return FilledButton.icon(
+        onPressed: () => context.read<AskPdfBloc>().add(const AskPdfDownloadEmbedder()),
+        icon: const Icon(Icons.download),
+        label: const Text('Telecharger Embedder'),
+      );
+    } else {
+      return FilledButton.icon(
+        onPressed: () => context.read<AskPdfBloc>().add(const AskPdfLoadEmbedder()),
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('Charger Embedder'),
+      );
+    }
+  }
+
+  Widget _buildGemmaActions(BuildContext context, AskPdfState state, ColorScheme colorScheme) {
+    if (state.isGemmaDownloading) {
+      return SizedBox(
+        width: 200,
+        child: Column(
+          children: [
+            LinearProgressIndicator(value: state.gemmaDownloadProgress),
+            const SizedBox(height: 8),
+            Text('${(state.gemmaDownloadProgress * 100).toInt()}%', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      );
+    } else if (state.isGemmaLoading) {
+      return Column(
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text('Chargement du modele...', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+        ],
+      );
+    } else if (!state.isGemmaInstalled) {
+      return FilledButton.icon(
+        onPressed: () => context.read<AskPdfBloc>().add(const AskPdfDownloadGemma()),
+        icon: const Icon(Icons.download),
+        label: const Text('Telecharger Gemma'),
+      );
+    } else {
+      return FilledButton.icon(
+        onPressed: () => context.read<AskPdfBloc>().add(const AskPdfLoadGemma()),
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('Charger Gemma'),
+      );
+    }
   }
 
   Widget _buildWelcomeState(BuildContext context, AskPdfState state) {

@@ -8,6 +8,7 @@ import '../../../core/utils/app_logger.dart';
 import '../../../data/datasources/ask_pdf_service.dart';
 import '../../../data/datasources/gemma_service.dart';
 import '../../../data/datasources/rag_service.dart';
+import '../../../domain/entities/gemma_model_info.dart';
 import '../../../domain/entities/pdf_source.dart';
 import 'ask_pdf_event.dart';
 import 'ask_pdf_state.dart';
@@ -19,12 +20,15 @@ class AskPdfBloc extends Bloc<AskPdfEvent, AskPdfState> {
   StreamSubscription<String>? _responseSubscription;
   StreamSubscription<GemmaStreamResponse>? _thinkingResponseSubscription;
   List<PdfSource> _pendingSources = [];
+  GemmaModelInfo? _modelInfo;
 
   AskPdfBloc(this._gemmaService, this._askPdfService)
       : super(const AskPdfState()) {
     on<AskPdfInitialize>(_onInitialize);
     on<AskPdfDownloadEmbedder>(_onDownloadEmbedder);
     on<AskPdfLoadEmbedder>(_onLoadEmbedder);
+    on<AskPdfDownloadGemma>(_onDownloadGemma);
+    on<AskPdfLoadGemma>(_onLoadGemma);
     on<AskPdfSelectFile>(_onSelectFile);
     on<AskPdfProcessingProgress>(_onProcessingProgress);
     on<AskPdfSendQuestion>(_onSendQuestion);
@@ -43,10 +47,19 @@ class AskPdfBloc extends Bloc<AskPdfEvent, AskPdfState> {
     AskPdfInitialize event,
     Emitter<AskPdfState> emit,
   ) async {
-    AppLogger.info('Initializing Ask PDF', 'AskPdfBloc');
+    AppLogger.info('Initializing Ask PDF with model: ${event.modelInfo.name}', 'AskPdfBloc');
+    _modelInfo = event.modelInfo;
 
+    // Check embedder status
     await _askPdfService.checkEmbedderStatus();
-    emit(state.copyWith(embedderState: _askPdfService.state));
+
+    // Check Gemma model status
+    await _gemmaService.checkModelStatus(event.modelInfo);
+
+    emit(state.copyWith(
+      embedderState: _askPdfService.state,
+      gemmaState: _gemmaService.state,
+    ));
   }
 
   Future<void> _onDownloadEmbedder(
@@ -117,6 +130,93 @@ class AskPdfBloc extends Bloc<AskPdfEvent, AskPdfState> {
       emit(state.copyWith(
         embedderState: EmbedderState.error,
         error: RagError.embedderNotLoaded(stack: stack),
+      ));
+    }
+  }
+
+  Future<void> _onDownloadGemma(
+    AskPdfDownloadGemma event,
+    Emitter<AskPdfState> emit,
+  ) async {
+    if (_modelInfo == null) {
+      AppLogger.warning('No model info set', 'AskPdfBloc');
+      return;
+    }
+
+    AppLogger.info('Downloading Gemma model: ${_modelInfo!.name}', 'AskPdfBloc');
+
+    try {
+      emit(state.copyWith(
+        gemmaState: GemmaModelState.downloading,
+        gemmaDownloadProgress: 0.0,
+        clearError: true,
+      ));
+
+      await _gemmaService.downloadModel(
+        _modelInfo!,
+        onProgress: (progress) {
+          emit(state.copyWith(gemmaDownloadProgress: progress));
+        },
+      );
+
+      emit(state.copyWith(gemmaState: GemmaModelState.installed));
+    } on AppError catch (e) {
+      AppLogger.logAppError(e, 'AskPdfBloc');
+      emit(state.copyWith(gemmaState: GemmaModelState.error, error: e));
+    } catch (e, stack) {
+      AppLogger.error(
+        'Gemma download failed',
+        tag: 'AskPdfBloc',
+        error: e,
+        stackTrace: stack,
+      );
+      emit(state.copyWith(
+        gemmaState: GemmaModelState.error,
+        error: NetworkError.downloadFailed(
+          
+          original: e,
+          stack: stack,
+        ),
+      ));
+    }
+  }
+
+  Future<void> _onLoadGemma(
+    AskPdfLoadGemma event,
+    Emitter<AskPdfState> emit,
+  ) async {
+    if (_modelInfo == null) {
+      AppLogger.warning('No model info set', 'AskPdfBloc');
+      return;
+    }
+
+    AppLogger.info('Loading Gemma model: ${_modelInfo!.name}', 'AskPdfBloc');
+
+    try {
+      emit(state.copyWith(
+        gemmaState: GemmaModelState.loading,
+        clearError: true,
+      ));
+
+      await _gemmaService.loadModel(_modelInfo);
+      emit(state.copyWith(gemmaState: GemmaModelState.ready));
+    } on AppError catch (e) {
+      AppLogger.logAppError(e, 'AskPdfBloc');
+      emit(state.copyWith(gemmaState: GemmaModelState.error, error: e));
+    } catch (e, stack) {
+      AppLogger.error(
+        'Gemma loading failed',
+        tag: 'AskPdfBloc',
+        error: e,
+        stackTrace: stack,
+      );
+      emit(state.copyWith(
+        gemmaState: GemmaModelState.error,
+        error: ModelError.loadingFailed(
+          
+          original: e,
+          stack: stack,
+        ),
       ));
     }
   }
