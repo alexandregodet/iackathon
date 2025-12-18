@@ -90,6 +90,7 @@ class MockGemmaService extends Mock implements GemmaService {
     GemmaModelInfo modelInfo, {
     void Function(double)? onProgress,
     String? token,
+    bool tryLocalFirst = true,
   }) async {
     _currentModel = modelInfo;
     _state = GemmaModelState.downloading;
