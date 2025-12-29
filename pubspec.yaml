@@ -49,7 +49,7 @@ dependencies:
   path: ^1.9.1
 
   # AI - Local LLM
-  flutter_gemma: ^0.11.13
+  flutter_gemma: ^0.11.14
 
   # Image Picker
   image_picker: ^1.1.2
