@@ -35,7 +35,7 @@ dependencies:
 
   # State Management - BLoC
   flutter_bloc: ^9.1.0
-  bloc: ^9.0.0
+  bloc: ^9.2.0
   equatable: ^2.0.7
 
   # Dependency Injection
@@ -43,13 +43,13 @@ dependencies:
   injectable: ^2.5.0
 
   # Database - Drift
-  drift: ^2.25.0
+  drift: ^2.30.1
   sqlite3_flutter_libs: ^0.5.30
   path_provider: ^2.1.5
   path: ^1.9.1
 
   # AI - Local LLM
-  flutter_gemma: ^0.11.13
+  flutter_gemma: ^0.12.2
 
   # Image Picker
   image_picker: ^1.1.2
@@ -62,7 +62,7 @@ dependencies:
   read_pdf_text: ^0.3.1
   intl: ^0.20.2
   shared_preferences: ^2.5.4
-  flutter_tts: ^4.2.3
+  flutter_tts: ^4.2.5
   google_fonts: ^6.2.1
 
 dev_dependencies:
@@ -76,7 +76,7 @@ dev_dependencies:
   bloc_test: ^10.0.0
 
   # Drift code generation
-  drift_dev: ^2.25.0
+  drift_dev: ^2.30.1
   build_runner: ^2.4.15
 
   # Injectable code generation
